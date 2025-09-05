@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- ccn_service_quote/views/pick_quote_wizard.xml -->
 <odoo>
   <data>
     <record id="view_pick_quote_wizard" model="ir.ui.view">
@@ -9,7 +8,11 @@
         <form string="Agregar cotización CCN">
           <group>
             <field name="order_id" invisible="1"/>
-            <field name="quote_id" options="{'no_open': True}"/>
+            <!-- OJO: usamos .id para que sea el entero, y reforzamos el contexto -->
+            <field name="quote_id"
+                   domain="[('partner_id','=', order_id.partner_id.id)]"
+                   context="{'ccn_partner_id': order_id.partner_id and order_id.partner_id.id or False}"
+                   options="{'no_open': True}"/>
           </group>
           <footer>
             <button string="Agregar" type="object" name="action_apply" class="btn-primary"/>

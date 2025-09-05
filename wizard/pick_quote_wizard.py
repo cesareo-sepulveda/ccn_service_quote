@@ -1,41 +1,40 @@
-# ccn_service_quote/wizard/pick_quote_wizard.py  (o pick_quote.py)
-from odoo import models, fields, api, _
+# -*- coding: utf-8 -*-
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
-class PickQuoteWizard(models.TransientModel):
-    _name = "ccn.service.quote.pick.wizard"
-    _description = "Elegir cotización CCN para una SO"
+class CCNPickQuoteWizard(models.TransientModel):
+    _name = 'ccn.service.quote.pick.wizard'
+    _description = 'Pick CCN Service Quote'
 
-    order_id = fields.Many2one("sale.order", required=True)
-    quote_id = fields.Many2one("ccn.service.quote", string="Cotización")
+    order_id = fields.Many2one('sale.order', required=True, readonly=True)
+    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True)
 
     @api.model
     def default_get(self, fields_list):
-        res = super().default_get(fields_list)
-        order_id = self.env.context.get("default_order_id")
-        if order_id:
-            order = self.env["sale.order"].browse(order_id)
-            if order.exists():
-                res["order_id"] = order.id
-        return res
+        vals = super().default_get(fields_list)
+        order_id = self.env.context.get('default_order_id') or self.env.context.get('active_id')
+        if order_id and (self.env.context.get('active_model') in (None, 'sale.order')):
+            vals['order_id'] = order_id
+        return vals
 
-    @api.onchange("order_id")
-    def _onchange_order_id(self):
-        """Restringe las cotizaciones al mismo cliente de la SO."""
-        if self.order_id and self.order_id.partner_id:
-            return {
-                "domain": {
-                    "quote_id": [("partner_id", "=", self.order_id.partner_id.id)]
-                }
-            }
-        return {"domain": {"quote_id": []}}
+    @api.onchange('order_id')
+    def _onchange_order_id_set_domain(self):
+        """Forzar el dominio del selector para que SOLO muestre cotizaciones del mismo cliente."""
+        dom = [('id', '=', 0)]
+        partner_id = self.order_id.partner_id.id if self.order_id else False
+        if partner_id:
+            dom = [('partner_id', '=', partner_id)]
+        return {'domain': {'quote_id': dom}}
 
     def action_apply(self):
         self.ensure_one()
-        if not self.order_id:
-            raise UserError(_("Primero selecciona una Orden de Venta."))
-        if not self.quote_id:
-            raise UserError(_("Selecciona una cotización."))
-        # Inserta líneas en la SO usando tu método existente
+        if not self.order_id or not self.quote_id:
+            raise UserError(_('Faltan datos.'))
+
+        # Doble validación de cliente por seguridad
+        if self.quote_id.partner_id and self.order_id.partner_id and \
+           self.quote_id.partner_id.id != self.order_id.partner_id.id:
+            raise UserError(_('Esta cotización pertenece a otro cliente.'))
+
         self.order_id.ccn_import_from_quote(self.quote_id)
-        return {"type": "ir.actions.act_window_close"}
+        return {'type': 'ir.actions.act_window_close'}

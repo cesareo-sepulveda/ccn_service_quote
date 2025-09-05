@@ -29,6 +29,7 @@ class SaleOrder(models.Model):
         # Pasar datos al wizard/acción
         ctx.update({
             'default_order_id': self.id,
+            'ccn_partner_id': self.partner_id.id if self.partner_id else False,
         })
 
         if self.partner_id:
