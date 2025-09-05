@@ -1,47 +1,46 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data>
-
-    <!-- Inyecta la subvista de líneas en el formulario principal -->
+    <!-- Heredamos el FORM de la cotización para reemplazar la subvista de line_ids -->
     <record id="ccn_view_quote_form_filter_products" model="ir.ui.view">
       <field name="name">ccn.quote.form.filter.products</field>
       <field name="model">ccn.service.quote</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
       <field name="arch" type="xml">
-        <!-- Reemplazamos el field vacío por una subvista list/form -->
+
+        <!-- Reemplazamos el <field name="line_ids"/> original por un widget con list/form -->
         <xpath expr="//form//field[@name='line_ids']" position="replace">
           <field name="line_ids" nolabel="1" mode="list,form">
             <list editable="bottom">
-              <field name="rubro_id" required="1"/>
-              <field name="product_id" required="1"
-                    options="{'no_create_edit': True}"
-                    domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+              <!-- Filtra rubros a solo los NO internos -->
+              <field name="rubro_id" domain="[('internal_only','=',False)]"/>
+
+              <!-- Filtra productos (placeholder + rubro) -->
+              <field name="product_id"
+                     options="{'no_open': True}"
+                     domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
                               ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])]"/>
-              <field name="quantity" class="o_list_number"/>
+
+              <field name="quantity"/>
               <field name="tabulator_percent"/>
-              <field name="base_price_unit" widget="monetary" class="o_list_number"/>
-              <field name="price_unit_final" widget="monetary" readonly="1" class="o_list_number"/>
-              <field name="total_price" widget="monetary" readonly="1" class="o_list_number"/>
+              <field name="base_price_unit"/>
+              <field name="price_unit_final"/>
+              <field name="total_price"/>
               <field name="currency_id" invisible="1"/>
             </list>
 
-            <form string="Línea de cotización">
+            <form>
               <group>
-                <field name="rubro_id" required="1"/>
-                <field name="product_id" required="1"
-                      options="{'no_create_edit': True}"
-                      domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                <field name="rubro_id" domain="[('internal_only','=',False)]"/>
+                <field name="product_id"
+                       options="{'no_open': True}"
+                       domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
                                 ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])]"/>
-                <group>
-                  <field name="quantity"/>
-                  <field name="tabulator_percent"/>
-                </group>
-                <group>
-                  <field name="base_price_unit" widget="monetary"/>
-                  <field name="price_unit_final" widget="monetary" readonly="1"/>
-                  <field name="total_price" widget="monetary" readonly="1"/>
-                  <field name="currency_id" invisible="1"/>
-                </group>
+                <field name="quantity"/>
+                <field name="tabulator_percent"/>
+                <field name="base_price_unit"/>
+                <field name="price_unit_final" readonly="1"/>
+                <field name="total_price" readonly="1"/>
               </group>
             </form>
           </field>
@@ -49,6 +48,5 @@
 
       </field>
     </record>
-
   </data>
 </odoo>

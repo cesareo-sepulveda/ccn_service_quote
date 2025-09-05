@@ -8,7 +8,7 @@ class CCNServiceQuoteLine(models.Model):
     _order = "rubro_id, id"
 
     quote_id = fields.Many2one("ccn.service.quote", required=True, ondelete="cascade")
-    rubro_id = fields.Many2one("ccn.service.rubro", string="Rubro", required=True)
+    rubro_id = fields.Many2one("ccn.service.rubro", string="Rubro", required=True, domain=[('internal_only', '=', False)])
 
     # dominio base: siempre ocultar placeholders
     product_id = fields.Many2one(
@@ -92,7 +92,13 @@ class CCNServiceQuoteLine(models.Model):
                         _("El producto '%s' no pertenece al Rubro '%s' o está marcado para no usarse en CCN Service Quote.")
                         % (rec.product_id.display_name, rec.rubro_id.display_name)
                     )
-                
+
+    @api.constrains('rubro_id')
+    def _check_rubro_no_interno(self):
+        for rec in self:
+            if rec.rubro_id and rec.rubro_id.internal_only:
+                raise ValidationError(_("Este rubro es interno y no se puede usar en líneas."))
+
     tabulador = fields.Selection(
         selection=[
             ('0',  '0%'),
