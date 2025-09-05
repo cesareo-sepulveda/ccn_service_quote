@@ -1,8 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!-- ccn_service_quote/views/pick_quote_wizard.xml -->
 <odoo>
   <data>
-
-    <!-- Vista del wizard -->
     <record id="view_pick_quote_wizard" model="ir.ui.view">
       <field name="name">ccn.pick.quote.wizard</field>
       <field name="model">ccn.service.quote.pick.wizard</field>
@@ -10,10 +9,7 @@
         <form string="Agregar cotización CCN">
           <group>
             <field name="order_id" invisible="1"/>
-            <!-- Filtrado por cliente tomado del contexto que arma sale_order.py -->
-            <field name="quote_id"
-                   options="{'no_open': True}"
-                   domain="[('partner_id', '=', context.get('ccn_partner_id'))]"/>
+            <field name="quote_id" options="{'no_open': True}"/>
           </group>
           <footer>
             <button string="Agregar" type="object" name="action_apply" class="btn-primary"/>
@@ -23,14 +19,11 @@
       </field>
     </record>
 
-    <!-- Acción que abre el wizard (la que lees con env.ref(...) en sale_order.py) -->
     <record id="action_ccn_pick_quote" model="ir.actions.act_window">
       <field name="name">Elegir cotización CCN</field>
       <field name="res_model">ccn.service.quote.pick.wizard</field>
-      <field name="view_mode">form</field> <!-- IMPORTANT: sin 'tree' -->
+      <field name="view_mode">form</field>
       <field name="target">new</field>
-      <field name="context">{}</field> <!-- El Python lo sobreescribe con ccn_partner_id y default_order_id -->
     </record>
-
   </data>
 </odoo>
