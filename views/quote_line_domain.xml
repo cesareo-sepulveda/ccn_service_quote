@@ -2,22 +2,49 @@
 <odoo>
   <data>
 
-    <!-- Heredamos el formulario de ccn.service.quote y forzamos el dominio del product_id -->
+    <!-- Inyecta la subvista de líneas en el formulario principal -->
     <record id="ccn_view_quote_form_filter_products" model="ir.ui.view">
       <field name="name">ccn.quote.form.filter.products</field>
       <field name="model">ccn.service.quote</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
       <field name="arch" type="xml">
+        <!-- Reemplazamos el field vacío por una subvista list/form -->
+        <xpath expr="//form//field[@name='line_ids']" position="replace">
+          <field name="line_ids" nolabel="1" mode="list,form">
+            <list editable="bottom">
+              <field name="rubro_id" required="1"/>
+              <field name="product_id" required="1"
+                    options="{'no_create_edit': True}"
+                    domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                              ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])]"/>
+              <field name="quantity" class="o_list_number"/>
+              <field name="tabulator_percent"/>
+              <field name="base_price_unit" widget="monetary" class="o_list_number"/>
+              <field name="price_unit_final" widget="monetary" readonly="1" class="o_list_number"/>
+              <field name="total_price" widget="monetary" readonly="1" class="o_list_number"/>
+              <field name="currency_id" invisible="1"/>
+            </list>
 
-        <!-- localiza el tree/list de line_ids y ajusta el campo product_id -->
-        <xpath expr="//form//field[@name='line_ids']//field[@name='product_id']" position="attributes">
-          <attribute name="domain">
-            [
-              ('product_tmpl_id.ccn_exclude_from_quote','=',False),
-              ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])
-            ]
-          </attribute>
-          <attribute name="context">{'default_type': 'service'}</attribute>
+            <form string="Línea de cotización">
+              <group>
+                <field name="rubro_id" required="1"/>
+                <field name="product_id" required="1"
+                      options="{'no_create_edit': True}"
+                      domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                                ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])]"/>
+                <group>
+                  <field name="quantity"/>
+                  <field name="tabulator_percent"/>
+                </group>
+                <group>
+                  <field name="base_price_unit" widget="monetary"/>
+                  <field name="price_unit_final" widget="monetary" readonly="1"/>
+                  <field name="total_price" widget="monetary" readonly="1"/>
+                  <field name="currency_id" invisible="1"/>
+                </group>
+              </group>
+            </form>
+          </field>
         </xpath>
 
       </field>
