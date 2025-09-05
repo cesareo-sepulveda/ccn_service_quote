@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="view_order_form_add_package" model="ir.ui.view">
+        <field name="name">sale.order.form.add.package</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//header" position="inside">
+                <button name="%(ccn_service_quote.action_open_add_package_wizard)d"
+                        type="action"
+                        class="oe_highlight"
+                        string="Agregar paquete"
+                        groups="ccn_service_quote.group_ccn_service_quote_user"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

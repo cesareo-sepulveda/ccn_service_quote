@@ -1,0 +1,13 @@
+<odoo>
+  <data>
+    <!-- Acción de ventana para ccn.service.quote -->
+    <record id="ccn_action_quotes" model="ir.actions.act_window">
+      <field name="name">Cotizaciones de Servicio</field>
+      <field name="res_model">ccn.service.quote</field>
+      <!-- En v17/v18 usa 'list', no 'tree' -->
+      <field name="view_mode">list,form</field>
+      <field name="context">{}</field>
+      <field name="domain">[]</field>
+    </record>
+  </data>
+</odoo>

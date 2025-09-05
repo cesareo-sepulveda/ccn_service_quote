@@ -1,0 +1,19 @@
+<!-- views/sale_order_button.xml -->
+<odoo>
+  <data>
+    <record id="ccn_sale_order_button" model="ir.ui.view">
+      <field name="name">ccn.sale.order.button</field>
+      <field name="model">sale.order</field>
+      <field name="inherit_id" ref="sale.view_order_form"/>
+      <field name="arch" type="xml">
+        <!-- Inserta el botón dentro del header, después de Confirm -->
+        <xpath expr="//header/button[@name='action_confirm']" position="after">
+          <button type="object"
+                  name="action_ccn_add_service_quote"
+                  string="Agregar cotización CCN"
+                  class="oe_highlight"/>
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>

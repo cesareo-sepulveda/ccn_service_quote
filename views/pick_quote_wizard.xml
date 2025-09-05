@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="view_pick_quote_wizard" model="ir.ui.view">
+      <field name="name">ccn.pick.quote.wizard</field>
+      <field name="model">ccn.service.quote.pick.wizard</field>
+      <field name="arch" type="xml">
+        <form string="Agregar cotización CCN">
+          <group>
+            <field name="order_id" invisible="1"/>
+            <field name="quote_id" options="{'no_open': True}"/>
+          </group>
+          <footer>
+            <button string="Agregar" type="object" name="action_apply" class="btn-primary"/>
+            <button string="Cancelar" special="cancel"/>
+          </footer>
+        </form>
+      </field>
+    </record>
+
+    <record id="action_ccn_pick_quote" model="ir.actions.act_window">
+      <field name="name">Elegir cotización CCN</field>
+      <field name="res_model">ccn.service.quote.pick.wizard</field>
+      <field name="view_mode">form</field>
+      <field name="target">new</field>
+    </record>
+  </data>
+</odoo>

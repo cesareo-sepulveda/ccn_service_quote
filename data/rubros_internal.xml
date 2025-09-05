@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo noupdate="1">
+  <data>
+    <record id="rubro_admin" model="ccn.service.rubro">
+      <field name="name">Administración (%)</field>
+      <field name="sequence">990</field>
+      <field name="internal_only">1</field>
+      <field name="active">1</field>
+    </record>
+    <record id="rubro_utility" model="ccn.service.rubro">
+      <field name="name">Utilidad (%)</field>
+      <field name="sequence">991</field>
+      <field name="internal_only">1</field>
+      <field name="active">1</field>
+    </record>
+    <record id="rubro_financial" model="ccn.service.rubro">
+      <field name="name">Costo financiero (%)</field>
+      <field name="sequence">992</field>
+      <field name="internal_only">1</field>
+      <field name="active">1</field>
+    </record>
+  </data>
+</odoo>

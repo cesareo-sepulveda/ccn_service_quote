@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <!-- Vista de búsqueda (líneas) -->
+    <record id="view_search_ccn_service_package_line" model="ir.ui.view">
+        <field name="name">ccn.service.package.line.search</field>
+        <field name="model">ccn.service.package.line</field>
+        <field name="arch" type="xml">
+            <search string="Buscar líneas">
+                <field name="product_id"/>
+                <field name="package_id"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Lista (líneas) -->
+    <record id="view_list_ccn_service_package_line" model="ir.ui.view">
+        <field name="name">ccn.service.package.line.list</field>
+        <field name="model">ccn.service.package.line</field>
+        <field name="arch" type="xml">
+            <list editable="bottom">
+                <field name="product_id"/>
+                <field name="quantity"/>
+                <field name="package_id"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Form (líneas) -->
+    <record id="view_form_ccn_service_package_line" model="ir.ui.view">
+        <field name="name">ccn.service.package.line.form</field>
+        <field name="model">ccn.service.package.line</field>
+        <field name="arch" type="xml">
+            <form string="Línea">
+                <sheet>
+                    <group>
+                        <field name="package_id"/>
+                        <field name="product_id"/>
+                        <field name="quantity"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+</odoo>

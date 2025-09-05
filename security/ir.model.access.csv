@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_ccn_rubro_user,access_ccn_rubro_user,model_ccn_service_rubro,base.group_user,1,1,1,1
+access_ccn_quote_user,access_ccn_quote_user,model_ccn_service_quote,base.group_user,1,1,1,1
+access_ccn_quote_line_user,access_ccn_quote_line_user,model_ccn_service_quote_line,base.group_user,1,1,1,1
+access_ccn_pick_wizard_user,access_ccn_pick_wizard_user,model_ccn_service_quote_pick_wizard,base.group_user,1,1,1,1

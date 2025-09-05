@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- A) Subvista LIST para líneas de venta: 'name' primero -->
+    <record id="ccn_sale_order_line_list_alt" model="ir.ui.view">
+      <field name="name">ccn.sale.order.line.list.alt</field>
+      <field name="model">sale.order.line</field>
+      <field name="priority" eval="99"/>
+      <field name="arch" type="xml">
+        <list editable="bottom">
+          <field name="sequence" widget="handle"/>
+          <field name="display_type" invisible="1"/>
+
+          <!-- Descripción (name) primero: aquí aplicamos la sangría -->
+          <field name="name" string="Producto / Descripción"/>
+
+          <!-- Ocultamos la columna visual del producto -->
+          <field name="product_id" invisible="1"/>
+
+          <!-- Ocultar numéricos en secciones/notas (sin attrs/states) -->
+          <field name="product_uom_qty" invisible="display_type != False"/>
+          <field name="product_uom"     invisible="display_type != False"/>
+          <field name="price_unit"      invisible="display_type != False"/>
+          <field name="tax_id"          invisible="display_type != False"/>
+          <field name="price_subtotal"  invisible="display_type != False"/>
+        </list>
+      </field>
+    </record>
+
+    <!-- B) Forzar que order_line use la subvista anterior vía 'views' -->
+    <record id="ccn_view_order_form_force_subview" model="ir.ui.view">
+      <field name="name">sale.order.form.ccn.force_subview</field>
+      <field name="model">sale.order</field>
+      <field name="inherit_id" ref="sale.view_order_form"/>
+      <field name="priority" eval="99"/>
+      <field name="arch" type="xml">
+        <!-- Añade/reescribe el atributo 'views' en el one2many -->
+        <xpath expr="//form//field[@name='order_line']" position="attributes">
+          <attribute name="views">
+            {'list': 'ccn_service_quote.ccn_sale_order_line_list_alt'}
+          </attribute>
+        </xpath>
+      </field>
+    </record>
+
+  </data>
+</odoo>

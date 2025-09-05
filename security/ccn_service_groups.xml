@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Grupo para usar el Cotizador CCN -->
+    <record id="group_ccn_service_quote_user" model="res.groups">
+        <field name="name">Cotizador CCN - Usuario</field>
+        <!-- (Opcional) asigna categoría si quieres que aparezca bajo Ventas:
+        <field name="category_id" ref="base.module_category_sales_management"/>
+        -->
+    </record>
+</odoo>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="ccn_view_rubro_tree" model="ir.ui.view">
+      <field name="name">ccn.rubro.tree</field>
+      <field name="model">ccn.service.rubro</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="sequence"/>
+          <field name="name"/>
+          <field name="internal_only"/>
+          <field name="active"/>
+        </list>
+      </field>
+    </record>
+
+    <record id="ccn_view_rubro_form" model="ir.ui.view">
+      <field name="name">ccn.rubro.form</field>
+      <field name="model">ccn.service.rubro</field>
+      <field name="arch" type="xml">
+        <form string="Rubro CCN">
+          <sheet>
+            <group>
+              <field name="name"/>
+              <field name="sequence"/>
+              <field name="internal_only"/>
+              <field name="active"/>
+            </group>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <record id="ccn_action_rubros" model="ir.actions.act_window">
+      <field name="name">Rubros CCN</field>
+      <field name="res_model">ccn.service.rubro</field>
+      <field name="view_mode">list,form</field>
+    </record>
+
+  </data>
+</odoo>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+
+    <record id="view_search_ccn_service_package" model="ir.ui.view">
+        <field name="name">ccn.service.package.search</field>
+        <field name="model">ccn.service.package</field>
+        <field name="arch" type="xml">
+            <search string="Buscar paquetes">
+                <field name="name"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="view_list_ccn_service_package" model="ir.ui.view">
+        <field name="name">ccn.service.package.list</field>
+        <field name="model">ccn.service.package</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="name"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_form_ccn_service_package" model="ir.ui.view">
+        <field name="name">ccn.service.package.form</field>
+        <field name="model">ccn.service.package</field>
+        <field name="arch" type="xml">
+            <form string="Paquete de servicio">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                    </group>
+                    <notebook>
+                        <page string="Líneas">
+                            <field name="line_ids"
+                                   mode="list,form"
+                                   context="{'add_an_item': 'Agregar servicio'}">
+                                <list string="Servicios" editable="bottom" create="1" edit="1" delete="1">
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                </list>
+                                <form string="Línea">
+                                    <sheet>
+                                        <group>
+                                            <field name="product_id"/>
+                                            <field name="quantity"/>
+                                        </group>
+                                    </sheet>
+                                </form>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Acción y menús (visibles solo para el grupo) -->
+    <record id="action_ccn_service_package" model="ir.actions.act_window">
+        <field name="name">Paquetes de servicio</field>
+        <field name="res_model">ccn.service.package</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_search_ccn_service_package"/>
+    </record>
+
+    <menuitem id="menu_ccn_service_package_root"
+              name="Cotizador CCN"
+              sequence="10"
+              groups="ccn_service_quote.group_ccn_service_quote_user"/>
+
+    <menuitem id="menu_ccn_service_package"
+              name="Paquetes"
+              parent="menu_ccn_service_package_root"
+              action="action_ccn_service_package"
+              sequence="20"
+              groups="ccn_service_quote.group_ccn_service_quote_user"/>
+
+</odoo>

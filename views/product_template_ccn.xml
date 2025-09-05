@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="ccn_product_template_form_inherit_rubros" model="ir.ui.view">
+      <field name="name">product.template.form.ccn.rubros</field>
+      <field name="model">product.template</field>
+      <field name="inherit_id" ref="product.product_template_only_form_view"/>
+      <field name="arch" type="xml">
+        <xpath expr="//sheet/notebook" position="inside">
+          <page string="CCN Service">
+            <group>
+              <field name="ccn_rubro_ids" widget="many2many_tags"
+                     options="{'no_create_edit': True}"
+                     placeholder="Selecciona los Rubros CCN para este producto/servicio"/>
+              <field name="ccn_exclude_from_quote"/>
+            </group>
+          </page>
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>
