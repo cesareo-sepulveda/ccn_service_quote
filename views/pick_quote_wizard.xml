@@ -1,16 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data>
+    <!-- Vista del wizard -->
     <record id="view_pick_quote_wizard" model="ir.ui.view">
       <field name="name">ccn.pick.quote.wizard</field>
       <field name="model">ccn.service.quote.pick.wizard</field>
       <field name="arch" type="xml">
         <form string="Agregar cotización CCN">
           <group>
+            <!-- La SO llega por default_get (invisible en el wizard) -->
             <field name="order_id" invisible="1"/>
-            <!-- Dominio basado en el contexto que pone la acción: ccn_partner_id -->
+            <!-- Filtramos por el MISMO cliente de la SO, sin variables extra -->
             <field name="quote_id"
-                   domain="[('partner_id','=', ccn_partner_id)]"
+                   domain="[('partner_id','=', order_id.partner_id)]"
                    options="{'no_open': True}"/>
           </group>
           <footer>
@@ -21,6 +23,7 @@
       </field>
     </record>
 
+    <!-- Acción que abre el wizard en modal -->
     <record id="action_ccn_pick_quote" model="ir.actions.act_window">
       <field name="name">Elegir cotización CCN</field>
       <field name="res_model">ccn.service.quote.pick.wizard</field>
