@@ -10,13 +10,15 @@ class SaleOrder(models.Model):
     def action_ccn_add_service_quote(self):
         """Abrir selector de CCN Service Quote, filtrando por cliente y corrigiendo context."""
         self.ensure_one()
+
+        # Lee la acción del wizard/selector
         action = self.env.ref('ccn_service_quote.action_ccn_pick_quote').read()[0]
 
-        # Normalizar context (puede venir como string en acciones)
+        # Normalizar context (en 18.0 puede venir como string)
         ctx_raw = action.get('context') or {}
         if isinstance(ctx_raw, str):
             try:
-                ctx = safe_eval(ctx_raw)
+                ctx = safe_eval(ctx_raw) or {}
             except Exception:
                 ctx = {}
         elif isinstance(ctx_raw, dict):
@@ -24,18 +26,29 @@ class SaleOrder(models.Model):
         else:
             ctx = {}
 
-        # Pasar datos útiles al wizard/acción
-        ctx.update({'default_order_id': self.id})
+        # Pasar datos al wizard/acción
+        ctx.update({
+            'default_order_id': self.id,
+        })
+
         if self.partner_id:
-            # útil si el wizard lee esta clave
-            ctx['ccn_partner_id'] = self.partner_id.id
+            # Claves útiles para filtros y defaults
+            ctx.update({
+                'ccn_partner_id': self.partner_id.id,          # por si tu vista usa domain="[...] context.get('ccn_partner_id') ..."
+                'search_default_partner_id': self.partner_id.id, # activa filtro rápido si hay filtro guardado
+                'default_partner_id': self.partner_id.id,        # default en asistentes/m2o
+                'force_partner_id': self.partner_id.id,          # por si lo lees explícitamente en el wizard
+            })
 
         action['context'] = ctx
 
-        # Si la acción abre directamente el modelo de cotizaciones de servicio,
-        # filtra por el mismo cliente de la SO.
+        # Si la acción apunta directo al modelo ccn.service.quote, forzar domain por cliente
         if self.partner_id and action.get('res_model') == 'ccn.service.quote':
+            # Sobrescribo cualquier dominio previo para asegurar el filtro por cliente
             action['domain'] = [('partner_id', '=', self.partner_id.id)]
+
+        # Importante en 18.0: no devolver 'tree' en ningún view_mode desde Python
+        # (El XML de la acción debe usar list,form; aquí no tocamos view_mode)
 
         return action
 
@@ -53,7 +66,7 @@ class SaleOrder(models.Model):
                 product.default_code = False
         # marcar el template para que NO aparezca en service_quote
         tmpl = product.product_tmpl_id
-        if not tmpl.ccn_exclude_from_quote:
+        if hasattr(tmpl, 'ccn_exclude_from_quote') and not tmpl.ccn_exclude_from_quote:
             tmpl.ccn_exclude_from_quote = True
         return product
 
@@ -67,7 +80,7 @@ class SaleOrder(models.Model):
             if product.default_code:
                 product.default_code = False
         tmpl = product.product_tmpl_id
-        if not tmpl.ccn_exclude_from_quote:
+        if hasattr(tmpl, 'ccn_exclude_from_quote') and not tmpl.ccn_exclude_from_quote:
             tmpl.ccn_exclude_from_quote = True
         return product
 
