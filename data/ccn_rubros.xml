@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+
+    <!-- 1 -->
+    <record id="ccn_rubro_mano_obra" model="ccn.service.rubro">
+      <field name="name">Mano de Obra</field>
+      <field name="code">mano_obra</field>
+      <field name="sequence">1</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+    <!-- 2 -->
+    <record id="ccn_rubro_uniforme" model="ccn.service.rubro">
+      <field name="name">Uniforme</field>
+      <field name="code">uniforme</field>
+      <field name="sequence">2</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+    <!-- 3 -->
+    <record id="ccn_rubro_epp" model="ccn.service.rubro">
+      <field name="name">EPP</field>
+      <field name="code">epp</field>
+      <field name="sequence">3</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+    <!-- 4 -->
+    <record id="ccn_rubro_epp_alturas" model="ccn.service.rubro">
+      <field name="name">EPP Alturas</field>
+      <field name="code">epp_alturas</field>
+      <field name="sequence">4</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">0</field>
+    </record>
+
+    <!-- 5 -->
+    <record id="ccn_rubro_equipo_especial_limpieza" model="ccn.service.rubro">
+      <field name="name">Equipo Especial de Limpieza</field>
+      <field name="code">equipo_especial_limpieza</field>
+      <field name="sequence">5</field>
+      <field name="apply_garden">0</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+    <!-- 6 -->
+    <record id="ccn_rubro_comunicacion_computo" model="ccn.service.rubro">
+      <field name="name">Comunicación y Cómputo</field>
+      <field name="code">comunicacion_computo</field>
+      <field name="sequence">6</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+    <!-- 7 -->
+    <record id="ccn_rubro_herramienta_menor_jardineria" model="ccn.service.rubro">
+      <field name="name">Herramienta Menor de Jardinería</field>
+      <field name="code">herramienta_menor_jardineria</field>
+      <field name="sequence">7</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">0</field>
+    </record>
+
+    <!-- 8 -->
+    <record id="ccn_rubro_material_limpieza" model="ccn.service.rubro">
+      <field name="name">Material de Limpieza</field>
+      <field name="code">material_limpieza</field>
+      <field name="sequence">8</field>
+      <field name="apply_garden">0</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+    <!-- 9 -->
+    <record id="ccn_rubro_perfil_medico" model="ccn.service.rubro">
+      <field name="name">Perfil Médico</field>
+      <field name="code">perfil_medico</field>
+      <field name="sequence">9</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+    <!-- 10 -->
+    <record id="ccn_rubro_maquinaria_limpieza" model="ccn.service.rubro">
+      <field name="name">Maquinaria de Limpieza</field>
+      <field name="code">maquinaria_limpieza</field>
+      <field name="sequence">10</field>
+      <field name="apply_garden">0</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+    <!-- 11 -->
+    <record id="ccn_rubro_maquinaria_jardineria" model="ccn.service.rubro">
+      <field name="name">Maquinaria de Jardinería</field>
+      <field name="code">maquinaria_jardineria</field>
+      <field name="sequence">11</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">0</field>
+    </record>
+
+    <!-- 12 -->
+    <record id="ccn_rubro_fertilizantes_tierra_lama" model="ccn.service.rubro">
+      <field name="name">Fertilizantes y Tierra Lama</field>
+      <field name="code">fertilizantes_tierra_lama</field>
+      <field name="sequence">12</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">0</field>
+    </record>
+
+    <!-- 13 -->
+    <record id="ccn_rubro_consumibles_jardineria" model="ccn.service.rubro">
+      <field name="name">Consumibles de Jardinería</field>
+      <field name="code">consumibles_jardineria</field>
+      <field name="sequence">13</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">0</field>
+    </record>
+
+    <!-- 14 -->
+    <record id="ccn_rubro_capacitacion" model="ccn.service.rubro">
+      <field name="name">Capacitación</field>
+      <field name="code">capacitacion</field>
+      <field name="sequence">14</field>
+      <field name="apply_garden">1</field>
+      <field name="apply_clean">1</field>
+    </record>
+
+  </data>
+</odoo>

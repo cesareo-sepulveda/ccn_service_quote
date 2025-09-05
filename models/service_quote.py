@@ -40,6 +40,12 @@ class CCNServiceQuote(models.Model):
         compute="_compute_amounts", currency_field="currency_id", store=True, string="Subtotal"
     )
 
+    site_ids = fields.One2many(
+        "ccn.service.quote.site",  # comodel
+        "quote_id",                # inverso en el comodel
+        string="Sitios",
+    )
+
     @api.depends("line_ids.total_price")
     def _compute_amounts(self):
         for q in self:

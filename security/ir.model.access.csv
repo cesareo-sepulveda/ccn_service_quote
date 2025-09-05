@@ -3,3 +3,4 @@ access_ccn_rubro_user,access_ccn_rubro_user,model_ccn_service_rubro,base.group_u
 access_ccn_quote_user,access_ccn_quote_user,model_ccn_service_quote,base.group_user,1,1,1,1
 access_ccn_quote_line_user,access_ccn_quote_line_user,model_ccn_service_quote_line,base.group_user,1,1,1,1
 access_ccn_pick_wizard_user,access_ccn_pick_wizard_user,model_ccn_service_quote_pick_wizard,base.group_user,1,1,1,1
+access_ccn_service_quote_site,access.ccn.service.quote.site,model_ccn_service_quote_site,base.group_user,1,1,1,1

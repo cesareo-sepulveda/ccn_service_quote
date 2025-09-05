@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 from odoo.exceptions import ValidationError
 
 class CCNServiceQuoteLine(models.Model):
@@ -9,7 +9,16 @@ class CCNServiceQuoteLine(models.Model):
 
     quote_id = fields.Many2one("ccn.service.quote", required=True, ondelete="cascade")
     rubro_id = fields.Many2one("ccn.service.rubro", string="Rubro", required=True, domain=[('internal_only', '=', False)])
-
+    site_id = fields.Many2one("ccn.service.quote.site", string="Sitio", ondelete="cascade")
+    type = fields.Selection([("garden","Jardinería"), ("clean","Limpieza")],
+                            string="Tipo", required=True, default="garden")
+    
+    # helper: código del rubro (para cálculos)
+    rubro_code = fields.Selection(
+        related="rubro_id.code", store=True, readonly=True,
+        help="Code del rubro (string), sincronizado con el rubro."
+    )
+    
     # dominio base: siempre ocultar placeholders
     product_id = fields.Many2one(
         "product.product",
@@ -98,6 +107,15 @@ class CCNServiceQuoteLine(models.Model):
         for rec in self:
             if rec.rubro_id and rec.rubro_id.internal_only:
                 raise ValidationError(_("Este rubro es interno y no se puede usar en líneas."))
+
+    @api.constrains("rubro_id", "type")
+    def _check_rubro_applicability(self):
+        for l in self:
+            if l.rubro_id:
+                if l.type == "garden" and not l.rubro_id.apply_garden:
+                    raise ValidationError(_("El rubro '%s' no aplica a Jardinería.") % l.rubro_id.display_name)
+                if l.type == "clean" and not l.rubro_id.apply_clean:
+                    raise ValidationError(_("El rubro '%s' no aplica a Limpieza.") % l.rubro_id.display_name)
 
     tabulador = fields.Selection(
         selection=[
