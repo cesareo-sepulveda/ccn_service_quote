@@ -19,6 +19,14 @@ class CCNServiceQuotePickWizard(models.TransientModel):
         required=False,
         help="Cotización de servicio a importar a la Orden de Venta.",
     )
+    
+    partner_id = fields.Many2one(
+    "res.partner",
+    string="Cliente",
+    related="order_id.partner_id",
+    readonly=True,
+    )
+
 
     @api.model
     def default_get(self, fields_list):
