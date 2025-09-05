@@ -41,6 +41,11 @@
                 <field name="site_label"/>
                 <field name="note_text" placeholder="Nota que se mostrará como sección en la SO"/>
               </group>
+              <group string="Parámetros internos">
+                <field name="admin_percent" widget="percentage" help="% de Administración para el cálculo interno"/>
+                <field name="utility_percent" widget="percentage" help="% de Utilidad para el cálculo interno"/>
+                <field name="financial_percent" widget="percentage" help="% de Costo financiero para el cálculo interno"/>
+              </group>
             </group>
 
             <group string="Líneas">
