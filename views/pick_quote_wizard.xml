@@ -8,10 +8,9 @@
         <form string="Agregar cotización CCN">
           <group>
             <field name="order_id" invisible="1"/>
-            <!-- OJO: usamos .id para que sea el entero, y reforzamos el contexto -->
+            <!-- Dominio basado en el contexto que pone la acción: ccn_partner_id -->
             <field name="quote_id"
-                   domain="[('partner_id','=', order_id.partner_id.id)]"
-                   context="{'ccn_partner_id': order_id.partner_id and order_id.partner_id.id or False}"
+                   domain="[('partner_id','=', ccn_partner_id)]"
                    options="{'no_open': True}"/>
           </group>
           <footer>

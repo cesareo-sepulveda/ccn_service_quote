@@ -31,6 +31,7 @@ class SaleOrder(models.Model):
             'default_order_id': self.id,
             'ccn_partner_id': self.partner_id.id if self.partner_id else False,
         })
+        action['context'] = ctx
 
         if self.partner_id:
             # Claves útiles para filtros y defaults
