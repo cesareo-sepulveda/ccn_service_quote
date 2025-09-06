@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- ================================
+         FORM del modelo de Sitio (con indicadores ARRIBA)
+         ================================ -->
+    <record id="ccn_view_site_form" model="ir.ui.view">
+      <field name="name">ccn.site.form</field>
+      <field name="model">ccn.service.quote.site</field>
+      <field name="arch" type="xml">
+        <form string="Sitio">
+          <sheet>
+            <group>
+              <group>
+                <field name="name"/>
+                <field name="quote_id" options="{'no_open': True}"/>
+                <field name="sequence"/>
+              </group>
+              <group string="Parámetros">
+                <field name="headcount"/>
+                <field name="admin_percent"/>
+                <field name="utility_percent"/>
+                <field name="financial_percent"/>
+                <field name="transporte_rate"/>
+                <field name="bienestar_rate"/>
+              </group>
+            </group>
+
+            <notebook>
+              <page string="Líneas">
+                <field name="line_ids" mode="list,form">
+                  <list editable="bottom">
+                    <field name="rubro_id"/>
+                    <field name="product_id"/>
+                    <field name="quantity"/>
+                    <field name="base_price_unit"/>
+                    <field name="tabulator_percent"/>
+                    <field name="price_unit_final" readonly="1"/>
+                    <field name="total_price" readonly="1"/>
+                  </list>
+                  <form string="Línea de sitio">
+                    <group>
+                      <field name="rubro_id"/>
+                      <field name="product_id"/>
+                      <field name="quantity"/>
+                      <field name="base_price_unit"/>
+                      <field name="tabulator_percent"/>
+                      <field name="price_unit_final" readonly="1"/>
+                      <field name="total_price" readonly="1"/>
+                    </group>
+                  </form>
+                </field>
+              </page>
+
+              <page string="Resumen del sitio">
+                <group>
+                  <field name="subtotal1" readonly="1"/>
+                  <field name="admin_amt" readonly="1"/>
+                  <field name="util_amt" readonly="1"/>
+                  <field name="subtotal2" readonly="1"/>
+                  <field name="transporte_amt" readonly="1"/>
+                  <field name="bienestar_amt" readonly="1"/>
+                  <field name="financial_amt" readonly="1"/>
+                  <field name="total_monthly" readonly="1"/>
+                </group>
+              </page>
+            </notebook>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <!-- ==========================================================
+         Heredamos el FORM de la Service Quote para:
+         - Agregar selector "Sitio actual" arriba,
+         - Embedir el FORM del sitio seleccionado,
+         - Agregar pestañas Sitios y Resumen Global.
+         ========================================================== -->
+    <record id="ccn_view_quote_form_sites" model="ir.ui.view">
+      <field name="name">ccn.quote.form.sites</field>
+      <field name="model">ccn.service.quote</field>
+      <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
+      <field name="arch" type="xml">
+
+        <!-- 1) Debajo de los grupos superiores, inserta el selector del sitio actual -->
+        <xpath expr="//form/sheet/group" position="after">
+          <group string="Sitio en edición">
+            <field name="current_site_id"
+                   domain="[('quote_id','=', id)]"
+                   context="{'default_quote_id': id}"/>
+          </group>
+        </xpath>
+
+        <!-- 2) Sustituye el antiguo bloque de líneas por el notebook completo -->
+        <xpath expr="//form//field[@name='line_ids']" position="replace">
+          <notebook>
+
+            <!-- A) Sitio actual (indicadores ARRIBA y líneas ABAJO, embebiendo el form del sitio) -->
+            <page string="Sitio actual">
+              <field name="current_site_id" options="{'no_create_edit': True}">
+                <!-- Reutilizamos el form del sitio -->
+                <form position="replace">
+                  <form string="Sitio">
+                    <sheet>
+                      <group>
+                        <group>
+                          <field name="name"/>
+                          <field name="quote_id" options="{'no_open': True}"/>
+                          <field name="sequence"/>
+                        </group>
+                        <group string="Parámetros">
+                          <field name="headcount"/>
+                          <field name="admin_percent"/>
+                          <field name="utility_percent"/>
+                          <field name="financial_percent"/>
+                          <field name="transporte_rate"/>
+                          <field name="bienestar_rate"/>
+                        </group>
+                      </group>
+
+                      <notebook>
+                        <page string="Líneas">
+                          <field name="line_ids" mode="list,form">
+                            <list editable="bottom">
+                              <field name="rubro_id"/>
+                              <field name="product_id"/>
+                              <field name="quantity"/>
+                              <field name="base_price_unit"/>
+                              <field name="tabulator_percent"/>
+                              <field name="price_unit_final" readonly="1"/>
+                              <field name="total_price" readonly="1"/>
+                            </list>
+                            <form string="Línea de sitio">
+                              <group>
+                                <field name="rubro_id"/>
+                                <field name="product_id"/>
+                                <field name="quantity"/>
+                                <field name="base_price_unit"/>
+                                <field name="tabulator_percent"/>
+                                <field name="price_unit_final" readonly="1"/>
+                                <field name="total_price" readonly="1"/>
+                              </group>
+                            </form>
+                          </field>
+                        </page>
+
+                        <page string="Resumen del sitio">
+                          <group>
+                            <field name="subtotal1" readonly="1"/>
+                            <field name="admin_amt" readonly="1"/>
+                            <field name="util_amt" readonly="1"/>
+                            <field name="subtotal2" readonly="1"/>
+                            <field name="transporte_amt" readonly="1"/>
+                            <field name="bienestar_amt" readonly="1"/>
+                            <field name="financial_amt" readonly="1"/>
+                            <field name="total_monthly" readonly="1"/>
+                          </group>
+                        </page>
+                      </notebook>
+                    </sheet>
+                  </form>
+                </form>
+              </field>
+            </page>
+
+            <!-- B) Gestión de sitios (lista mínima; al abrir se ve el form con indicadores arriba) -->
+            <page string="Sitios">
+              <field name="site_ids" mode="list,form">
+                <list editable="bottom">
+                  <field name="sequence"/>
+                  <field name="name"/>
+                </list>
+                <form string="Sitio">
+                  <sheet>
+                    <group>
+                      <group>
+                        <field name="name"/>
+                        <field name="quote_id" options="{'no_open': True}"/>
+                        <field name="sequence"/>
+                      </group>
+                      <group string="Parámetros">
+                        <field name="headcount"/>
+                        <field name="admin_percent"/>
+                        <field name="utility_percent"/>
+                        <field name="financial_percent"/>
+                        <field name="transporte_rate"/>
+                        <field name="bienestar_rate"/>
+                      </group>
+                    </group>
+                    <notebook>
+                      <page string="Líneas">
+                        <field name="line_ids" mode="list,form">
+                          <list editable="bottom">
+                            <field name="rubro_id"/>
+                            <field name="product_id"/>
+                            <field name="quantity"/>
+                            <field name="base_price_unit"/>
+                            <field name="tabulator_percent"/>
+                            <field name="price_unit_final" readonly="1"/>
+                            <field name="total_price" readonly="1"/>
+                          </list>
+                          <form string="Línea de sitio">
+                            <group>
+                              <field name="rubro_id"/>
+                              <field name="product_id"/>
+                              <field name="quantity"/>
+                              <field name="base_price_unit"/>
+                              <field name="tabulator_percent"/>
+                              <field name="price_unit_final" readonly="1"/>
+                              <field name="total_price" readonly="1"/>
+                            </group>
+                          </form>
+                        </field>
+                      </page>
+                      <page string="Resumen del sitio">
+                        <group>
+                          <field name="subtotal1" readonly="1"/>
+                          <field name="admin_amt" readonly="1"/>
+                          <field name="util_amt" readonly="1"/>
+                          <field name="subtotal2" readonly="1"/>
+                          <field name="transporte_amt" readonly="1"/>
+                          <field name="bienestar_amt" readonly="1"/>
+                          <field name="financial_amt" readonly="1"/>
+                          <field name="total_monthly" readonly="1"/>
+                        </group>
+                      </page>
+                    </notebook>
+                  </sheet>
+                </form>
+              </field>
+            </page>
+
+            <!-- C) Resumen Global -->
+            <page string="Resumen Global">
+              <div class="o_form_label">Tabla global pendiente (se llenará en el siguiente paso).</div>
+            </page>
+          </notebook>
+        </xpath>
+      </field>
+    </record>
+
+  </data>
+</odoo>

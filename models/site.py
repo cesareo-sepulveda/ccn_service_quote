@@ -36,7 +36,7 @@ class CCNServiceQuoteSite(models.Model):
     financial_percent = fields.Float(string="% Costo financiero", digits=(5,2), default=0.0)
     transporte_rate   = fields.Monetary(string="Tarifa Transporte / persona", currency_field="currency_id", default=0.0)
     bienestar_rate    = fields.Monetary(string="Tarifa Bienestar / persona", currency_field="currency_id", default=0.0)
-
+    partner_id = fields.Many2one(related="quote_id.partner_id", store=False, readonly=True)
     currency_id = fields.Many2one("res.currency", default=lambda self: self.env.company.currency_id.id)
 
     # Indicadores clave
