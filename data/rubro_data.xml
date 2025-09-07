@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <!-- No reescribas registros en upgrades -->
+  <data noupdate="1">
+    <record id="rubro_mano_obra" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">mano_obra</field>
+      <field name="name">Mano de Obra</field>
+      <field name="sequence">1</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_uniforme" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">uniforme</field>
+      <field name="name">Uniforme</field>
+      <field name="sequence">2</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_epp" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">epp</field>
+      <field name="name">EPP</field>
+      <field name="sequence">3</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_epp_alturas" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">epp_alturas</field>
+      <field name="name">EPP Alturas</field>
+      <field name="sequence">4</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">False</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_equipo_especial_limpieza" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">equipo_especial_limpieza</field>
+      <field name="name">Equipo Especial de Limpieza</field>
+      <field name="sequence">5</field>
+      <field name="apply_garden">False</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_comunicacion_computo" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">comunicacion_computo</field>
+      <field name="name">Comunicación y Cómputo</field>
+      <field name="sequence">6</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_herramienta_menor_jardineria" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">herramienta_menor_jardineria</field>
+      <field name="name">Herramienta Menor de Jardinería</field>
+      <field name="sequence">7</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">False</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_material_limpieza" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">material_limpieza</field>
+      <field name="name">Material de Limpieza</field>
+      <field name="sequence">8</field>
+      <field name="apply_garden">False</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_perfil_medico" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">perfil_medico</field>
+      <field name="name">Perfil Médico</field>
+      <field name="sequence">9</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_maquinaria_limpieza" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">maquinaria_limpieza</field>
+      <field name="name">Maquinaria de Limpieza</field>
+      <field name="sequence">10</field>
+      <field name="apply_garden">False</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_maquinaria_jardineria" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">maquinaria_jardineria</field>
+      <field name="name">Maquinaria de Jardinería</field>
+      <field name="sequence">11</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">False</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_fertilizantes_tierra_lama" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">fertilizantes_tierra_lama</field>
+      <field name="name">Fertilizantes y Tierra Lama</field>
+      <field name="sequence">12</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">False</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_consumibles_jardineria" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">consumibles_jardineria</field>
+      <field name="name">Consumibles de Jardinería</field>
+      <field name="sequence">13</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">False</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+
+    <record id="rubro_capacitacion" model="ccn.service.rubro" forcecreate="0">
+      <field name="code">capacitacion</field>
+      <field name="name">Capacitación</field>
+      <field name="sequence">14</field>
+      <field name="apply_garden">True</field>
+      <field name="apply_clean">True</field>
+      <field name="internal_only">False</field>
+      <field name="active">True</field>
+    </record>
+  </data>
+</odoo>

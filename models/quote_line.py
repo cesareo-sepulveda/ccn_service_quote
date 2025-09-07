@@ -1,32 +1,38 @@
 # -*- coding: utf-8 -*-
-from odoo import models, fields, api, _
-from odoo.exceptions import ValidationError
+from odoo import api, fields, models
+
+# Debe coincidir con ccn.service.rubro.code
+RUBRO_CODES = [
+    ("mano_obra", "Mano de Obra"),
+    ("uniforme", "Uniforme"),
+    ("epp", "EPP"),
+    ("epp_alturas", "EPP Alturas"),
+    ("equipo_especial_limpieza", "Equipo Especial de Limpieza"),
+    ("comunicacion_computo", "Comunicación y Cómputo"),
+    ("herramienta_menor_jardineria", "Herramienta Menor de Jardinería"),
+    ("material_limpieza", "Material de Limpieza"),
+    ("perfil_medico", "Perfil Médico"),
+    ("maquinaria_limpieza", "Maquinaria de Limpieza"),
+    ("maquinaria_jardineria", "Maquinaria de Jardinería"),
+    ("fertilizantes_tierra_lama", "Fertilizantes y Tierra Lama"),
+    ("consumibles_jardineria", "Consumibles de Jardinería"),
+    ("capacitacion", "Capacitación"),
+]
 
 class CCNServiceQuoteLine(models.Model):
     _name = "ccn.service.quote.line"
     _description = "Línea de CCN Service Quote"
     _order = "rubro_id, id"
 
+    # Fase 1
     quote_id = fields.Many2one("ccn.service.quote", required=True, ondelete="cascade")
-    rubro_id = fields.Many2one("ccn.service.rubro", string="Rubro", required=True, domain=[('internal_only', '=', False)])
-    site_id = fields.Many2one("ccn.service.quote.site", string="Sitio", ondelete="cascade")
-    type = fields.Selection([("garden","Jardinería"), ("clean","Limpieza")],
-                            string="Tipo", required=True, default="garden")
-    
-    # helper: código del rubro (para cálculos)
-    rubro_code = fields.Selection(
-        related="rubro_id.code", store=True, readonly=True,
-        help="Code del rubro (string), sincronizado con el rubro."
-    )
-    
-    # dominio base: siempre ocultar placeholders
+    rubro_id = fields.Many2one("ccn.service.rubro", string="Rubro", required=True)
     product_id = fields.Many2one(
         "product.product",
         string="Producto/Servicio",
         required=True,
         domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False)]",
     )
-
     quantity = fields.Float(string="Cantidad", default=1.0, required=True)
     base_price_unit = fields.Monetary(
         string="Precio base",
@@ -47,6 +53,15 @@ class CCNServiceQuoteLine(models.Model):
         store=True,
     )
     currency_id = fields.Many2one(related="quote_id.currency_id", store=True, readonly=True)
+
+    # Fase 2: dimensión Sitio + Tipo
+    site_id = fields.Many2one("ccn.service.quote.site", string="Sitio", ondelete="cascade")
+    type = fields.Selection([("garden", "Jardinería"), ("clean", "Limpieza")], string="Tipo")
+
+    # Para poder filtrar por código de rubro sin usar ref() en vistas
+    rubro_code = fields.Selection(
+        RUBRO_CODES, related="rubro_id.code", store=True, readonly=True
+    )
 
     @api.onchange("product_id")
     def _onchange_product_id(self):
@@ -69,101 +84,3 @@ class CCNServiceQuoteLine(models.Model):
     def _compute_total(self):
         for l in self:
             l.total_price = (l.price_unit_final or 0.0) * (l.quantity or 0.0)
-
-    @api.onchange("rubro_id")
-    def _onchange_rubro_id_set_domain(self):
-        """
-        Cuando el usuario elige el Rubro en la línea, limitamos product_id
-        a productos de ese rubro y que no sean placeholders.
-        """
-        dom = [('product_tmpl_id.ccn_exclude_from_quote', '=', False)]
-        if self.rubro_id:
-            dom.append(('product_tmpl_id.ccn_rubro_ids', 'in', [self.rubro_id.id]))
-        return {'domain': {'product_id': dom}}
-
-    @api.constrains('product_id')
-    def _check_product_not_placeholder(self):
-        for l in self:
-            if l.product_id and l.product_id.product_tmpl_id.ccn_exclude_from_quote:
-                raise ValidationError(_("Este producto está marcado como 'excluir de cotización'."))
-            
-    @api.constrains('product_id', 'rubro_id')
-    def _check_product_matches_rubro(self):
-        for rec in self:
-            if rec.product_id:
-                if not rec.rubro_id:
-                    raise ValidationError(_("Seleccione un Rubro antes de elegir el Producto."))
-
-                tmpl = rec.product_id.product_tmpl_id
-                # Debe pertenecer al rubro y no estar excluido del selector
-                if rec.rubro_id not in tmpl.ccn_rubro_ids or tmpl.ccn_exclude_from_quote:
-                    raise ValidationError(
-                        _("El producto '%s' no pertenece al Rubro '%s' o está marcado para no usarse en CCN Service Quote.")
-                        % (rec.product_id.display_name, rec.rubro_id.display_name)
-                    )
-
-    @api.constrains('rubro_id')
-    def _check_rubro_no_interno(self):
-        for rec in self:
-            if rec.rubro_id and rec.rubro_id.internal_only:
-                raise ValidationError(_("Este rubro es interno y no se puede usar en líneas."))
-
-    @api.constrains("rubro_id", "type")
-    def _check_rubro_applicability(self):
-        for l in self:
-            if l.rubro_id:
-                if l.type == "garden" and not l.rubro_id.apply_garden:
-                    raise ValidationError(_("El rubro '%s' no aplica a Jardinería.") % l.rubro_id.display_name)
-                if l.type == "clean" and not l.rubro_id.apply_clean:
-                    raise ValidationError(_("El rubro '%s' no aplica a Limpieza.") % l.rubro_id.display_name)
-
-    tabulador = fields.Selection(
-        selection=[
-            ('0',  '0%'),
-            ('3',  '3%'),
-            ('5',  '5%'),
-            ('10', '10%'),
-        ],
-        string='Tabulador',
-        default='0',
-        help='Porcentaje extra aplicado sobre el precio base de esta línea.'
-    )
-
-    # Recalcula el precio final cuando cambia el tabulador o el base
-    @api.onchange('tabulador', 'base_price_unit')
-    def _onchange_tabulador_or_base(self):
-        for rec in self:
-            try:
-                pct = float(rec.tabulador or '0') / 100.0
-            except Exception:
-                pct = 0.0
-            if rec.base_price_unit is not None:
-                rec.price_unit_final = rec.base_price_unit * (1.0 + pct)
-
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            t_raw = vals.get('tabulador', '0') or '0'
-            try:
-                t = float(t_raw) / 100.0
-            except Exception:
-                t = 0.0
-            if 'base_price_unit' in vals and 'price_unit_final' not in vals:
-                base = vals.get('base_price_unit') or 0.0
-                vals['price_unit_final'] = base * (1.0 + t)
-        return super().create(vals_list)
-
-    def write(self, vals):
-        res = super().write(vals)
-        # Si el usuario cambió tabulador o base (y no envió explícitamente price_unit_final),
-        # recalculamos para mantener coherencia en servidor.
-        if any(k in vals for k in ('tabulador', 'base_price_unit')) and 'price_unit_final' not in vals:
-            for rec in self:
-                try:
-                    pct = float(rec.tabulador or '0') / 100.0
-                except Exception:
-                    pct = 0.0
-                if rec.base_price_unit is not None:
-                    rec.price_unit_final = rec.base_price_unit * (1.0 + pct)
-        return res
-

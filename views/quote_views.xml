@@ -2,9 +2,9 @@
 <odoo>
   <data>
 
-    <!-- =========================
+    <!-- =======================================================
          LISTA de Service Quotes
-         ========================= -->
+         ======================================================= -->
     <record id="ccn_view_quote_tree" model="ir.ui.view">
       <field name="name">ccn.quote.list</field>
       <field name="model">ccn.service.quote</field>
@@ -12,54 +12,243 @@
         <list>
           <field name="name"/>
           <field name="partner_id"/>
-          <field name="category"/>
           <field name="display_mode"/>
-          <field name="site_label"/>
+          <field name="current_site_id"/>
+          <field name="current_type"/>
           <field name="create_date"/>
         </list>
       </field>
     </record>
 
-    <!-- =========================
+    <!-- =======================================================
          FORM de Service Quote
-         (la subvista de line_ids la reemplaza quote_line_domain.xml)
-         ========================= -->
+         ======================================================= -->
     <record id="ccn_view_quote_form" model="ir.ui.view">
       <field name="name">ccn.quote.form</field>
       <field name="model">ccn.service.quote</field>
       <field name="arch" type="xml">
         <form string="CCN Service Quote">
           <sheet>
+
+            <!-- Cabecera -->
             <group>
               <group>
                 <field name="name"/>
                 <field name="partner_id" options="{'no_create_edit': True}"/>
-                <field name="category"/>
                 <field name="display_mode"/>
               </group>
-              <group>
-                <field name="site_label"/>
-                <field name="note_text" placeholder="Nota que se mostrará como sección en la SO"/>
-              </group>
               <group string="Parámetros internos">
-                <field name="admin_percent" widget="percentage" help="% de Administración para el cálculo interno"/>
-                <field name="utility_percent" widget="percentage" help="% de Utilidad para el cálculo interno"/>
-                <field name="financial_percent" widget="percentage" help="% de Costo financiero para el cálculo interno"/>
+                <field name="admin_percent" widget="percentage" help="% de Administración (global)"/>
+                <field name="utility_percent" widget="percentage" help="% de Utilidad (global)"/>
+                <field name="financial_percent" widget="percentage" help="% de Costo financiero (global)"/>
+                <field name="note_text" placeholder="Nota que se mostrará como sección en la SO"/>
               </group>
             </group>
 
-            <group string="Líneas">
-              <!-- IMPORTANTE: NO embebemos <list> aquí.
-                   La vista 'quote_line_domain.xml' reemplaza este nodo completo
-                   para inyectar el <list> con dominio y la columna Tabulador. -->
-              <field name="line_ids"/>
+            <!-- Contexto de edición (sitio y tipo actual) -->
+            <separator string="SITIO EN EDICIÓN"/>
+            <group>
+              <field name="current_site_id" required="1"
+                     context="{'default_quote_id': id}"
+                     options="{'no_open': True}"/>
+              <field name="current_type" required="1"/>
             </group>
+
+            <!-- Notebook de rubros -->
+            <separator string="LÍNEAS"/>
+            <notebook>
+
+              <!-- 1) Mano de Obra -->
+              <page string="1) Mano de Obra">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','mano_obra')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'mano_obra'}"/>
+              </page>
+
+              <!-- 2) Uniforme -->
+              <page string="2) Uniforme">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','uniforme')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'uniforme'}"/>
+              </page>
+
+              <!-- 3) EPP -->
+              <page string="3) EPP">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','epp')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'epp'}"/>
+              </page>
+
+              <!-- 4) EPP Alturas -->
+              <page string="4) EPP Alturas">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','epp_alturas')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'epp_alturas'}"/>
+              </page>
+
+              <!-- 5) Equipo Especial de Limpieza -->
+              <page string="5) Equipo Especial de Limpieza">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','equipo_especial_limpieza')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'equipo_especial_limpieza'}"/>
+              </page>
+
+              <!-- 6) Comunicación y Cómputo -->
+              <page string="6) Comunicación y Cómputo">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','comunicacion_computo')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'comunicacion_computo'}"/>
+              </page>
+
+              <!-- 7) Herr. Menor Jardinería -->
+              <page string="7) Herr. Menor Jardinería">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','herramienta_menor_jardineria')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'herramienta_menor_jardineria'}"/>
+              </page>
+
+              <!-- 8) Material de Limpieza -->
+              <page string="8) Material de Limpieza">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','material_limpieza')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'material_limpieza'}"/>
+              </page>
+
+              <!-- 9) Perfil Médico -->
+              <page string="9) Perfil Médico">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','perfil_medico')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'perfil_medico'}"/>
+              </page>
+
+              <!-- 10) Maquinaria de Limpieza -->
+              <page string="10) Maquinaria de Limpieza">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','maquinaria_limpieza')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'maquinaria_limpieza'}"/>
+              </page>
+
+              <!-- 11) Maquinaria de Jardinería -->
+              <page string="11) Maquinaria de Jardinería">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','maquinaria_jardineria')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'maquinaria_jardineria'}"/>
+              </page>
+
+              <!-- 12) Fertilizantes y Tierra Lama -->
+              <page string="12) Fertilizantes y Tierra Lama">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','fertilizantes_tierra_lama')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'fertilizantes_tierra_lama'}"/>
+              </page>
+
+              <!-- 13) Consumibles de Jardinería -->
+              <page string="13) Consumibles de Jardinería">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','consumibles_jardineria')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'consumibles_jardineria'}"/>
+              </page>
+
+              <!-- 14) Capacitación -->
+              <page string="14) Capacitación">
+                <field name="line_ids" mode="list,form"
+                  domain="[('quote_id','=', id),
+                           ('site_id','=', current_site_id),
+                           ('type','=', current_type),
+                           ('rubro_code','=','capacitacion')]"
+                  context="{'default_quote_id': id,
+                            'default_site_id': current_site_id,
+                            'default_type': current_type,
+                            'default_rubro_code': 'capacitacion'}"/>
+              </page>
+
+            </notebook>
           </sheet>
         </form>
       </field>
     </record>
 
-    <!-- (Opcional) Búsqueda -->
+    <!-- =======================================================
+         BÚSQUEDA
+         ======================================================= -->
     <record id="ccn_view_quote_search" model="ir.ui.view">
       <field name="name">ccn.quote.search</field>
       <field name="model">ccn.service.quote</field>
@@ -67,25 +256,22 @@
         <search string="Buscar Service Quotes">
           <field name="name"/>
           <field name="partner_id"/>
-          <field name="category"/>
+          <field name="current_site_id"/>
+          <field name="current_type"/>
           <field name="display_mode"/>
-          <field name="site_label"/>
         </search>
       </field>
     </record>
 
-    <!-- =========================
-         ACCIÓN de ventana
-         ========================= -->
+    <!-- =======================================================
+         ACCIÓN
+         ======================================================= -->
     <record id="ccn_action_service_quotes" model="ir.actions.act_window">
       <field name="name">CCN Service Quotes</field>
       <field name="res_model">ccn.service.quote</field>
-      <!-- En Odoo 17/18 el modo es 'list,form' -->
       <field name="view_mode">list,form</field>
       <field name="view_id" ref="ccn_view_quote_tree"/>
       <field name="search_view_id" ref="ccn_view_quote_search"/>
-      <!-- (Opcional) dominio o contexto por defecto -->
-      <!-- <field name="context">{}</field> -->
     </record>
 
   </data>
