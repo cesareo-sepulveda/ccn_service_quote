@@ -80,14 +80,13 @@ class ServiceQuote(models.Model):
     mano_obra_count = fields.Integer(compute='_compute_rubro_counts')
     uniforme_count  = fields.Integer(compute='_compute_rubro_counts')
 
-    @api.depends('line_ids.rubro_id', 'line_ids.product_id', 'line_ids.qty')
+    @api.depends('line_ids', 'line_ids.rubro_id')
     def _compute_rubro_counts(self):
-        Line = self.env['ccn.service.quote.line']
         for rec in self:
             # Ajusta los filtros de acuerdo a tu definición de líneas (site, type, service_type, etc.)
-            base_domain = [('quote_id', '=', rec.id)]
-            rec.mano_obra_count = Line.search_count(base_domain + [('rubro_id.code', '=', 'mano_obra')])
-            rec.uniforme_count  = Line.search_count(base_domain + [('rubro_id.code', '=', 'uniforme')])
+            lines = rec.line_ids  # ya tienes las líneas en memoria
+            rec.mano_obra_count = len(lines.filtered(lambda l: getattr(l.rubro_id, 'code', False) == 'mano_obra'))
+            rec.uniforme_count  = len(lines.filtered(lambda l: getattr(l.rubro_id, 'code', False) == 'uniforme'))
 
     @api.model_create_multi
     def create(self, vals_list):
