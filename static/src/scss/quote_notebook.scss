@@ -1,0 +1,32 @@
+.ccn-tab-angle {
+    position: relative;
+}
+
+.ccn-tab-angle a {
+    border-top-right-radius: 0 !important;
+    padding-right: 1.5rem;
+}
+
+.ccn-tab-angle::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: -15px;
+    width: 0;
+    height: 0;
+    border-top: 15px solid transparent;
+    border-bottom: 15px solid transparent;
+    border-left: 15px solid #ddd;
+}
+
+.ccn-tab-empty > a {
+    background-color: #ffdddd !important;
+}
+
+.ccn-tab-skip > a {
+    background-color: #fff4c2 !important;
+}
+
+.ccn-tab-complete > a {
+    background-color: #d4f9d4 !important;
+}
