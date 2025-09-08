@@ -17,19 +17,22 @@
               </group>
               <group string="Modo de presentación">
                 <field name="current_site_id" domain="[('quote_id','=', id)]"/>
+                <field name="current_service_type"/>
                 <field name="current_type"/>
               </group>
             </group>
 
             <!-- Tabs por rubro (edición inline) -->
-            <notebook>
+            <notebook attrs="{'invisible':[('current_service_type','=',False)]}">
 
-              <page string="Mano de Obra">
+              <page string="Mano de Obra"
+                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'mano_obra',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -37,16 +40,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','mano_obra')
                        ]"/>
               </page>
 
-              <page string="Uniforme">
+              <page string="Uniforme"
+                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'uniforme',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -54,16 +60,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','uniforme')
                        ]"/>
               </page>
 
-              <page string="EPP">
+              <page string="EPP"
+                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'epp',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -71,16 +80,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','epp')
                        ]"/>
               </page>
 
-              <page string="EPP Alturas">
+              <page string="EPP Alturas"
+                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'epp_alturas',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -88,16 +100,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','epp_alturas')
                        ]"/>
               </page>
 
-              <page string="Equipo Especial de Limpieza">
+              <page string="Equipo Especial de Limpieza"
+                    attrs="{'invisible':[('current_service_type','!=','limpieza')]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'equipo_especial_limpieza',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -105,16 +120,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','equipo_especial_limpieza')
                        ]"/>
               </page>
 
-              <page string="Comunicación y Cómputo">
+              <page string="Comunicación y Cómputo"
+                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'comunicacion_computo',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -122,16 +140,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','comunicacion_computo')
                        ]"/>
               </page>
 
-              <page string="Herr. Menor Jardinería">
+              <page string="Herr. Menor Jardinería"
+                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'herramienta_menor_jardineria',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -139,16 +160,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','herramienta_menor_jardineria')
                        ]"/>
               </page>
 
-              <page string="Material de Limpieza">
+              <page string="Material de Limpieza"
+                    attrs="{'invisible':[('current_service_type','!=','limpieza')]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'material_limpieza',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -156,16 +180,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','material_limpieza')
                        ]"/>
               </page>
 
-              <page string="Perfil Médico">
+              <page string="Perfil Médico"
+                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'perfil_medico',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -173,16 +200,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','perfil_medico')
                        ]"/>
               </page>
 
-              <page string="Maquinaria de Limpieza">
+              <page string="Maquinaria de Limpieza"
+                    attrs="{'invisible':[('current_service_type','!=','limpieza')]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'maquinaria_limpieza',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -190,16 +220,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','maquinaria_limpieza')
                        ]"/>
               </page>
 
-              <page string="Maquinaria de Jardinería">
+              <page string="Maquinaria de Jardinería"
+                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'maquinaria_jardineria',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -207,16 +240,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','maquinaria_jardineria')
                        ]"/>
               </page>
 
-              <page string="Fertilizantes y Tierra Lama">
+              <page string="Fertilizantes y Tierra Lama"
+                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'fertilizantes_tierra_lama',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -224,16 +260,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','fertilizantes_tierra_lama')
                        ]"/>
               </page>
 
-              <page string="Consumibles de Jardinería">
+              <page string="Consumibles de Jardinería"
+                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'consumibles_jardineria',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -241,16 +280,19 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','consumibles_jardineria')
                        ]"/>
               </page>
 
-              <page string="Capacitación">
+              <page string="Capacitación"
+                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
                          'default_type': current_type,
+                         'default_service_type': current_service_type,
                          'ctx_rubro_code': 'capacitacion',
                          'tree_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'
                        }"
@@ -258,6 +300,7 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
+                         ('service_type','=', current_service_type),
                          ('rubro_id.code','=','capacitacion')
                        ]"/>
               </page>
