@@ -25,10 +25,10 @@
           <field name="tabulator_percent" string="Tabulador"/>
 
           <!-- Impuestos (texto) -->
-          <field name="taxes_display" string="Impuestos" readonly="1" optional="show"/>
+          <field name="taxes_display" string="Detalle de impuestos" readonly="1" optional="show"/>
 
           <!-- Subtotal -->
-          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="total_price" string="Subtotal final" readonly="1"/>
 
           <!-- Metadatos ocultos -->
           <field name="quote_id" invisible="1"/>

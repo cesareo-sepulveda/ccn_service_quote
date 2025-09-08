@@ -5,7 +5,7 @@ class ServiceQuoteLine(models.Model):
     _inherit = 'ccn.service.quote.line'
 
     # Muestra los impuestos del producto como texto (no requiere instalar 'account')
-    taxes_display = fields.Char(string='Impuestos', compute='_compute_taxes_display', store=False)
+    taxes_display = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
 
     @api.depends('product_id')
     def _compute_taxes_display(self):

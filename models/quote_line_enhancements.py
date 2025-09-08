@@ -10,19 +10,19 @@ class CCNServiceQuoteLine(models.Model):
         "ccn_quote_line_tax_rel",
         "line_id",
         "tax_id",
-        string="Impuestos",
+        string="Impuestos aplicables",
         help="Impuestos aplicables a esta línea",
     )
 
     # Subtotales mostrados en UI
     price_subtotal = fields.Monetary(
-        string="Subtotal",
+        string="Subtotal base",
         currency_field="currency_id",
         compute="_compute_display_amounts",
         store=False,
     )
     amount_tax = fields.Monetary(
-        string="Impuestos",
+        string="Monto de impuestos",
         currency_field="currency_id",
         compute="_compute_display_amounts",
         store=False,

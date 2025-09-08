@@ -84,10 +84,10 @@ class ServiceQuoteLine(models.Model):
     price_unit_final = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
 
     # Impuestos (texto, tomado del producto si existe account)
-    taxes_display = fields.Char(string='Impuestos', compute='_compute_taxes_display', store=False)
+    taxes_display = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
 
     # Subtotal (cantidad * precio unitario final)
-    total_price = fields.Monetary(string='Subtotal', compute='_compute_total_price', store=False)
+    total_price = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
     # -------------------- Computes --------------------
     @api.depends('product_id')
