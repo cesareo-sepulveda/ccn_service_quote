@@ -26,7 +26,7 @@
             <!-- Tabs por rubro (edición inline) -->
             <notebook invisible="not current_service_type">
 
-              <page string="Mano de Obra"
+              <page string="Mano de Obra" name="page_mano_obra"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
@@ -46,7 +46,7 @@
                        ]"/>
               </page>
 
-              <page string="Uniforme"
+              <page string="Uniforme" name="page_uniforme"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
@@ -66,7 +66,7 @@
                        ]"/>
               </page>
 
-              <page string="EPP"
+              <page string="EPP" name="page_epp"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
@@ -86,7 +86,7 @@
                        ]"/>
               </page>
 
-              <page string="EPP Alturas"
+              <page string="EPP Alturas" name="page_epp_alturas"
                     invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
@@ -106,7 +106,7 @@
                        ]"/>
               </page>
 
-              <page string="Equipo Especial de Limpieza"
+              <page string="Equipo Especial de Limpieza" name="page_equipo_especial_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <field name="line_ids" mode="list"
                        context="{
@@ -126,7 +126,7 @@
                        ]"/>
               </page>
 
-              <page string="Comunicación y Cómputo"
+              <page string="Comunicación y Cómputo" name="page_comunicacion_computo"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
@@ -146,7 +146,7 @@
                        ]"/>
               </page>
 
-              <page string="Herr. Menor Jardinería"
+              <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
@@ -166,7 +166,7 @@
                        ]"/>
               </page>
 
-              <page string="Material de Limpieza"
+              <page string="Material de Limpieza" name="page_material_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <field name="line_ids" mode="list"
                        context="{
@@ -186,7 +186,7 @@
                        ]"/>
               </page>
 
-              <page string="Perfil Médico"
+              <page string="Perfil Médico" name="page_perfil_medico"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
@@ -206,7 +206,7 @@
                        ]"/>
               </page>
 
-              <page string="Maquinaria de Limpieza"
+              <page string="Maquinaria de Limpieza" name="page_maquinaria_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <field name="line_ids" mode="list"
                        context="{
@@ -226,7 +226,7 @@
                        ]"/>
               </page>
 
-              <page string="Maquinaria de Jardinería"
+              <page string="Maquinaria de Jardinería" name="page_maquinaria_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
@@ -246,7 +246,7 @@
                        ]"/>
               </page>
 
-              <page string="Fertilizantes y Tierra Lama"
+              <page string="Fertilizantes y Tierra Lama" name="page_fertilizantes_tierra_lama"
                     invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
@@ -266,7 +266,7 @@
                        ]"/>
               </page>
 
-              <page string="Consumibles de Jardinería"
+              <page string="Consumibles de Jardinería" name="page_consumibles_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
@@ -286,7 +286,7 @@
                        ]"/>
               </page>
 
-              <page string="Capacitación"
+              <page string="Capacitación" name="page_capacitacion"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
