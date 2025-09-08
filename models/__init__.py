@@ -1,15 +1,20 @@
-# -*- coding: utf-8 -*-
-from . import rubro        # sólo si EXISTE rubro.py; si no, quítalo
-from . import service_quote
-from . import site
-from . import quote_line
-from . import product      # o product_template, usa el nombre REAL del archivo que tengas
-from . import rubro        # sólo si EXISTE rubro.py; si no, quítalo
-from . import sale_order
-from . import quote_rubro_ack
-from . import patch_rubro_code
-from . import quote_line_tax
-from . import quote_line_enhancements
-from . import quote_partner_user_fields
-from . import quote_line_extend   # <-- añade esta línea
-from . import quote_line_related
+"""Load all models for the CCN service quote module."""
+
+from . import (
+    add_package_wizard,
+    patch_rubro_code,
+    product,
+    quote_line,
+    quote_line_enhancements,
+    quote_line_extend,
+    quote_line_related,
+    quote_line_tax,
+    quote_partner_user_fields,
+    quote_rubro_ack,
+    rubro,
+    rubro_flag,
+    sale_order,
+    service_package,
+    service_quote,
+    site,
+)
