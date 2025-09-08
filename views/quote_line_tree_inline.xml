@@ -9,7 +9,7 @@
           <!-- Producto: solo del rubro actual; sin abrir ficha -->
           <field name="product_id"
                  required="1"
-                 options="{'no_open': True, 'no_create_edit': True}"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"
                  domain="[
                    ('product_tmpl_id.ccn_exclude_from_quote','=',False),
                    '|',
