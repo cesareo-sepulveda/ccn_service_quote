@@ -16,12 +16,7 @@ class ServiceQuote(models.Model):
         default=lambda self: self.env.company.currency_id.id,
     )
     # Sitios
-    site_ids = fields.One2many(
-        'ccn.service.quote.site',
-        'quote_id',
-        string='Sitios',
-        default=lambda self: [(0, 0, {'name': _('Sitio Default')})],
-    )
+    site_ids = fields.One2many('ccn.service.quote.site', 'quote_id', string='Sitios')
 
     # Modo de presentación de la cotización
     display_mode = fields.Selection(

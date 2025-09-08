@@ -9,12 +9,8 @@ class CCNServiceQuoteSite(models.Model):
     # Básicos
     name = fields.Char(required=True)
     sequence = fields.Integer(default=10)
-    quote_id = fields.Many2one(
-        "ccn.service.quote",
-        required=True,
-        ondelete="cascade",
-        index=True,
-    )
+    quote_id = fields.Many2one('ccn.service.quote', string='Cotización',
+        required=True, index=True, ondelete='cascade')
 
     # Líneas del sitio
     line_ids = fields.One2many(
