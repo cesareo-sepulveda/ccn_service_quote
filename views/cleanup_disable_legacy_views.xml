@@ -16,18 +16,5 @@
       </field>
     </record>
 
-    <!-- Desactiva la variante que añadía 'Sitios / Resumen Global' -->
-    <record id="ccn_view_quote_form_sites" model="ir.ui.view">
-      <field name="name">ccn.quote.form.sites (DISABLED)</field>
-      <field name="model">ccn.service.quote</field>
-      <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
-      <field name="active">False</field>
-      <field name="arch" type="xml">
-        <xpath expr="//sheet" position="inside">
-          <separator string="(legacy sites disabled)"/>
-        </xpath>
-      </field>
-    </record>
-
   </data>
 </odoo>
