@@ -76,13 +76,11 @@
             <group string="Sitio en edición">
               <field name="current_site_id"
                      domain="[('quote_id','=', id)]"
-                     context="{'default_quote_id': id}"
-                     options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+                     context="{'default_quote_id': id}"/>
             </group>
             <group string="Sitios">
               <field name="site_ids" mode="list"
-                     context="{'default_quote_id': id}"
-                     options="{'no_open': True}">
+                     context="{'default_quote_id': id}">
                 <list editable="bottom">
                   <field name="sequence"/>
                   <field name="name"/>
@@ -98,7 +96,9 @@
 
             <!-- A) Sitio actual (indicadores ARRIBA y líneas ABAJO, embebiendo el form del sitio) -->
             <page string="Sitio actual">
-              <field name="current_site_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}">
+              <field name="current_site_id"
+                     domain="[('quote_id','=', id)]"
+                     context="{'default_quote_id': id}">
                 <!-- Reutilizamos el form del sitio -->
                 <form position="replace">
                   <form string="Sitio">
