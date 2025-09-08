@@ -11,7 +11,6 @@
                  required="1"
                  options="{'no_open': True, 'no_create_edit': True}"
                  domain="[
-                   ('sale_ok','=',True),
                    ('product_tmpl_id.ccn_exclude_from_quote','=',False),
                    '|',
                    ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')),
