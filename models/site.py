@@ -1,83 +1,110 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models, _
+from odoo import api, fields, models
 
 class CCNServiceQuoteSite(models.Model):
     _name = "ccn.service.quote.site"
-    _description = "Sitio de Service Quote"
+    _description = "Sitio de la Cotización CCN"
     _order = "sequence, id"
 
-    # Identificación y vínculo con la SQ
-    name = fields.Char(string="Nombre del sitio", required=True)
+    # Básicos
+    name = fields.Char(required=True)
+    sequence = fields.Integer(default=10)
     quote_id = fields.Many2one(
         "ccn.service.quote",
-        string="Service Quote",
         required=True,
         ondelete="cascade",
+        index=True,
     )
-    sequence = fields.Integer(default=10)
 
-    # Parámetros internos (por sitio)
-    admin_percent = fields.Float(string="% Administración", digits=(5, 2), default=0.0)
-    utility_percent = fields.Float(string="% Utilidad", digits=(5, 2), default=0.0)
-    financial_percent = fields.Float(string="% Costo financiero", digits=(5, 2), default=0.0)
+    # Parámetros del sitio (ya los usabas en la vista)
+    admin_percent = fields.Float(default=0.0)
+    utility_percent = fields.Float(default=0.0)
+    financial_percent = fields.Float(default=0.0)
+    transporte_rate = fields.Float(default=0.0)
+    bienestar_rate = fields.Float(default=0.0)
 
-    # Parámetros especiales por sitio
-    transporte_rate = fields.Float(string="Transporte (por headcount)", default=0.0)
-    bienestar_rate = fields.Float(string="Bienestar (por headcount)", default=0.0)
-
-    # Headcount del sitio (global o por tipo más adelante)
-    headcount = fields.Float(string="Headcount", default=0.0)
-
-    # Líneas del sitio (si aún no usas site_id en las líneas, puedes dejar este campo para más adelante)
+    # Líneas del sitio
     line_ids = fields.One2many(
         "ccn.service.quote.line",
         "site_id",
         string="Líneas",
-        help="Líneas asociadas a este sitio (por tipo/rubro).",
     )
 
-    # --- Placeholders de totales/resúmenes por sitio (se llenarán en Fase 2) ---
-    subtotal1 = fields.Monetary(string="Subtotal 1", currency_field="currency_id", compute="_compute_totals", store=False)
-    admin_amt = fields.Monetary(string="Administración", currency_field="currency_id", compute="_compute_totals", store=False)
-    util_amt = fields.Monetary(string="Utilidad", currency_field="currency_id", compute="_compute_totals", store=False)
-    subtotal2 = fields.Monetary(string="Subtotal 2", currency_field="currency_id", compute="_compute_totals", store=False)
-    transporte_amt = fields.Monetary(string="Transporte", currency_field="currency_id", compute="_compute_totals", store=False)
-    bienestar_amt = fields.Monetary(string="Bienestar", currency_field="currency_id", compute="_compute_totals", store=False)
-    financial_amt = fields.Monetary(string="Costo financiero", currency_field="currency_id", compute="_compute_totals", store=False)
-    total_monthly = fields.Monetary(string="Total mensual", currency_field="currency_id", compute="_compute_totals", store=False)
-
+    # Moneda (heredada de la quote)
     currency_id = fields.Many2one(
-        "res.currency",
-        string="Moneda",
-        default=lambda self: self.env.company.currency_id.id,
+        "res.currency", string='Moneda',
+        related="quote_id.currency_id",
+        store=True,
+        readonly=True,
     )
 
-    # -------------------------------------------------------------------------
-    # Métodos "stub" para que los botones de la vista sean válidos
-    # (Más adelante implementamos la lógica de marcar rubro rojo/amarillo)
-    # -------------------------------------------------------------------------
-    def action_mark_rubro_empty(self):
-        """Marca un rubro como 'sin información' (amarillo). Placeholder."""
-        # TODO: implementar lógica con el rubro en contexto o un modelo de estado
-        # Por ahora, solo devuelve True para que la acción sea válida.
-        return True
+    # Indicadores calculados del sitio
+    headcount = fields.Float(
+        compute="_compute_indicators", store=True, readonly=True
+    )
+    subtotal1 = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    admin_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    util_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    subtotal2 = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    transporte_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    bienestar_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    financial_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    total_monthly = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
 
-    def action_unmark_rubro_empty(self):
-        """Desmarca el rubro 'sin información'. Placeholder."""
-        return True
-
-    # -------------------------------------------------------------------------
-    # Cómputos placeholder (evitan errores en vistas de resumen)
-    # -------------------------------------------------------------------------
-    @api.depends('line_ids')  # afina dependencias cuando tengas site_id/type/rubro_code
-    def _compute_totals(self):
+    @api.depends(
+        "line_ids.quantity",
+        "line_ids.price_unit_final",
+        "line_ids.total_price",
+        "line_ids.rubro_code",
+    )
+    def _compute_indicators(self):
+        """
+        - headcount: suma de quantities en el rubro 'mano_obra'
+        - subtotal1: suma de total_price de las líneas del sitio
+        - admin/util/financiero/transporte/bienestar: porcentajes encadenados
+        - total_monthly: subtotal2 + extras
+        """
         for site in self:
-            # TODO: implementar fórmulas reales en Fase 2
-            site.subtotal1 = 0.0
-            site.admin_amt = 0.0
-            site.util_amt = 0.0
-            site.subtotal2 = 0.0
-            site.transporte_amt = site.headcount * (site.transporte_rate or 0.0)
-            site.bienestar_amt = site.headcount * (site.bienestar_rate or 0.0)
-            site.financial_amt = 0.0
-            site.total_monthly = 0.0
+            lines = site.line_ids
+
+            # Headcount: utiliza el código fijo del rubro
+            headcount = sum(l.quantity for l in lines if l.rubro_code == "mano_obra")
+
+            # Base del sitio: usamos el subtotal de cada línea
+            base = sum(l.total_price or 0.0 for l in lines)
+
+            admin_amt = base * (site.admin_percent or 0.0) / 100.0
+            util_amt = (base + admin_amt) * (site.utility_percent or 0.0) / 100.0
+            subtotal2 = base + admin_amt + util_amt
+
+            transporte_amt = subtotal2 * (site.transporte_rate or 0.0) / 100.0
+            bienestar_amt = subtotal2 * (site.bienestar_rate or 0.0) / 100.0
+            financial_amt = subtotal2 * (site.financial_percent or 0.0) / 100.0
+
+            total = subtotal2 + transporte_amt + bienestar_amt + financial_amt
+
+            site.headcount = headcount
+            site.subtotal1 = base
+            site.admin_amt = admin_amt
+            site.util_amt = util_amt
+            site.subtotal2 = subtotal2
+            site.transporte_amt = transporte_amt
+            site.bienestar_amt = bienestar_amt
+            site.financial_amt = financial_amt
+            site.total_monthly = total

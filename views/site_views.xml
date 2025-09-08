@@ -29,27 +29,18 @@
 
             <notebook>
               <page string="Líneas">
-                <field name="line_ids" mode="list,form">
-                  <list editable="bottom">
-                    <field name="rubro_id"/>
-                    <field name="product_id"/>
+                <field name="line_ids" mode="list" context="{'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'}">
+                  <list editable="bottom" string="Líneas del sitio">
+                    <field name="product_id" options="{'no_open': True, 'no_create_edit': True}"/>
                     <field name="quantity"/>
-                    <field name="base_price_unit"/>
-                    <field name="tabulator_percent"/>
-                    <field name="price_unit_final" readonly="1"/>
-                    <field name="total_price" readonly="1"/>
+                    <!-- Reemplaza base_price_unit por el campo real que sí tienes -->
+                    <field name="price_unit_final" string="Precio Unitario"/>
+                    <field name="tabulator_percent" string="Tabulador"/>
+                    <!-- Muestra subtotal con tu campo existente -->
+                    <field name="total_price" string="Subtotal" readonly="1"/>
+                    <!-- Si ya añadiste tax_ids, puedes insertarlo aquí entre Tabulador y Subtotal -->
+                    <!-- <field name="tax_ids" widget="many2many_tags" string="Impuestos"/> -->
                   </list>
-                  <form string="Línea de sitio">
-                    <group>
-                      <field name="rubro_id"/>
-                      <field name="product_id"/>
-                      <field name="quantity"/>
-                      <field name="base_price_unit"/>
-                      <field name="tabulator_percent"/>
-                      <field name="price_unit_final" readonly="1"/>
-                      <field name="total_price" readonly="1"/>
-                    </group>
-                  </form>
                 </field>
               </page>
 

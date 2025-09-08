@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <record id="ccn_view_quote_line_tree_inline" model="ir.ui.view">
+      <field name="name">ccn.quote.line.tree.inline</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <!-- Rubro (solo informativo aquí) -->
+          <field name="rubro_id" readonly="1" optional="hide"/>
+
+          <!-- Producto: solo del rubro actual; sin abrir ficha -->
+          <field name="product_id"
+                 required="1"
+                 options="{'no_open': True, 'no_create_edit': True}"
+                 domain="[
+                   ('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                   '|',
+                   ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')),
+                   ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])
+                 ]"/>
+
+          <!-- Cantidad -->
+          <field name="quantity"/>
+
+          <!-- Precio Unitario -->
+          <field name="price_unit_final" string="Precio Unitario"/>
+
+          <!-- Tabulador (0/3/5/10 %) -->
+          <field name="tabulator_percent" string="Tabulador"/>
+
+          <!-- Impuestos -->
+          <field name="tax_ids"/>
+
+          <!-- Subtotal (sin impuestos) -->
+          <field name="price_subtotal" readonly="1"/>
+
+          <!-- Metadatos necesarios pero ocultos -->
+          <field name="currency_id" invisible="1"/>
+          <field name="quote_id" invisible="1"/>
+          <field name="site_id" invisible="1"/>
+          <field name="type" invisible="1"/>
+          <field name="rubro_code" invisible="1"/>
+        </list>
+      </field>
+    </record>
+  </data>
+</odoo>

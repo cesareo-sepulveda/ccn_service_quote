@@ -37,7 +37,7 @@ class CcnServiceAddPackageWizard(models.TransientModel):
                 'order_id': order.id,
                 'product_id': pline.product_id.id,
                 'product_uom_qty': pline.quantity,
-                'price_unit': pline.product_id.lst_price,  # básico; se puede cambiar a pricelist
+                'price_unit': pline.product_id.list_price,  # básico; se puede cambiar a pricelist
             }
             commands.append((0, 0, vals))
 
