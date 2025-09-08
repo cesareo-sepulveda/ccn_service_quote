@@ -18,7 +18,8 @@
               <!-- Filtra productos (placeholder + rubro) -->
               <field name="product_id"
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"
-                     domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                     domain="[('sale_ok','=',True),
+                              ('product_tmpl_id.ccn_exclude_from_quote','=',False),
                               '|',
                               ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')),
                               ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])]"/>
@@ -36,7 +37,8 @@
                 <field name="rubro_id" domain="[('internal_only','=',False)]"/>
                 <field name="product_id"
                        options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"
-                       domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                       domain="[('sale_ok','=',True),
+                                ('product_tmpl_id.ccn_exclude_from_quote','=',False),
                                 '|',
                                 ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')),
                                 ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])]"/>

@@ -11,7 +11,8 @@
 
           <!-- Producto/Servicio del rubro (filtro por rubro del template) -->
           <field name="product_id" required="1"
-                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                 domain="[('sale_ok','=',True),
+                          ('product_tmpl_id.ccn_exclude_from_quote','=',False),
                           '|',
                           ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')),
                           ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])]"
