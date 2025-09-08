@@ -1,6 +1,5 @@
 /** @odoo-module **/
 import { registry } from "@web/core/registry";
-import { onMounted, onPatched } from "@odoo/owl";
 
 const PAGES = [
   "page_mano_obra",
@@ -62,11 +61,12 @@ function applyTabStatuses() {
 const service = {
   name: "ccn_quote_tab_colors",
   start() {
-    onMounted(() => applyTabStatuses());
-    onPatched(() => applyTabStatuses());
+    const observer = new MutationObserver(() => applyTabStatuses());
+    observer.observe(document.body, { childList: true, subtree: true });
     document.body.addEventListener("change", (ev) => {
       if (ev.target.closest(".o_form_view.ccn-quote")) applyTabStatuses();
     });
+    applyTabStatuses();
   },
 };
 registry.category("services").add("ccn_quote_tab_colors", service);
