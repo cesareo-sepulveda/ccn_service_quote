@@ -1,24 +1,27 @@
-from odoo import api, fields, models
+# ccn_service_quote/models/quote_line_tax.py
+from odoo import api, models
 
-class ServiceQuoteLine(models.Model):
-    _inherit = 'ccn.service.quote.line'
+class CcnServiceQuoteLine(models.Model):
+    _inherit = 'ccn.service.quote.line'  # o _name si es la clase base
 
-    # Impuestos seleccionables en la línea (de venta)
-    tax_ids = fields.Many2many(
-        'account.tax', 'ccn_quote_line_tax_rel', 'line_id', 'tax_id',
-        string='Impuestos aplicables',
-        domain="[('type_tax_use','=','sale'), ('company_id','=', company_id)]",
-        help="Impuestos aplicables; por defecto se copian del producto."
-    )
-
-    @api.onchange('product_id', 'company_id')
+    @api.onchange('product_id')
     def _onchange_product_set_taxes(self):
-        """Copiar impuestos del producto al elegirlo."""
         for line in self:
             if not line.product_id:
-                line.tax_ids = [(5, 0, 0)]  # limpiar
+                line.tax_ids = [(6, 0, [])]
                 continue
-            taxes = line.product_id.taxes_id.filtered(
-                lambda t: (not t.company_id) or (t.company_id == line.company_id)
-            )
-            line.tax_ids = taxes
+
+            # Toma impuestos del producto
+            taxes = line.product_id.taxes_id
+
+            # Filtra por compañía usando la compañía de la cabecera
+            company = line.quote_id.company_id or self.env.company
+            if company:
+                taxes = taxes.filtered(lambda t: (not t.company_id) or (t.company_id == company))
+
+            # (Opcional) mapear con fpos si tu quote tiene partner/fiscal_position
+            # fpos = line.quote_id.fiscal_position_id
+            # if fpos:
+            #     taxes = fpos.map_tax(taxes, partner=line.quote_id.partner_id)
+
+            line.tax_ids = [(6, 0, taxes.ids)]
