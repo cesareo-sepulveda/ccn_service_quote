@@ -23,10 +23,10 @@
             </group>
 
             <!-- Tabs por rubro (edición inline) -->
-            <notebook attrs="{'invisible':[('current_service_type','=',False)]}">
+            <notebook invisible="not current_service_type">
 
               <page string="Mano de Obra"
-                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -46,7 +46,7 @@
               </page>
 
               <page string="Uniforme"
-                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -66,7 +66,7 @@
               </page>
 
               <page string="EPP"
-                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -86,7 +86,7 @@
               </page>
 
               <page string="EPP Alturas"
-                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -106,7 +106,7 @@
               </page>
 
               <page string="Equipo Especial de Limpieza"
-                    attrs="{'invisible':[('current_service_type','!=','limpieza')]}">
+                    invisible="current_service_type != 'limpieza'">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -126,7 +126,7 @@
               </page>
 
               <page string="Comunicación y Cómputo"
-                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -146,7 +146,7 @@
               </page>
 
               <page string="Herr. Menor Jardinería"
-                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -166,7 +166,7 @@
               </page>
 
               <page string="Material de Limpieza"
-                    attrs="{'invisible':[('current_service_type','!=','limpieza')]}">
+                    invisible="current_service_type != 'limpieza'">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -186,7 +186,7 @@
               </page>
 
               <page string="Perfil Médico"
-                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -206,7 +206,7 @@
               </page>
 
               <page string="Maquinaria de Limpieza"
-                    attrs="{'invisible':[('current_service_type','!=','limpieza')]}">
+                    invisible="current_service_type != 'limpieza'">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -226,7 +226,7 @@
               </page>
 
               <page string="Maquinaria de Jardinería"
-                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -246,7 +246,7 @@
               </page>
 
               <page string="Fertilizantes y Tierra Lama"
-                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -266,7 +266,7 @@
               </page>
 
               <page string="Consumibles de Jardinería"
-                    attrs="{'invisible':[('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -286,7 +286,7 @@
               </page>
 
               <page string="Capacitación"
-                    attrs="{'invisible':[('current_service_type','not in',('jardineria','limpieza'))]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
