@@ -1,0 +1,31 @@
+<odoo>
+  <data>
+    <!-- Para líneas que usan product.product -->
+    <record id="view_ccn_quote_line_inline_product_domain" model="ir.ui.view">
+      <field name="name">ccn.service.quote.line.inline.product.domain</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_line_list_inline"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='product_id']" position="attributes">
+          <!-- Filtra por rubro de la línea -->
+          <attribute name="domain">[('product_tmpl_id.ccn_rubro_ids','in',[rubro_id]), ('sale_ok','=',True), ('product_tmpl_id.ccn_exclude_from_quote','=',False)]</attribute>
+          <attribute name="context">{'active_test': False}</attribute>
+        </xpath>
+      </field>
+    </record>
+
+    <!-- ❗ Si en tu línea usas product.template (product_tmpl_id), usa ESTO en vez del de arriba:
+    <record id="view_ccn_quote_line_inline_producttmpl_domain" model="ir.ui.view">
+      <field name="name">ccn.service.quote.line.inline.producttmpl.domain</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_line_list_inline"/>
+      <field name="arch" type="xml">
+        <xpath expr="//field[@name='product_tmpl_id']" position="attributes">
+          <attribute name="domain">[('ccn_rubro_ids','in',[rubro_id]), ('sale_ok','=',True), ('ccn_exclude_from_quote','=',False)]</attribute>
+          <attribute name="context">{'active_test': False}</attribute>
+        </xpath>
+      </field>
+    </record>
+    -->
+  </data>
+</odoo>

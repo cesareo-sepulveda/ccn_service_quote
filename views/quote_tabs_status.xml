@@ -3,24 +3,23 @@
     <record id="view_ccn_service_quote_form_tabs_status" model="ir.ui.view">
       <field name="name">ccn.service.quote.form.tabs.status</field>
       <field name="model">ccn.service.quote</field>
-      <!-- ⚠️ Cambia por tu XMLID real de la vista 1351 -->
-      <field name="inherit_id" ref="ccn_service_quote.ccn_quote_form"/>
+      <field name="inherit_id" ref="ccn_service_quote.ccn_quote_form_1351"/>
       <field name="arch" type="xml">
 
-        <!-- MANO DE OBRA: añade name a la page y el checkbox de reconocimiento -->
+        <!-- Nombrar páginas -->
         <xpath expr="//page[child::field[@name='line_ids'] and @string='Mano de Obra']" position="attributes">
           <attribute name="name">page_mano_obra</attribute>
         </xpath>
+        <xpath expr="//page[child::field[@name='line_ids'] and @string='Uniforme']" position="attributes">
+          <attribute name="name">page_uniforme</attribute>
+        </xpath>
+
+        <!-- Checkbox de reconocimiento por rubro -->
         <xpath expr="//page[@string='Mano de Obra']/field[@name='line_ids']" position="after">
           <group>
             <field name="ack_mano_obra_empty" widget="boolean_toggle"
                    string="No aplica este rubro (reconozco no cargar datos)"/>
           </group>
-        </xpath>
-
-        <!-- UNIFORME: idem -->
-        <xpath expr="//page[child::field[@name='line_ids'] and @string='Uniforme']" position="attributes">
-          <attribute name="name">page_uniforme</attribute>
         </xpath>
         <xpath expr="//page[@string='Uniforme']/field[@name='line_ids']" position="after">
           <group>
@@ -29,7 +28,7 @@
           </group>
         </xpath>
 
-        <!-- Exponer contadores como invisibles para que el webclient tenga los valores -->
+        <!-- Contadores invisibles (para que JS tenga los valores) -->
         <xpath expr="//sheet/group" position="inside">
           <field name="mano_obra_count" invisible="1"/>
           <field name="uniforme_count" invisible="1"/>

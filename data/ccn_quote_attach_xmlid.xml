@@ -1,0 +1,11 @@
+<odoo noupdate="1">
+  <data>
+    <record id="ccn_quote_form_1351" model="ir.model.data">
+      <field name="module">ccn_service_quote</field>
+      <field name="name">ccn_quote_form_1351</field>
+      <field name="model">ir.ui.view</field>
+      <field name="res_id" eval="1351"/>
+      <field name="noupdate">1</field>
+    </record>
+  </data>
+</odoo>
