@@ -12,11 +12,28 @@ class ServiceQuote(models.Model):
     currency_id = fields.Many2one('res.currency', string='Moneda', required=True,
                                   default=lambda self: self.env.company.currency_id.id)
     # Sitios
-    site_ids = fields.One2many('ccn.service.quote.site', 'quote_id', string='Sitios')
+    site_ids = fields.One2many(
+        'ccn.service.quote.site',
+        'quote_id',
+        string='Sitios',
+        default=lambda self: [(0, 0, {'name': _('Sitio Default')})],
+    )
 
     # Modo de presentación (los usas en los dominios de las líneas)
-    current_site_id = fields.Many2one('ccn.service.quote.site', string='Sitio actual',
-                                      domain="[('quote_id','=', id)]")
+    current_site_id = fields.Many2one(
+        'ccn.service.quote.site',
+        string='Sitio actual',
+        domain="[('quote_id','=', id)]",
+    )
+    current_service_type = fields.Selection([
+        ('jardineria', 'Jardinería'),
+        ('limpieza', 'Limpieza'),
+        ('mantenimiento', 'Mantenimiento'),
+        ('materiales', 'Materiales'),
+        ('servicios_especiales', 'Servicios Especiales'),
+        ('almacenaje', 'Almacenaje'),
+        ('fletes', 'Fletes'),
+    ], string='Tipo de Servicio actual')
     current_type = fields.Selection([
         ('servicio', 'Servicio'),
         ('material', 'Material'),
@@ -24,6 +41,16 @@ class ServiceQuote(models.Model):
 
     # Líneas (todas las de la cotización)
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
+
+    @api.model
+    def create(self, vals):
+        """Asegura que exista al menos un sitio y que se seleccione como actual."""
+        if not vals.get('site_ids'):
+            vals['site_ids'] = [(0, 0, {'name': _('Sitio Default')})]
+        quote = super().create(vals)
+        if not quote.current_site_id and quote.site_ids:
+            quote.current_site_id = quote.site_ids[0].id
+        return quote
 
 
 # ---------------------------------------------------------------------------
@@ -51,6 +78,15 @@ class ServiceQuoteLine(models.Model):
     # Enlaces
     quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade')
     site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null')
+    service_type = fields.Selection([
+        ('jardineria', 'Jardinería'),
+        ('limpieza', 'Limpieza'),
+        ('mantenimiento', 'Mantenimiento'),
+        ('materiales', 'Materiales'),
+        ('servicios_especiales', 'Servicios Especiales'),
+        ('almacenaje', 'Almacenaje'),
+        ('fletes', 'Fletes'),
+    ], string='Tipo de Servicio')
     type = fields.Selection([
         ('servicio', 'Servicio'),
         ('material', 'Material'),
@@ -145,6 +181,8 @@ class ServiceQuoteLine(models.Model):
             res.setdefault('site_id', ctx.get('default_site_id'))
         if 'default_type' in ctx and 'type' in self._fields:
             res.setdefault('type', ctx.get('default_type'))
+        if 'default_service_type' in ctx and 'service_type' in self._fields:
+            res.setdefault('service_type', ctx.get('default_service_type'))
         code = ctx.get('ctx_rubro_code')
         if code and 'rubro_id' in self._fields and not res.get('rubro_id'):
             rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
