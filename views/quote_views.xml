@@ -16,6 +16,11 @@
               <field name="current_site_id" domain="[('quote_id','=', id)]" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}" colspan="2"/>
               <field name="current_service_type" colspan="2"/>
               <field name="display_mode" colspan="2"/>
+              <field name="admin_percent" colspan="2"/>
+              <field name="utility_percent" colspan="2"/>
+              <field name="financial_percent" colspan="2"/>
+              <field name="transporte_rate" colspan="2"/>
+              <field name="bienestar_rate" colspan="2"/>
             </group>
 
             <!-- Tabs por rubro (edición inline) -->

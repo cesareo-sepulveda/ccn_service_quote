@@ -35,6 +35,13 @@ class ServiceQuote(models.Model):
         required=True,
     )
 
+    # Parámetros porcentuales de la cotización
+    admin_percent = fields.Float(string='Administración (%)', default=0.0)
+    utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
+    financial_percent = fields.Float(string='Financiero (%)', default=0.0)
+    transporte_rate = fields.Float(string='Transporte (%)', default=0.0)
+    bienestar_rate = fields.Float(string='Bienestar (%)', default=0.0)
+
     # Campos usados para filtrar la edición de líneas
     current_site_id = fields.Many2one(
         'ccn.service.quote.site',

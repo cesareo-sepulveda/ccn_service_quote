@@ -16,13 +16,6 @@ class CCNServiceQuoteSite(models.Model):
         index=True,
     )
 
-    # Parámetros del sitio (ya los usabas en la vista)
-    admin_percent = fields.Float(default=0.0)
-    utility_percent = fields.Float(default=0.0)
-    financial_percent = fields.Float(default=0.0)
-    transporte_rate = fields.Float(default=0.0)
-    bienestar_rate = fields.Float(default=0.0)
-
     # Líneas del sitio
     line_ids = fields.One2many(
         "ccn.service.quote.line",
@@ -72,6 +65,11 @@ class CCNServiceQuoteSite(models.Model):
         "line_ids.price_unit_final",
         "line_ids.total_price",
         "line_ids.rubro_code",
+        "quote_id.admin_percent",
+        "quote_id.utility_percent",
+        "quote_id.financial_percent",
+        "quote_id.transporte_rate",
+        "quote_id.bienestar_rate",
     )
     def _compute_indicators(self):
         """
@@ -89,13 +87,19 @@ class CCNServiceQuoteSite(models.Model):
             # Base del sitio: usamos el subtotal de cada línea
             base = sum(l.total_price or 0.0 for l in lines)
 
-            admin_amt = base * (site.admin_percent or 0.0) / 100.0
-            util_amt = (base + admin_amt) * (site.utility_percent or 0.0) / 100.0
+            admin_p = site.quote_id.admin_percent or 0.0
+            util_p = site.quote_id.utility_percent or 0.0
+            fin_p = site.quote_id.financial_percent or 0.0
+            trans_p = site.quote_id.transporte_rate or 0.0
+            bien_p = site.quote_id.bienestar_rate or 0.0
+
+            admin_amt = base * admin_p / 100.0
+            util_amt = (base + admin_amt) * util_p / 100.0
             subtotal2 = base + admin_amt + util_amt
 
-            transporte_amt = subtotal2 * (site.transporte_rate or 0.0) / 100.0
-            bienestar_amt = subtotal2 * (site.bienestar_rate or 0.0) / 100.0
-            financial_amt = subtotal2 * (site.financial_percent or 0.0) / 100.0
+            transporte_amt = subtotal2 * trans_p / 100.0
+            bienestar_amt = subtotal2 * bien_p / 100.0
+            financial_amt = subtotal2 * fin_p / 100.0
 
             total = subtotal2 + transporte_amt + bienestar_amt + financial_amt
 
