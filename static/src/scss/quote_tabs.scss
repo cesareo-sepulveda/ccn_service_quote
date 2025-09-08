@@ -8,7 +8,32 @@
   border: 1px solid #d9e1ea;
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
 }
-.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-empty   { background:#e74c3c; color:#fff; border-color:#c0392b; }
-.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-ack     { background:#f1c40f; color:#4a3d00; border-color:#d4ac0d; }
-.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-filled  { background:#2ecc71; color:#fff; border-color:#27ae60; }
-.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link:hover { filter: brightness(0.97); }
+
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link:not(:first-child) {
+  margin-left: -16px;
+  padding-left: 2.25rem;
+  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+}
+
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-empty {
+  background: #e74c3c !important;
+  color: #fff !important;
+  border-color: #c0392b !important;
+}
+
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-ack {
+  background: #f1c40f !important;
+  color: #4a3d00 !important;
+  border-color: #d4ac0d !important;
+}
+
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-filled {
+  background: #2ecc71 !important;
+  color: #fff !important;
+  border-color: #27ae60 !important;
+}
+
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link:hover {
+  filter: brightness(0.97);
+}
+
