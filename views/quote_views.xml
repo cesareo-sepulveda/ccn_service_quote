@@ -10,16 +10,12 @@
         <form string="CCN Service Quote">
           <sheet>
 
-            <!-- Cabecera sin repetir "Sitio" -->
+            <!-- Cabecera -->
             <group>
-              <group>
-                <field name="name"/>
-              </group>
-              <group string="Modo de presentación">
-                <field name="current_site_id" domain="[('quote_id','=', id)]"/>
-                <field name="current_service_type"/>
-                <field name="current_type"/>
-              </group>
+              <field name="name" colspan="2"/>
+              <field name="current_site_id" domain="[('quote_id','=', id)]" colspan="2"/>
+              <field name="current_service_type" colspan="2"/>
+              <field name="display_mode" colspan="2"/>
             </group>
 
             <!-- Tabs por rubro (edición inline) -->

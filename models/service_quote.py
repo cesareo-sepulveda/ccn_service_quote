@@ -9,8 +9,12 @@ class ServiceQuote(models.Model):
     _description = 'CCN Service Quote'
 
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
-    currency_id = fields.Many2one('res.currency', string='Moneda', required=True,
-                                  default=lambda self: self.env.company.currency_id.id)
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Moneda',
+        required=True,
+        default=lambda self: self.env.company.currency_id.id,
+    )
     # Sitios
     site_ids = fields.One2many(
         'ccn.service.quote.site',
@@ -19,25 +23,44 @@ class ServiceQuote(models.Model):
         default=lambda self: [(0, 0, {'name': _('Sitio Default')})],
     )
 
-    # Modo de presentación (los usas en los dominios de las líneas)
+    # Modo de presentación de la cotización
+    display_mode = fields.Selection(
+        [
+            ('by_rubro', 'Acumulado por rubro'),
+            ('total_only', 'Acumulado General'),
+            ('itemized', 'Itemizado'),
+        ],
+        string='Modo de presentación',
+        default='itemized',
+        required=True,
+    )
+
+    # Campos usados para filtrar la edición de líneas
     current_site_id = fields.Many2one(
         'ccn.service.quote.site',
         string='Sitio actual',
         domain="[('quote_id','=', id)]",
     )
-    current_service_type = fields.Selection([
-        ('jardineria', 'Jardinería'),
-        ('limpieza', 'Limpieza'),
-        ('mantenimiento', 'Mantenimiento'),
-        ('materiales', 'Materiales'),
-        ('servicios_especiales', 'Servicios Especiales'),
-        ('almacenaje', 'Almacenaje'),
-        ('fletes', 'Fletes'),
-    ], string='Tipo de Servicio actual')
-    current_type = fields.Selection([
-        ('servicio', 'Servicio'),
-        ('material', 'Material'),
-    ], string='Tipo actual', default='servicio')
+    current_service_type = fields.Selection(
+        [
+            ('jardineria', 'Jardinería'),
+            ('limpieza', 'Limpieza'),
+            ('mantenimiento', 'Mantenimiento'),
+            ('materiales', 'Materiales'),
+            ('servicios_especiales', 'Servicios Especiales'),
+            ('almacenaje', 'Almacenaje'),
+            ('fletes', 'Fletes'),
+        ],
+        string='Tipo de Servicio actual',
+    )
+    current_type = fields.Selection(
+        [
+            ('servicio', 'Servicio'),
+            ('material', 'Material'),
+        ],
+        string='Tipo actual',
+        default='servicio',
+    )
 
     # Líneas (todas las de la cotización)
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
@@ -54,6 +77,15 @@ class ServiceQuote(models.Model):
             if not quote.current_site_id and quote.site_ids:
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
+
+    @api.onchange('current_service_type')
+    def _onchange_current_service_type(self):
+        """Ajusta automáticamente el tipo servicio/material según el tipo de servicio."""
+        for quote in self:
+            if quote.current_service_type == 'materiales':
+                quote.current_type = 'material'
+            else:
+                quote.current_type = 'servicio'
 
 
 # ---------------------------------------------------------------------------
