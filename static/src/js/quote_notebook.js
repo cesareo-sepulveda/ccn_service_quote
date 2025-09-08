@@ -65,7 +65,8 @@ function initQuoteTabs(controller) {
     });
 }
 
-patch(FormController.prototype, "ccn_quote_notebook", {
+patch(FormController.prototype, {
+    patchName: "ccn_quote_notebook",
     async onMounted() {
         await this._super(...arguments);
         initQuoteTabs(this);
