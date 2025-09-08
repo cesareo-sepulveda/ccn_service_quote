@@ -46,14 +46,16 @@ function applyTabStatuses() {
       if (!panel) return;
       const link = linkForPanel(form, panel);
       if (!link) return;
+      const tab = link.closest("li");
+      if (!tab) return;
 
       const count = countRows(panel);
       const ack = readAckForPage(panel, pageName);
 
-      link.classList.remove("ccn-status-empty","ccn-status-ack","ccn-status-filled");
-      if (count > 0)       link.classList.add("ccn-status-filled");
-      else if (ack)        link.classList.add("ccn-status-ack");
-      else                 link.classList.add("ccn-status-empty");
+      tab.classList.remove("ccn-tab-empty", "ccn-tab-skip", "ccn-tab-complete");
+      if (count > 0)      tab.classList.add("ccn-tab-complete");
+      else if (ack)       tab.classList.add("ccn-tab-skip");
+      else                tab.classList.add("ccn-tab-empty");
     });
   });
 }
