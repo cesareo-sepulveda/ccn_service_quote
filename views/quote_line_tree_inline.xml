@@ -12,9 +12,7 @@
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"
                  domain="[
                    ('product_tmpl_id.ccn_exclude_from_quote','=',False),
-                   '|',
-                   ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')),
-                   ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])
+                   ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])
                  ]"/>
 
           <!-- Cantidad -->
