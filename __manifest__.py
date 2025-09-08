@@ -23,6 +23,12 @@
         'views/cleanup_disable_legacy_views.xml',
         'views/quote_site_fix.xml',
     ],
+    "assets": {
+        "web.assets_backend": [
+            "ccn_service_quote/static/src/js/quote_notebook.js",
+            "ccn_service_quote/static/src/scss/quote_notebook.scss",
+        ],
+    },
     "installable": True,
     "application": True,
     "auto_install": False,
