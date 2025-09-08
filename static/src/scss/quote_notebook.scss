@@ -1,5 +1,13 @@
+// Apply a small arrow to each tab so the steps feel connected.  The arrow
+// colour should match the tab's background to avoid an odd grey separator, and
+// the last tab shouldn't display an arrow at all.
 .ccn-tab-angle {
     position: relative;
+
+    // The last tab doesn't point to anything, so hide the decorative arrow.
+    &:last-child::after {
+        content: none;
+    }
 }
 
 .ccn-tab-angle a {
@@ -19,14 +27,27 @@
     border-left: 15px solid #ddd;
 }
 
+// Status colours for each step and matching arrow colour
 .ccn-tab-empty > a {
     background-color: #ffdddd !important;
+}
+
+.ccn-tab-empty.ccn-tab-angle::after {
+    border-left-color: #ffdddd;
 }
 
 .ccn-tab-skip > a {
     background-color: #fff4c2 !important;
 }
 
+.ccn-tab-skip.ccn-tab-angle::after {
+    border-left-color: #fff4c2;
+}
+
 .ccn-tab-complete > a {
     background-color: #d4f9d4 !important;
+}
+
+.ccn-tab-complete.ccn-tab-angle::after {
+    border-left-color: #d4f9d4;
 }
