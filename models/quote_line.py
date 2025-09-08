@@ -1,12 +1,23 @@
-from odoo import api, fields, models
+"""Helpers for the ``ccn.service.quote.line`` model.
+
+This file only adds behavior to the base model defined in
+``service_quote.py``.  Previously the model was redefined here using the
+``_name`` attribute which caused Odoo to drop fields (such as
+``site_id``) declared in the original class.  As a consequence the module
+failed to install with ``KeyError: 'site_id'`` during the registry
+loading phase.
+
+To avoid overriding the base definition we now use ``_inherit`` and only
+declare the helper methods.  The fields ``quote_id``, ``rubro_id`` and
+``product_id`` are already provided by the base model so they are no
+longer duplicated here.
+"""
+
+from odoo import api, models
+
 
 class CcnServiceQuoteLine(models.Model):
-    _name = 'ccn.service.quote.line'
-    _description = 'Línea de cotización CCN'
-
-    quote_id   = fields.Many2one('ccn.service.quote', required=True, ondelete='cascade')
-    rubro_id   = fields.Many2one('ccn.service.rubro', required=True)
-    product_id = fields.Many2one('product.product')  # si usas product_tmpl_id, ajusta abajo
+    _inherit = 'ccn.service.quote.line'
 
     @api.model
     def default_get(self, fields_list):
