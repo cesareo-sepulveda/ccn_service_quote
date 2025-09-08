@@ -6,9 +6,6 @@
       <field name="model">ccn.service.quote.line</field>
       <field name="arch" type="xml">
         <list editable="bottom" string="Líneas del rubro">
-          <!-- Rubro (solo informativo aquí) -->
-          <field name="rubro_id" readonly="1" optional="hide"/>
-
           <!-- Producto: solo del rubro actual; sin abrir ficha -->
           <field name="product_id"
                  required="1"
@@ -29,11 +26,11 @@
           <!-- Tabulador (0/3/5/10 %) -->
           <field name="tabulator_percent" string="Tabulador"/>
 
-          <!-- Impuestos -->
-          <field name="tax_ids"/>
+          <!-- IVA -->
+          <field name="amount_tax" string="IVA" readonly="1"/>
 
-          <!-- Subtotal (sin impuestos) -->
-          <field name="price_subtotal" readonly="1"/>
+          <!-- Subtotal -->
+          <field name="total_price" string="Subtotal" readonly="1"/>
 
           <!-- Metadatos necesarios pero ocultos -->
           <field name="currency_id" invisible="1"/>

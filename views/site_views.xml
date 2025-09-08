@@ -36,10 +36,8 @@
                     <!-- Reemplaza base_price_unit por el campo real que sí tienes -->
                     <field name="price_unit_final" string="Precio Unitario"/>
                     <field name="tabulator_percent" string="Tabulador"/>
-                    <!-- Muestra subtotal con tu campo existente -->
-                    <field name="total_price" string="Subtotal final" readonly="1"/>
-                    <!-- Si ya añadiste tax_ids, puedes insertarlo aquí entre Tabulador y Subtotal -->
-                    <!-- <field name="tax_ids" widget="many2many_tags" string="Impuestos aplicables"/> -->
+                    <field name="amount_tax" string="IVA" readonly="1"/>
+                    <field name="total_price" string="Subtotal" readonly="1"/>
                   </list>
                 </field>
               </page>
