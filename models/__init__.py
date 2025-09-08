@@ -1,6 +1,8 @@
 """Load all models for the CCN service quote module."""
 
 from . import (
+    service_quote,
+    site,
     add_package_wizard,
     patch_rubro_code,
     product,
@@ -15,6 +17,4 @@ from . import (
     rubro_flag,
     sale_order,
     service_package,
-    service_quote,
-    site,
 )
