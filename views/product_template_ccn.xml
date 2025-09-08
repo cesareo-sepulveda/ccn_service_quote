@@ -7,7 +7,7 @@
       <field name="inherit_id" ref="product.product_template_only_form_view"/>
       <field name="arch" type="xml">
         <xpath expr="//sheet/notebook" position="inside">
-          <page string="CCN Service">
+          <page string="Rubro CCN">
             <group>
               <field name="ccn_rubro_ids" widget="many2many_tags"
                      options="{'no_create_edit': True}"
