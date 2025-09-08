@@ -8,6 +8,6 @@ class ServiceQuoteLine(models.Model):
     product_taxes_ids = fields.Many2many(
         comodel_name='account.tax',
         related='product_id.taxes_id',
-        string='Impuestos',
+        string='Impuestos del producto',
         readonly=True,
     )

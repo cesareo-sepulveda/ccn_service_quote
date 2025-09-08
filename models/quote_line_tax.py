@@ -6,7 +6,7 @@ class ServiceQuoteLine(models.Model):
     # Impuestos seleccionables en la línea (de venta)
     tax_ids = fields.Many2many(
         'account.tax', 'ccn_quote_line_tax_rel', 'line_id', 'tax_id',
-        string='Impuestos',
+        string='Impuestos aplicables',
         domain="[('type_tax_use','=','sale'), ('company_id','=', company_id)]",
         help="Impuestos aplicables; por defecto se copian del producto."
     )
