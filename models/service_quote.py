@@ -42,15 +42,18 @@ class ServiceQuote(models.Model):
     # Líneas (todas las de la cotización)
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    @api.model
-    def create(self, vals):
-        """Asegura que exista al menos un sitio y que se seleccione como actual."""
-        if not vals.get('site_ids'):
-            vals['site_ids'] = [(0, 0, {'name': _('Sitio Default')})]
-        quote = super().create(vals)
-        if not quote.current_site_id and quote.site_ids:
-            quote.current_site_id = quote.site_ids[0].id
-        return quote
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Asegura que cada cotización tenga al menos un sitio y lo establezca
+        como actual."""
+        for vals in vals_list:
+            if not vals.get('site_ids'):
+                vals['site_ids'] = [(0, 0, {'name': _('Sitio Default')})]
+        quotes = super().create(vals_list)
+        for quote in quotes:
+            if not quote.current_site_id and quote.site_ids:
+                quote.current_site_id = quote.site_ids[0].id
+        return quotes
 
 
 # ---------------------------------------------------------------------------
