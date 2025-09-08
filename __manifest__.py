@@ -10,7 +10,6 @@
     "data": [
         "data/ccn_quote_attach_xmlid.xml",
         "views/ccn_quote_form_scope.xml",
-        "views/ccn_quote_pages_name.xml",        
         "views/ccn_quote_line_inline_product_domain.xml",
         "views/quote_site_fix.xml",
         "security/ir.model.access.csv",
