@@ -72,6 +72,23 @@ class ServiceQuote(models.Model):
     # Líneas (todas las de la cotización)
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
+    # --- Reconocimiento del usuario de que NO cargará datos en ese rubro ---
+    ack_mano_obra_empty = fields.Boolean(string="No aplica Mano de Obra")
+    ack_uniforme_empty  = fields.Boolean(string="No aplica Uniforme")
+
+    # --- Conteos de líneas por rubro (para pintar tabs). No es necesario store=True. ---
+    mano_obra_count = fields.Integer(compute='_compute_rubro_counts')
+    uniforme_count  = fields.Integer(compute='_compute_rubro_counts')
+
+    @api.depends('line_ids.rubro_id', 'line_ids.product_id', 'line_ids.qty')
+    def _compute_rubro_counts(self):
+        Line = self.env['ccn.service.quote.line']
+        for rec in self:
+            # Ajusta los filtros de acuerdo a tu definición de líneas (site, type, service_type, etc.)
+            base_domain = [('quote_id', '=', rec.id)]
+            rec.mano_obra_count = Line.search_count(base_domain + [('rubro_id.code', '=', 'mano_obra')])
+            rec.uniforme_count  = Line.search_count(base_domain + [('rubro_id.code', '=', 'uniforme')])
+
     @api.model_create_multi
     def create(self, vals_list):
         """Asegura que cada cotización tenga al menos un sitio y lo establezca

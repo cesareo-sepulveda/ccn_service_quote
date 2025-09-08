@@ -1,0 +1,31 @@
+.o_form_view .o_notebook .nav-tabs .nav-link {
+  position: relative;
+  margin-right: 10px;
+  padding-right: 2.25rem; /* espacio para el 'chevron' */
+  color: #1f2d3d; // texto por defecto
+  background: #eef2f7;
+  border: 1px solid #d9e1ea;
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
+}
+
+/* Estados */
+.o_form_view .o_notebook .nav-tabs .nav-link.ccn-status-empty {
+  background: #e74c3c; /* rojo */
+  color: #fff;
+  border-color: #c0392b;
+}
+.o_form_view .o_notebook .nav-tabs .nav-link.ccn-status-ack {
+  background: #f1c40f; /* amarillo */
+  color: #4a3d00;
+  border-color: #d4ac0d;
+}
+.o_form_view .o_notebook .nav-tabs .nav-link.ccn-status-filled {
+  background: #2ecc71; /* verde (opcional) */
+  color: #fff;
+  border-color: #27ae60;
+}
+
+/* opcional: al pasar mouse */
+.o_form_view .o_notebook .nav-tabs .nav-link:hover {
+  filter: brightness(0.97);
+}
