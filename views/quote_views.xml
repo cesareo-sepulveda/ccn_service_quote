@@ -41,7 +41,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -60,7 +61,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -79,7 +81,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -98,7 +101,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -117,7 +121,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -136,7 +141,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -155,7 +161,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -174,7 +181,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -193,7 +201,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -212,7 +221,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -231,7 +241,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -250,7 +261,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -269,7 +281,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
@@ -288,7 +301,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                           ('service_type','=', current_service_type)
+                           ('service_type','=', current_service_type),
+                         ('rubro_code','=', context.get('ctx_rubro_code'))
                          ]"/>
               </page>
 
