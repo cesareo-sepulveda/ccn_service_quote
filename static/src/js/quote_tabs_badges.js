@@ -1,24 +1,20 @@
 /** @odoo-module **/
 
+import { registry } from "@web/core/registry";
+
 /*
   Tabs de colores SOLO en Service Quote.
-  - Detecta automáticamente las páginas del notebook (no requiere PAGES).
-  - Si el <form> no tiene .ccn-quote, se la añade al vuelo por detección.
-  - Coloca clases de estado en <li> y en <a.nav-link>.
+  - Auto-scope: si el <form> no tiene .ccn-quote, se la añade al vuelo.
+  - Detección automática de páginas (no requiere lista fija).
+  - Pone clases de estado en <li> y en <a.nav-link>.
 */
 
 function ensureScopeClass() {
-  // Busca formularios que aún no tengan .ccn-quote pero parezcan Service Quote
+  // Marca como .ccn-quote cualquier form que tenga señales de Service Quote
   document.querySelectorAll(".o_form_view:not(.ccn-quote)").forEach((form) => {
-    const hasQuotePages = form.querySelector(
-      '.o_notebook .o_notebook_page[name^="page_"], .o_notebook .o_notebook_page[name="page_mano_obra"]'
-    );
-    const hasCurrentSite = form.querySelector(
-      '.o_field_widget[name="current_site_id"], [name="current_site_id"]'
-    );
-    if (hasQuotePages || hasCurrentSite) {
-      form.classList.add("ccn-quote");
-    }
+    const hasQuotePages = form.querySelector('.o_notebook .o_notebook_page[name^="page_"]');
+    const hasCurrentSite = form.querySelector('.o_field_widget[name="current_site_id"], [name="current_site_id"]');
+    if (hasQuotePages || hasCurrentSite) form.classList.add("ccn-quote");
   });
 }
 
@@ -69,35 +65,26 @@ function applyAll() {
   document.querySelectorAll(".o_form_view.ccn-quote").forEach(applyInForm);
 }
 
-// Debounce sencillo
+// Debounce
 let t;
 function scheduleApply() { clearTimeout(t); t = setTimeout(applyAll, 60); }
 
-function installObserver() {
-  if (window.__ccnTabsObserver) return;
-  const root = document.body;
-  if (!root) return;
-
-  const obs = new MutationObserver(scheduleApply);
-  obs.observe(root, { childList: true, subtree: true });
-  window.__ccnTabsObserver = obs;
-
-  root.addEventListener("click",  (ev) => {
-    if (ev.target.closest(".o_form_view.ccn-quote .nav-link")) scheduleApply();
-  });
-  root.addEventListener("change", (ev) => {
-    if (ev.target.closest(".o_form_view")) scheduleApply();
-  });
-
-  scheduleApply();
-}
-
-window.__ccnTabsDebug = { applyAll, installed: () => !!window.__ccnTabsObserver };
-
-(function bootstrap() {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", installObserver, { once: true });
-  } else {
-    installObserver();
-  }
-})();
+// Servicio webclient — asegura ejecución al iniciar el cliente
+const service = {
+  name: "ccn_quote_tabs_service",
+  start() {
+    const root = document.body;
+    if (!root) return;
+    // Observer de todo el webclient
+    const obs = new MutationObserver(scheduleApply);
+    obs.observe(root, { childList: true, subtree: true });
+    // Reaplicar al navegar entre tabs o cambiar campos
+    root.addEventListener("click",  (ev) => { if (ev.target.closest(".o_form_view .nav-link")) scheduleApply(); });
+    root.addEventListener("change", (ev) => { if (ev.target.closest(".o_form_view")) scheduleApply(); });
+    // Primera pasada
+    scheduleApply();
+    // Exponer helper para debug
+    window.__ccnTabsDebug = { applyAll, installed: () => true };
+  },
+};
+registry.category("services").add("ccn_quote_tabs_service", service);
