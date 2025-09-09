@@ -3,7 +3,7 @@
     <record id="view_ccn_service_quote_form_tabs_status" model="ir.ui.view">
       <field name="name">ccn.service.quote.form.tabs.status</field>
       <field name="model">ccn.service.quote</field>
-      <field name="inherit_id" ref="ccn_service_quote.ccn_quote_form_1351"/>
+      <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
       <field name="arch" type="xml">
         <!-- Campos invisibles para estados por rubro -->
         <xpath expr="//sheet/group" position="inside">
