@@ -33,16 +33,24 @@ function panelCode(panelEl) {
   return m ? m[1] : null;
 }
 
+function rowRubroCode(row) {
+  const cell = row.querySelector('td[data-name="rubro_code"]');
+  const code = cell
+    ? (cell.dataset.value || cell.textContent.trim())
+    : row.dataset.rubroCode || "";
+  if (code) {
+    row.dataset.rubroCode = code;
+  }
+  return code;
+}
+
 function filterRows(panelEl) {
   const code = panelCode(panelEl);
   if (!code) return;
   panelEl
     .querySelectorAll(".o_list_view tbody tr.o_data_row")
     .forEach((row) => {
-      const cell = row.querySelector('td[data-name="rubro_code"]');
-      const rowCode = cell
-        ? (cell.dataset.value || cell.textContent.trim())
-        : row.dataset.rubroCode || "";
+      const rowCode = rowRubroCode(row);
       row.style.display = rowCode === code ? "" : "none";
     });
 }
@@ -53,10 +61,7 @@ function countRows(panelEl) {
   return Array.from(
     panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row")
   ).filter((row) => {
-    const cell = row.querySelector('td[data-name="rubro_code"]');
-    const rowCode = cell
-      ? (cell.dataset.value || cell.textContent.trim())
-      : row.dataset.rubroCode || "";
+    const rowCode = rowRubroCode(row);
     return rowCode === code;
   }).length;
 }
