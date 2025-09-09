@@ -42,7 +42,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','mano_obra')
                          ]"/>
               </page>
 
@@ -62,7 +62,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','uniforme')
                          ]"/>
               </page>
 
@@ -82,7 +82,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','epp')
                          ]"/>
               </page>
 
@@ -102,7 +102,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','epp_alturas')
                          ]"/>
               </page>
 
@@ -122,7 +122,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','equipo_especial_limpieza')
                          ]"/>
               </page>
 
@@ -142,7 +142,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','comunicacion_computo')
                          ]"/>
               </page>
 
@@ -162,7 +162,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','herramienta_menor_jardineria')
                          ]"/>
               </page>
 
@@ -182,7 +182,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','material_limpieza')
                          ]"/>
               </page>
 
@@ -202,7 +202,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','perfil_medico')
                          ]"/>
               </page>
 
@@ -222,7 +222,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','maquinaria_limpieza')
                          ]"/>
               </page>
 
@@ -242,7 +242,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','maquinaria_jardineria')
                          ]"/>
               </page>
 
@@ -262,7 +262,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','fertilizantes_tierra_lama')
                          ]"/>
               </page>
 
@@ -282,7 +282,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','consumibles_jardineria')
                          ]"/>
               </page>
 
@@ -302,7 +302,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                            ('service_type','=', current_service_type),
-                         ('rubro_code','=', context.get('ctx_rubro_code'))
+                         ('rubro_code','=','capacitacion')
                          ]"/>
               </page>
 
