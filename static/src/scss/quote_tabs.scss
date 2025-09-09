@@ -1,83 +1,52 @@
 /* SOLO en Service Quote (form con clase ccn-quote) */
-form.ccn-quote .o_notebook {
-  /* en algunos temas el contenedor oculta el chevrón */
-  overflow: visible !important;
+.o_form_view.ccn-quote .o_notebook .nav-tabs {
+  overflow: visible;
 }
 
-form.ccn-quote .o_notebook .nav-tabs {
-  /* por si el chevrón se corta en algunos temas */
-  overflow: visible !important;
-}
-
-form.ccn-quote .o_notebook .nav-tabs li .nav-link,
-form.ccn-quote .o_notebook .nav-tabs .nav-link {
+/* base del tab con chevrón */
+.o_form_view.ccn-quote .o_notebook .nav-tabs li .nav-link,
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link {
   position: relative;
   margin-right: 10px;
   padding-right: 2.25rem;
-  color: #1f2d3d !important;
-  background: #ed378f !important; /* base (se sobreescribe por estados) */
+  color: #1f2d3d;
+  background: #eef2f7;
   border: 1px solid #d9e1ea;
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
 }
 
-/* chevrón visual en cada tab */
-form.ccn-quote .o_notebook .nav-tabs li .nav-link::after,
-form.ccn-quote .o_notebook .nav-tabs .nav-link::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  right: 6px;
-  width: 6px;
-  height: 6px;
-  border: solid currentColor;
-  border-width: 0 2px 2px 0;
-  transform: translateY(-50%) rotate(-45deg);
-}
-
-/* encadenamiento visual (chevrón continuo) */
-form.ccn-quote .o_notebook .nav-tabs li:not(:first-child) .nav-link,
-form.ccn-quote .o_notebook .nav-tabs .nav-link + .nav-link {
+/* continuidad del chevrón entre tabs */
+.o_form_view.ccn-quote .o_notebook .nav-tabs li:not(:first-child) .nav-link,
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link + .nav-link {
   margin-left: -16px;
   padding-left: 2.25rem;
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
 }
 
-form.ccn-quote .o_notebook .nav-tabs li:not(:first-child) .nav-link::before,
-form.ccn-quote .o_notebook .nav-tabs .nav-link + .nav-link::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 6px;
-  width: 6px;
-  height: 6px;
-  border: solid currentColor;
-  border-width: 0 2px 2px 0;
-  transform: translateY(-50%) rotate(135deg);
+/* hover */
+.o_form_view.ccn-quote .o_notebook .nav-tabs li .nav-link:hover,
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link:hover {
+  filter: brightness(0.97);
 }
 
 /* ESTADOS — cubre clase en <li> y/o en <a> */
-form.ccn-quote .o_notebook .nav-tabs li.ccn-status-empty .nav-link,
-form.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-empty {
-  background: #e74c3c !important;
-  color: #fff !important;
-  border-color: #c0392b !important;
+.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-status-empty .nav-link,
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-empty {
+  background: #e74c3c;
+  color: #fff;
+  border-color: #c0392b;
 }
 
-form.ccn-quote .o_notebook .nav-tabs li.ccn-status-ack .nav-link,
-form.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-ack {
-  background: #f1c40f !important;
-  color: #4a3d00 !important;
-  border-color: #d4ac0d !important;
+.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-status-ack .nav-link,
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-ack {
+  background: #f1c40f;
+  color: #4a3d00;
+  border-color: #d4ac0d;
 }
 
-form.ccn-quote .o_notebook .nav-tabs li.ccn-status-filled .nav-link,
-form.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-filled {
-  background: #2ecc71 !important;
-  color: #fff !important;
-  border-color: #27ae60 !important;
-}
-
-form.ccn-quote .o_notebook .nav-tabs li .nav-link:hover,
-form.ccn-quote .o_notebook .nav-tabs .nav-link:hover {
-  filter: brightness(0.97);
+.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-status-filled .nav-link,
+.o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-filled {
+  background: #2ecc71;
+  color: #fff;
+  border-color: #27ae60;
 }
