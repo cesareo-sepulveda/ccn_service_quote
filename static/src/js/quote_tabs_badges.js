@@ -23,7 +23,7 @@ function applyTabStatuses() {
     if (!notebook) {
       return;
     }
-    notebook.querySelectorAll(":scope > ul.nav-tabs > li").forEach((tab) => {
+    notebook.querySelectorAll("ul.nav-tabs > li").forEach((tab) => {
       const link = tab.querySelector(".nav-link");
       if (!link) {
         return;
