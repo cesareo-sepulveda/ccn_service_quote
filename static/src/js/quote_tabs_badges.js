@@ -116,6 +116,11 @@ function applyInForm(form) {
     const link = linkForPanel(form, panel);
     if (!link) return;
     const li = link.closest("li");
+    if (li) {
+      li.classList.add("ccn-tab-angle");
+    } else {
+      link.classList.add("ccn-tab-angle");
+    }
     const targets = li ? [link, li] : [link];
     targets.forEach((el) =>
       el.classList.remove("ccn-status-empty", "ccn-status-ack", "ccn-status-filled")
