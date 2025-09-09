@@ -1,22 +1,36 @@
 /** @odoo-module **/
 
-/* 
-  Colorea tabs SOLO en Service Quote (.ccn-quote).
-  No depende de una lista fija: detecta todas las páginas del notebook,
-  cuenta filas de su lista y busca un checkbox "ack_*_empty" dentro.
+/*
+  Tabs de colores SOLO en Service Quote.
+  - Detecta automáticamente las páginas del notebook (no requiere PAGES).
+  - Si el <form> no tiene .ccn-quote, se la añade al vuelo por detección.
+  - Coloca clases de estado en <li> y en <a.nav-link>.
 */
 
+function ensureScopeClass() {
+  // Busca formularios que aún no tengan .ccn-quote pero parezcan Service Quote
+  document.querySelectorAll(".o_form_view:not(.ccn-quote)").forEach((form) => {
+    const hasQuotePages = form.querySelector(
+      '.o_notebook .o_notebook_page[name^="page_"], .o_notebook .o_notebook_page[name="page_mano_obra"]'
+    );
+    const hasCurrentSite = form.querySelector(
+      '.o_field_widget[name="current_site_id"], [name="current_site_id"]'
+    );
+    if (hasQuotePages || hasCurrentSite) {
+      form.classList.add("ccn-quote");
+    }
+  });
+}
+
 function countRows(panelEl) {
-  // Odoo 16–18: filas de datos reales en el list view
   let rows = panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row");
   if (rows.length) return rows.length;
-  // Fallback (evita la fila "Agregar un elemento")
   rows = panelEl.querySelectorAll(".o_list_view tbody tr:not(.o_list_record_add)");
   return rows.length || 0;
 }
 
 function readAck(panelEl) {
-  // Busca cualquier checkbox cuyo name termine en _empty dentro de la página
+  // cualquier checkbox *_empty dentro de la página
   const el = panelEl.querySelector(
     '.o_field_widget input[type="checkbox"][name$="_empty"], input[type="checkbox"][name$="_empty"]'
   );
@@ -27,8 +41,7 @@ function linkForPanel(form, panelEl) {
   const id = panelEl.getAttribute("id");
   if (!id) return null;
   return form.querySelector(
-    `.o_notebook .nav-link[data-bs-target="#${id}"],
-     .o_notebook .nav-link[href="#${id}"]`
+    `.o_notebook .nav-link[data-bs-target="#${id}"], .o_notebook .nav-link[href="#${id}"]`
   );
 }
 
@@ -52,6 +65,7 @@ function applyInForm(form) {
 }
 
 function applyAll() {
+  ensureScopeClass();
   document.querySelectorAll(".o_form_view.ccn-quote").forEach(applyInForm);
 }
 
@@ -68,8 +82,12 @@ function installObserver() {
   obs.observe(root, { childList: true, subtree: true });
   window.__ccnTabsObserver = obs;
 
-  root.addEventListener("click",  (ev) => { if (ev.target.closest(".o_form_view.ccn-quote .nav-link")) scheduleApply(); });
-  root.addEventListener("change", (ev) => { if (ev.target.closest(".o_form_view.ccn-quote")) scheduleApply(); });
+  root.addEventListener("click",  (ev) => {
+    if (ev.target.closest(".o_form_view.ccn-quote .nav-link")) scheduleApply();
+  });
+  root.addEventListener("change", (ev) => {
+    if (ev.target.closest(".o_form_view")) scheduleApply();
+  });
 
   scheduleApply();
 }
