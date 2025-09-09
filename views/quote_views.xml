@@ -42,7 +42,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','mano_obra')
+                         ('rubro_code','=','mano_obra')
                        ]"/>
               </page>
 
@@ -62,7 +62,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','uniforme')
+                         ('rubro_code','=','uniforme')
                        ]"/>
               </page>
 
@@ -82,7 +82,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','epp')
+                         ('rubro_code','=','epp')
                        ]"/>
               </page>
 
@@ -102,7 +102,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','epp_alturas')
+                         ('rubro_code','=','epp_alturas')
                        ]"/>
               </page>
 
@@ -122,7 +122,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','equipo_especial_limpieza')
+                         ('rubro_code','=','equipo_especial_limpieza')
                        ]"/>
               </page>
 
@@ -142,7 +142,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','comunicacion_computo')
+                         ('rubro_code','=','comunicacion_computo')
                        ]"/>
               </page>
 
@@ -162,7 +162,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','herramienta_menor_jardineria')
+                         ('rubro_code','=','herramienta_menor_jardineria')
                        ]"/>
               </page>
 
@@ -182,7 +182,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','material_limpieza')
+                         ('rubro_code','=','material_limpieza')
                        ]"/>
               </page>
 
@@ -202,7 +202,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','perfil_medico')
+                         ('rubro_code','=','perfil_medico')
                        ]"/>
               </page>
 
@@ -222,7 +222,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','maquinaria_limpieza')
+                         ('rubro_code','=','maquinaria_limpieza')
                        ]"/>
               </page>
 
@@ -242,7 +242,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','maquinaria_jardineria')
+                         ('rubro_code','=','maquinaria_jardineria')
                        ]"/>
               </page>
 
@@ -262,7 +262,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','fertilizantes_tierra_lama')
+                         ('rubro_code','=','fertilizantes_tierra_lama')
                        ]"/>
               </page>
 
@@ -282,7 +282,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','consumibles_jardineria')
+                         ('rubro_code','=','consumibles_jardineria')
                        ]"/>
               </page>
 
@@ -302,7 +302,7 @@
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
                          ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','capacitacion')
+                         ('rubro_code','=','capacitacion')
                        ]"/>
               </page>
 
