@@ -80,8 +80,12 @@ function linkForPanel(form, panelEl) {
 }
 
 function applyInForm(form) {
-  const panels = Array.from(form.querySelectorAll(".o_notebook .o_notebook_page"));
-  const activePanel = panels.find((p) => p.querySelector(".o_list_view"));
+  const panels = Array.from(
+    form.querySelectorAll(".o_notebook .o_notebook_page")
+  );
+  const activePanel =
+    panels.find((p) => p.classList.contains("active") || p.classList.contains("show")) ||
+    panels.find((p) => p.querySelector(".o_list_view"));
 
   if (activePanel) {
     // Contar líneas por rubro y mostrar solo las del panel activo
