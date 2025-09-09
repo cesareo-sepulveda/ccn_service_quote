@@ -27,10 +27,37 @@ function ensureScopeClass() {
   });
 }
 
+function panelCode(panelEl) {
+  const name = panelEl.getAttribute("name") || "";
+  const m = name.match(/^page_(.+)$/);
+  return m ? m[1] : null;
+}
+
+function filterRows(panelEl) {
+  const code = panelCode(panelEl);
+  if (!code) return;
+  panelEl
+    .querySelectorAll(".o_list_view tbody tr.o_data_row")
+    .forEach((row) => {
+      const cell = row.querySelector('td[data-name="rubro_code"]');
+      const rowCode = cell ? cell.textContent.trim() : "";
+      row.style.display = rowCode === code ? "" : "none";
+    });
+}
+
 function countRows(panelEl) {
-  let rows = panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row");
+  filterRows(panelEl);
+  let rows = Array.from(
+    panelEl.querySelectorAll(
+      ".o_list_view tbody tr.o_data_row"
+    )
+  ).filter((r) => r.style.display !== "none");
   if (rows.length) return rows.length;
-  rows = panelEl.querySelectorAll(".o_list_view tbody tr:not(.o_list_record_add)");
+  rows = Array.from(
+    panelEl.querySelectorAll(
+      ".o_list_view tbody tr:not(.o_list_record_add)"
+    )
+  ).filter((r) => r.style.display !== "none");
   return rows.length || 0;
 }
 
