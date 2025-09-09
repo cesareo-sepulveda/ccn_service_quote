@@ -4,6 +4,12 @@ import { patch } from "@web/core/utils/patch";
 import { FormController } from "@web/views/form/form_controller";
 import { _t } from "@web/core/l10n/translation";
 
+function panelCode(pane) {
+    const name = pane.getAttribute("name") || "";
+    const m = name.match(/^page_(.+)$/);
+    return m ? m[1] : null;
+}
+
 export function initQuoteTabs(controller) {
     if (!controller.model || controller.model.name !== "ccn.service.quote") {
         return;
@@ -12,75 +18,45 @@ export function initQuoteTabs(controller) {
     if (!notebook) {
         return;
     }
-    const tabs = notebook.querySelectorAll(".nav-tabs > *");
-    tabs.forEach((tab, index) => {
-        tab.classList.add("ccn-tab-angle");
-        const link = tab.classList.contains("nav-link")
-            ? tab
-            : tab.querySelector(".nav-link");
-        if (!link) {
+    notebook.querySelectorAll(".o_notebook_page").forEach((pane) => {
+        if (pane.querySelector(".ccn-skip")) {
             return;
         }
-        const targets = tab === link ? [link] : [tab, link];
-        let targetSelector =
-            link.getAttribute("href") ||
-            link.getAttribute("data-bs-target") ||
-            (link.getAttribute("aria-controls")
-                ? `#${link.getAttribute("aria-controls")}`
-                : null);
-        const pane = targetSelector
-            ? notebook.querySelector(targetSelector)
-            : null;
-        if (!pane || pane.querySelector(".ccn-skip")) {
+        const code = panelCode(pane);
+        if (!code) {
             return;
+        }
+        // Estado inicial desde campos rubro_state_*
+        const stateField = `rubro_state_${code}`;
+        const state = controller.model.root.data[stateField];
+        if (state === "yellow") {
+            pane.dataset.ccnAck = "1";
         }
         const btn = document.createElement("button");
         btn.type = "button";
         btn.className = "btn btn-secondary ccn-skip";
-        btn.textContent = _t("No Aplica");
+        btn.textContent = pane.dataset.ccnAck === "1" ? _t("Quitar No Aplica") : _t("No Aplica");
         pane.prepend(btn);
-        btn.addEventListener("click", () => {
-            targets.forEach((el) => {
-                el.classList.remove("ccn-status-empty");
-                el.classList.add("ccn-status-ack");
-            });
-        });
-        if (!pane.querySelector("table tbody tr")) {
-            targets.forEach((el) => el.classList.add("ccn-status-empty"));
-        } else {
-            targets.forEach((el) => el.classList.add("ccn-status-filled"));
-        }
-        tab.addEventListener(
-            "click",
-            (ev) => {
-                const prev = Array.from(tabs).slice(0, index);
-                const ok = prev.every(
-                    (p) =>
-                        p.classList.contains("ccn-status-filled") ||
-                        p.classList.contains("ccn-status-ack")
-                );
-                if (!ok) {
-                    ev.preventDefault();
-                    ev.stopPropagation();
-                    controller.displayNotification({
-                        title: _t("Atención"),
-                        message: _t("Completa el paso anterior."),
-                        type: "warning",
-                    });
-                }
-            },
-            true
-        );
-        const observer = new MutationObserver(() => {
-            if (pane.querySelector("table tbody tr")) {
-                targets.forEach((el) => {
-                    el.classList.remove("ccn-status-empty", "ccn-status-ack");
-                    el.classList.add("ccn-status-filled");
-                });
+        btn.addEventListener("click", async () => {
+            const ack = pane.dataset.ccnAck === "1";
+            const method = ack ? "action_unmark_rubro_empty" : "action_mark_rubro_empty";
+            const orm = controller.model.orm || controller.orm;
+            await orm.call(
+                "ccn.service.quote",
+                method,
+                [[controller.model.root.data.id]],
+                { context: { rubro_code: code } }
+            );
+            pane.dataset.ccnAck = ack ? "0" : "1";
+            btn.textContent = pane.dataset.ccnAck === "1" ? _t("Quitar No Aplica") : _t("No Aplica");
+            if (window.__ccnTabsDebug && window.__ccnTabsDebug.applyAll) {
+                window.__ccnTabsDebug.applyAll();
             }
         });
-        observer.observe(pane, { childList: true, subtree: true });
     });
+    if (window.__ccnTabsDebug && window.__ccnTabsDebug.applyAll) {
+        window.__ccnTabsDebug.applyAll();
+    }
 }
 
 patch(FormController.prototype, {
