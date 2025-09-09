@@ -49,6 +49,10 @@ export function initQuoteTabs(controller) {
             );
             pane.dataset.ccnAck = ack ? "0" : "1";
             btn.textContent = pane.dataset.ccnAck === "1" ? _t("Quitar No Aplica") : _t("No Aplica");
+            const stateInput = controller.el.querySelector(`[name="rubro_state_${code}"]`);
+            if (stateInput) {
+                stateInput.value = pane.dataset.ccnAck === "1" ? "yellow" : "red";
+            }
             if (window.__ccnTabsDebug && window.__ccnTabsDebug.applyAll) {
                 window.__ccnTabsDebug.applyAll();
             }

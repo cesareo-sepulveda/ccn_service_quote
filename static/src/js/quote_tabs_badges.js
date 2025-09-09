@@ -56,6 +56,18 @@ function readAck(panelEl) {
   return el ? !!el.checked : false;
 }
 
+function readState(form, code) {
+  const el = form.querySelector(`[name="rubro_state_${code}"]`);
+  return el ? el.value || "" : "";
+}
+
+function writeState(form, code, state) {
+  const el = form.querySelector(`[name="rubro_state_${code}"]`);
+  if (el && el.value !== state) {
+    el.value = state;
+  }
+}
+
 function linkForPanel(form, panelEl) {
   let id = panelEl.getAttribute("id");
   if (!id) id = panelEl.getAttribute("name") || panelEl.getAttribute("data-tab-id");
@@ -70,18 +82,25 @@ function linkForPanel(form, panelEl) {
 function applyInForm(form) {
   const panels = Array.from(form.querySelectorAll(".o_notebook .o_notebook_page"));
   const activePanel = panels.find((p) => p.querySelector(".o_list_view"));
-  const counts = {};
 
   if (activePanel) {
     // Contar líneas por rubro y mostrar solo las del panel activo
     const activeCode = panelCode(activePanel);
+    let count = 0;
     activePanel
       .querySelectorAll(".o_list_view tbody tr.o_data_row")
       .forEach((row) => {
         const rowCode = rowRubroCode(row);
-        counts[rowCode] = (counts[rowCode] || 0) + 1;
-        row.style.display = rowCode === activeCode ? "" : "none";
+        if (rowCode === activeCode) {
+          count++;
+          row.style.display = "";
+        } else {
+          row.style.display = "none";
+        }
       });
+    const ack = readAck(activePanel);
+    const state = count > 0 ? "ok" : ack ? "yellow" : "red";
+    writeState(form, activeCode, state);
   }
 
   panels.forEach((panel) => {
@@ -90,14 +109,13 @@ function applyInForm(form) {
     const li = link.closest("li");
     const targets = li ? [link, li] : [link];
     const code = panelCode(panel);
-    const count = code ? counts[code] || 0 : 0;
-    const ack = readAck(panel);
+    const state = code ? readState(form, code) : "";
 
     targets.forEach((el) =>
       el.classList.remove("ccn-status-empty", "ccn-status-ack", "ccn-status-filled")
     );
-    if (count > 0) targets.forEach((el) => el.classList.add("ccn-status-filled"));
-    else if (ack) targets.forEach((el) => el.classList.add("ccn-status-ack"));
+    if (state === "ok") targets.forEach((el) => el.classList.add("ccn-status-filled"));
+    else if (state === "yellow") targets.forEach((el) => el.classList.add("ccn-status-ack"));
     else targets.forEach((el) => el.classList.add("ccn-status-empty"));
   });
 }
