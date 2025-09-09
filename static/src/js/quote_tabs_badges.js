@@ -34,11 +34,14 @@ function readAck(panelEl) {
 }
 
 function linkForPanel(form, panelEl) {
-  const id = panelEl.getAttribute("id");
+  let id = panelEl.getAttribute("id");
+  if (!id) id = panelEl.getAttribute("name") || panelEl.getAttribute("data-tab-id");
   if (!id) return null;
-  return form.querySelector(
-    `.o_notebook .nav-link[data-bs-target="#${id}"], .o_notebook .nav-link[href="#${id}"]`
-  );
+  const selector =
+    `.o_notebook .nav-link[aria-controls="${id}"], ` +
+    `.o_notebook .nav-link[data-bs-target="#${id}"], ` +
+    `.o_notebook .nav-link[href="#${id}"]`;
+  return form.querySelector(selector);
 }
 
 function applyInForm(form) {
