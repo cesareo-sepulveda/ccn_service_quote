@@ -83,38 +83,40 @@ function applyInForm(form) {
   const panels = Array.from(
     form.querySelectorAll(".o_notebook .o_notebook_page")
   );
+  const rows = Array.from(
+    form.querySelectorAll(".o_list_view tbody tr.o_data_row")
+  );
+
+  // Contar líneas por rubro
+  const counts = {};
+  rows.forEach((row) => {
+    const code = rowRubroCode(row);
+    counts[code] = (counts[code] || 0) + 1;
+  });
+
+  // Mostrar solo las líneas correspondientes al panel activo
   const activePanel =
     panels.find((p) => p.classList.contains("active") || p.classList.contains("show")) ||
     panels.find((p) => p.querySelector(".o_list_view"));
-
   if (activePanel) {
-    // Contar líneas por rubro y mostrar solo las del panel activo
     const activeCode = panelCode(activePanel);
-    let count = 0;
-    activePanel
-      .querySelectorAll(".o_list_view tbody tr.o_data_row")
-      .forEach((row) => {
-        const rowCode = rowRubroCode(row);
-        if (rowCode === activeCode) {
-          count++;
-          row.style.display = "";
-        } else {
-          row.style.display = "none";
-        }
-      });
-    const ack = readAck(activePanel);
-    const state = count > 0 ? "ok" : ack ? "yellow" : "red";
-    writeState(form, activeCode, state);
+    rows.forEach((row) => {
+      const rowCode = rowRubroCode(row);
+      row.style.display = rowCode === activeCode ? "" : "none";
+    });
   }
 
   panels.forEach((panel) => {
+    const code = panelCode(panel);
+    if (!code) return;
+    const ack = readAck(panel);
+    const state = (counts[code] || 0) > 0 ? "ok" : ack ? "yellow" : "red";
+    writeState(form, code, state);
+
     const link = linkForPanel(form, panel);
     if (!link) return;
     const li = link.closest("li");
     const targets = li ? [link, li] : [link];
-    const code = panelCode(panel);
-    const state = code ? readState(form, code) : "";
-
     targets.forEach((el) =>
       el.classList.remove("ccn-status-empty", "ccn-status-ack", "ccn-status-filled")
     );
