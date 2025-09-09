@@ -48,19 +48,15 @@ function filterRows(panelEl) {
 }
 
 function countRows(panelEl) {
-  filterRows(panelEl);
-  let rows = Array.from(
-    panelEl.querySelectorAll(
-      ".o_list_view tbody tr.o_data_row"
-    )
-  ).filter((r) => r.style.display !== "none");
-  if (rows.length) return rows.length;
-  rows = Array.from(
-    panelEl.querySelectorAll(
-      ".o_list_view tbody tr:not(.o_list_record_add)"
-    )
-  ).filter((r) => r.style.display !== "none");
-  return rows.length || 0;
+  const code = panelCode(panelEl);
+  if (!code) return 0;
+  return Array.from(
+    panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row")
+  ).filter((row) => {
+    const cell = row.querySelector('td[data-name="rubro_code"]');
+    const rowCode = cell ? (cell.dataset.value || cell.textContent.trim()) : "";
+    return rowCode === code;
+  }).length;
 }
 
 function readAck(panelEl) {
@@ -87,22 +83,28 @@ function linkForPanel(form, panelEl) {
 }
 
 function applyInForm(form) {
-  form.querySelectorAll(".o_notebook .o_notebook_page").forEach((panel) => {
+  const panels = Array.from(form.querySelectorAll(".o_notebook .o_notebook_page"));
+  panels.forEach((panel) => {
     const link = linkForPanel(form, panel);
     if (!link) return;
     const li = link.closest("li");
     const targets = li ? [link, li] : [link];
 
     const count = countRows(panel);
-    const ack   = readAck(panel);
+    const ack = readAck(panel);
 
     targets.forEach((el) =>
       el.classList.remove("ccn-status-empty", "ccn-status-ack", "ccn-status-filled")
     );
-    if (count > 0)       targets.forEach((el) => el.classList.add("ccn-status-filled"));
-    else if (ack)        targets.forEach((el) => el.classList.add("ccn-status-ack"));
-    else                 targets.forEach((el) => el.classList.add("ccn-status-empty"));
+    if (count > 0) targets.forEach((el) => el.classList.add("ccn-status-filled"));
+    else if (ack) targets.forEach((el) => el.classList.add("ccn-status-ack"));
+    else targets.forEach((el) => el.classList.add("ccn-status-empty"));
   });
+
+  const activePanel = form.querySelector(".o_notebook .o_notebook_page.active");
+  if (activePanel) {
+    filterRows(activePanel);
+  }
 }
 
 function applyAll() {
