@@ -12,7 +12,7 @@ function initQuoteTabs(controller) {
     if (!notebook) {
         return;
     }
-    const tabs = notebook.querySelectorAll(":scope > ul.nav-tabs > li");
+    const tabs = notebook.querySelectorAll("ul.nav-tabs > li");
     tabs.forEach((li, index) => {
         li.classList.add("ccn-tab-angle");
         const a = li.querySelector("a");
