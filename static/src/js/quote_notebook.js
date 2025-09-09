@@ -5,7 +5,7 @@ import { FormController } from "@web/views/form/form_controller";
 import { _t } from "@web/core/l10n/translation";
 
 function panelCode(pane) {
-    const name = pane.getAttribute("name") || "";
+    const name = pane.getAttribute("name") || pane.dataset.name || "";
     const m = name.match(/^page_(.+)$/);
     return m ? m[1] : null;
 }
