@@ -34,6 +34,14 @@
 
 .ccn-tab-angle.ccn-status-ack::after {
     border-left-color: #f1c40f;
+
+.ccn-tab-empty > a {
+    background-color: hsl(0, 92%, 60%) !important;
+}
+
+.ccn-tab-empty.ccn-tab-angle::after {
+    border-left-color: #c68484;
+
 }
 
 .ccn-tab-angle.ccn-status-filled::after {
