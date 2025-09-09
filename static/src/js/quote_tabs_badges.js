@@ -85,15 +85,17 @@ function scheduleApply() {
 function installObserver() {
   if (window.__ccnTabsObserver) return; // evita doble instalación
   const root = document.body;
+  if (!root) return; // DOM aún no listo
+
   const obs = new MutationObserver(scheduleApply);
   obs.observe(root, { childList: true, subtree: true });
   window.__ccnTabsObserver = obs;
 
   // Reaplicar al click en tabs o cambios de campos dentro del form scopeado
-  document.body.addEventListener("click", (ev) => {
+  root.addEventListener("click", (ev) => {
     if (ev.target.closest(".o_form_view.ccn-quote .nav-link")) scheduleApply();
   });
-  document.body.addEventListener("change", (ev) => {
+  root.addEventListener("change", (ev) => {
     if (ev.target.closest(".o_form_view.ccn-quote")) scheduleApply();
   });
 
@@ -108,6 +110,10 @@ window.__ccnTabsDebug = {
 };
 
 // Arranque inmediato cuando el script carga
-(async function bootstrap() {
-  installObserver();
+(function bootstrap() {
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", installObserver, { once: true });
+  } else {
+    installObserver();
+  }
 })();
