@@ -9,8 +9,8 @@ form.ccn-quote .o_notebook .nav-tabs .nav-link {
   position: relative;
   margin-right: 10px;
   padding-right: 2.25rem;
-  color: #1f2d3d;
-  background: #ed378f; /* base (se sobreescribe por estados) */
+  color: #1f2d3d !important;
+  background: #ed378f !important; /* base (se sobreescribe por estados) */
   border: 1px solid #d9e1ea;
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
 }
