@@ -4,14 +4,14 @@ import { registry } from "@web/core/registry";
 
 /*
   Tabs de colores SOLO en Service Quote.
-  - Auto-scope: si el <form> no tiene .ccn-quote, se la añade al vuelo.
+  - Auto-scope: si el formulario <form> no tiene .ccn-quote, se la añade al vuelo.
   - Detección automática de páginas (no requiere lista fija).
   - Pone clases de estado en <li> y en <a.nav-link>.
 */
 
 function ensureScopeClass() {
-  // Marca como .ccn-quote cualquier form que tenga señales de Service Quote
-  document.querySelectorAll(".o_form_view:not(.ccn-quote)").forEach((form) => {
+  // Marca como .ccn-quote cualquier formulario que tenga señales de Service Quote
+  document.querySelectorAll(".o_form_view form:not(.ccn-quote)").forEach((form) => {
     const resModel =
       form.getAttribute("data-res-model") ||
       (form.dataset ? form.dataset.resModel || form.dataset.model : null);
@@ -128,7 +128,7 @@ function applyInForm(form) {
 
 function applyAll() {
   ensureScopeClass();
-  document.querySelectorAll(".o_form_view.ccn-quote").forEach(applyInForm);
+  document.querySelectorAll("form.ccn-quote").forEach(applyInForm);
 }
 
 // Debounce
