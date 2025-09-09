@@ -29,11 +29,11 @@
 
 // Status colours for each step and matching arrow colour
 .ccn-tab-empty > a {
-    background-color: #ffdddd !important;
+    background-color: hsl(0, 92%, 60%) !important;
 }
 
 .ccn-tab-empty.ccn-tab-angle::after {
-    border-left-color: #ffdddd;
+    border-left-color: #c68484;
 }
 
 .ccn-tab-skip > a {
