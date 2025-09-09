@@ -25,7 +25,6 @@
         'data/ccn_rubros.xml',
         'views/site_views.xml',
         'views/cleanup_disable_legacy_views.xml',
-        "views/assets_force.xml",
     ],
     "assets": {
         "web.assets_backend": [
