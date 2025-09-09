@@ -1,0 +1,11 @@
+<odoo>
+  <data>
+    <template id="assets_backend_inherit" inherit_id="web.assets_backend" name="CCN SQ forced assets">
+      <xpath expr="." position="inside">
+        <script type="module" src="/ccn_service_quote/static/src/js/ping.js"/>
+        <script type="module" src="/ccn_service_quote/static/src/js/quote_tabs_badges.js"/>
+        <link rel="stylesheet" href="/ccn_service_quote/static/src/scss/quote_tabs.scss"/>
+      </xpath>
+    </template>
+  </data>
+</odoo>
