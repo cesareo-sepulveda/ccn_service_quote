@@ -44,28 +44,6 @@ function rowRubroCode(row) {
   return code;
 }
 
-function filterRows(panelEl) {
-  const code = panelCode(panelEl);
-  if (!code) return;
-  panelEl
-    .querySelectorAll(".o_list_view tbody tr.o_data_row")
-    .forEach((row) => {
-      const rowCode = rowRubroCode(row);
-      row.style.display = rowCode === code ? "" : "none";
-    });
-}
-
-function countRows(panelEl) {
-  const code = panelCode(panelEl);
-  if (!code) return 0;
-  return Array.from(
-    panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row")
-  ).filter((row) => {
-    const rowCode = rowRubroCode(row);
-    return rowCode === code;
-  }).length;
-}
-
 function readAck(panelEl) {
   // dataset.cnnAck="1" indica "No Aplica" marcado
   if (panelEl.dataset.ccnAck !== undefined) {
@@ -91,16 +69,28 @@ function linkForPanel(form, panelEl) {
 
 function applyInForm(form) {
   const panels = Array.from(form.querySelectorAll(".o_notebook .o_notebook_page"));
+  const activePanel = panels.find((p) => p.querySelector(".o_list_view"));
+  const counts = {};
+
+  if (activePanel) {
+    // Contar líneas por rubro y mostrar solo las del panel activo
+    const activeCode = panelCode(activePanel);
+    activePanel
+      .querySelectorAll(".o_list_view tbody tr.o_data_row")
+      .forEach((row) => {
+        const rowCode = rowRubroCode(row);
+        counts[rowCode] = (counts[rowCode] || 0) + 1;
+        row.style.display = rowCode === activeCode ? "" : "none";
+      });
+  }
+
   panels.forEach((panel) => {
     const link = linkForPanel(form, panel);
     if (!link) return;
     const li = link.closest("li");
     const targets = li ? [link, li] : [link];
-
-    // Show only the lines belonging to this rubro in its panel
-    filterRows(panel);
-
-    const count = countRows(panel);
+    const code = panelCode(panel);
+    const count = code ? counts[code] || 0 : 0;
     const ack = readAck(panel);
 
     targets.forEach((el) =>
