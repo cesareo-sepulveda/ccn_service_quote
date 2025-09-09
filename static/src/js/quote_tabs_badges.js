@@ -12,9 +12,18 @@ import { registry } from "@web/core/registry";
 function ensureScopeClass() {
   // Marca como .ccn-quote cualquier form que tenga señales de Service Quote
   document.querySelectorAll(".o_form_view:not(.ccn-quote)").forEach((form) => {
-    const hasQuotePages = form.querySelector('.o_notebook .o_notebook_page[name^="page_"]');
-    const hasCurrentSite = form.querySelector('.o_field_widget[name="current_site_id"], [name="current_site_id"]');
-    if (hasQuotePages || hasCurrentSite) form.classList.add("ccn-quote");
+    const resModel =
+      form.getAttribute("data-res-model") ||
+      (form.dataset ? form.dataset.resModel || form.dataset.model : null);
+    const hasQuotePages = form.querySelector(
+      '.o_notebook .o_notebook_page[name^="page_"]'
+    );
+    const hasCurrentSite = form.querySelector(
+      '.o_field_widget[name="current_site_id"], [name="current_site_id"]'
+    );
+    if (resModel === "ccn.service.quote" || hasQuotePages || hasCurrentSite) {
+      form.classList.add("ccn-quote");
+    }
   });
 }
 
