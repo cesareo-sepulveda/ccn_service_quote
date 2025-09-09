@@ -12,15 +12,25 @@ export function initQuoteTabs(controller) {
     if (!notebook) {
         return;
     }
-    const tabs = notebook.querySelectorAll("ul.nav-tabs > li");
-    tabs.forEach((li, index) => {
-        li.classList.add("ccn-tab-angle");
-        const a = li.querySelector("a");
-        if (!a) {
+    const tabs = notebook.querySelectorAll(".nav-tabs > *");
+    tabs.forEach((tab, index) => {
+        tab.classList.add("ccn-tab-angle");
+        const link = tab.classList.contains("nav-link")
+            ? tab
+            : tab.querySelector(".nav-link");
+        if (!link) {
             return;
         }
-        const targets = [li, a];
-        const pane = notebook.querySelector(a.getAttribute("href"));
+        const targets = tab === link ? [link] : [tab, link];
+        let targetSelector =
+            link.getAttribute("href") ||
+            link.getAttribute("data-bs-target") ||
+            (link.getAttribute("aria-controls")
+                ? `#${link.getAttribute("aria-controls")}`
+                : null);
+        const pane = targetSelector
+            ? notebook.querySelector(targetSelector)
+            : null;
         if (!pane || pane.querySelector(".ccn-skip")) {
             return;
         }
@@ -40,7 +50,7 @@ export function initQuoteTabs(controller) {
         } else {
             targets.forEach((el) => el.classList.add("ccn-status-filled"));
         }
-        li.addEventListener(
+        tab.addEventListener(
             "click",
             (ev) => {
                 const prev = Array.from(tabs).slice(0, index);
