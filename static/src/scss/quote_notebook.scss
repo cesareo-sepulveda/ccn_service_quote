@@ -15,6 +15,9 @@
     padding-right: 1.5rem;
 }
 
+// The arrow uses a border trick; explicitly mark the colour as important so
+// status-specific rules can reliably override the default grey even when other
+// themes define their own border styles.
 .ccn-tab-angle::after {
     content: "";
     position: absolute;
@@ -24,18 +27,20 @@
     height: 0;
     border-top: 15px solid transparent;
     border-bottom: 15px solid transparent;
-    border-left: 15px solid #ddd;
+    // Default arrow colour (overridden by status-specific classes below)
+    border-left: 15px solid #ddd !important;
 }
 
 // Status colours for each step and matching arrow colour
+// Ensure the arrow colour matches the tab background for each status.
 .ccn-tab-angle.ccn-status-empty::after {
-    border-left-color: #e74c3c;
+    border-left-color: #e74c3c !important;
 }
 
 .ccn-tab-angle.ccn-status-ack::after {
-    border-left-color: #f1c40f;
+    border-left-color: #f1c40f !important;
 }
 
 .ccn-tab-angle.ccn-status-filled::after {
-    border-left-color: #2ecc71;
+    border-left-color: #2ecc71 !important;
 }
