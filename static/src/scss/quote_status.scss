@@ -1,0 +1,15 @@
+/* Generic status background classes for CCN */
+.ccn-status-empty {
+  background-color: #e74c3c !important;
+  color: #fff !important;
+}
+
+.ccn-status-ack {
+  background-color: #f1c40f !important;
+  color: #4a3d00 !important;
+}
+
+.ccn-status-filled {
+  background-color: #2ecc71 !important;
+  color: #fff !important;
+}
