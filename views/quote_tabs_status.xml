@@ -5,27 +5,23 @@
       <field name="model">ccn.service.quote</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_quote_form_1351"/>
       <field name="arch" type="xml">
-
-        <!-- Checkbox de reconocimiento por rubro -->
-        <xpath expr="//page[@name='page_mano_obra']/field[@name='line_ids']" position="after">
-          <group>
-            <field name="ack_mano_obra_empty" widget="boolean_toggle"
-                   string="No aplica este rubro (reconozco no cargar datos)"/>
-          </group>
-        </xpath>
-        <xpath expr="//page[@name='page_uniforme']/field[@name='line_ids']" position="after">
-          <group>
-            <field name="ack_uniforme_empty" widget="boolean_toggle"
-                   string="No aplica este rubro (reconozco no cargar datos)"/>
-          </group>
-        </xpath>
-
-        <!-- Contadores invisibles (para que JS tenga los valores) -->
+        <!-- Campos invisibles para estados por rubro -->
         <xpath expr="//sheet/group" position="inside">
-          <field name="mano_obra_count" invisible="1"/>
-          <field name="uniforme_count" invisible="1"/>
+          <field name="rubro_state_mano_obra" invisible="1"/>
+          <field name="rubro_state_uniforme" invisible="1"/>
+          <field name="rubro_state_epp" invisible="1"/>
+          <field name="rubro_state_epp_alturas" invisible="1"/>
+          <field name="rubro_state_equipo_especial_limpieza" invisible="1"/>
+          <field name="rubro_state_comunicacion_computo" invisible="1"/>
+          <field name="rubro_state_herramienta_menor_jardineria" invisible="1"/>
+          <field name="rubro_state_material_limpieza" invisible="1"/>
+          <field name="rubro_state_perfil_medico" invisible="1"/>
+          <field name="rubro_state_maquinaria_limpieza" invisible="1"/>
+          <field name="rubro_state_maquinaria_jardineria" invisible="1"/>
+          <field name="rubro_state_fertilizantes_tierra_lama" invisible="1"/>
+          <field name="rubro_state_consumibles_jardineria" invisible="1"/>
+          <field name="rubro_state_capacitacion" invisible="1"/>
         </xpath>
-
       </field>
     </record>
   </data>

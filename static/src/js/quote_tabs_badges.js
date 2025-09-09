@@ -40,7 +40,9 @@ function filterRows(panelEl) {
     .querySelectorAll(".o_list_view tbody tr.o_data_row")
     .forEach((row) => {
       const cell = row.querySelector('td[data-name="rubro_code"]');
-      const rowCode = cell ? cell.textContent.trim() : "";
+      const rowCode = cell
+        ? (cell.dataset.value || cell.textContent.trim())
+        : "";
       row.style.display = rowCode === code ? "" : "none";
     });
 }
@@ -62,7 +64,11 @@ function countRows(panelEl) {
 }
 
 function readAck(panelEl) {
-  // cualquier checkbox *_empty dentro de la página
+  // dataset.cnnAck="1" indica "No Aplica" marcado
+  if (panelEl.dataset.ccnAck !== undefined) {
+    return panelEl.dataset.ccnAck === "1" || panelEl.dataset.ccnAck === "true";
+  }
+  // fallback: cualquier checkbox *_empty dentro de la página
   const el = panelEl.querySelector(
     '.o_field_widget input[type="checkbox"][name$="_empty"], input[type="checkbox"][name$="_empty"]'
   );
