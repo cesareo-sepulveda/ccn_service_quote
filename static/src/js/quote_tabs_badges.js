@@ -28,7 +28,7 @@ function ensureScopeClass() {
 }
 
 function panelCode(panelEl) {
-  const name = panelEl.getAttribute("name") || "";
+  const name = panelEl.getAttribute("name") || panelEl.dataset.name || "";
   const m = name.match(/^page_(.+)$/);
   return m ? m[1] : null;
 }
@@ -42,7 +42,7 @@ function filterRows(panelEl) {
       const cell = row.querySelector('td[data-name="rubro_code"]');
       const rowCode = cell
         ? (cell.dataset.value || cell.textContent.trim())
-        : "";
+        : row.dataset.rubroCode || "";
       row.style.display = rowCode === code ? "" : "none";
     });
 }
@@ -54,7 +54,9 @@ function countRows(panelEl) {
     panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row")
   ).filter((row) => {
     const cell = row.querySelector('td[data-name="rubro_code"]');
-    const rowCode = cell ? (cell.dataset.value || cell.textContent.trim()) : "";
+    const rowCode = cell
+      ? (cell.dataset.value || cell.textContent.trim())
+      : row.dataset.rubroCode || "";
     return rowCode === code;
   }).length;
 }
