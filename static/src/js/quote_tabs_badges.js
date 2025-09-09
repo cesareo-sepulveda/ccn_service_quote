@@ -90,6 +90,9 @@ function applyInForm(form) {
     const li = link.closest("li");
     const targets = li ? [link, li] : [link];
 
+    // Show only the lines belonging to this rubro in its panel
+    filterRows(panel);
+
     const count = countRows(panel);
     const ack = readAck(panel);
 
@@ -100,11 +103,6 @@ function applyInForm(form) {
     else if (ack) targets.forEach((el) => el.classList.add("ccn-status-ack"));
     else targets.forEach((el) => el.classList.add("ccn-status-empty"));
   });
-
-  const activePanel = form.querySelector(".o_notebook .o_notebook_page.active");
-  if (activePanel) {
-    filterRows(activePanel);
-  }
 }
 
 function applyAll() {
