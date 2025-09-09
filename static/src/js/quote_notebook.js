@@ -29,13 +29,13 @@ export function initQuoteTabs(controller) {
         btn.textContent = _t("No Aplica");
         pane.prepend(btn);
         btn.addEventListener("click", () => {
-            li.classList.remove("ccn-tab-empty");
-            li.classList.add("ccn-tab-skip");
+            li.classList.remove("ccn-status-empty");
+            li.classList.add("ccn-status-ack");
         });
         if (!pane.querySelector("table tbody tr")) {
-            li.classList.add("ccn-tab-empty");
+            li.classList.add("ccn-status-empty");
         } else {
-            li.classList.add("ccn-tab-complete");
+            li.classList.add("ccn-status-filled");
         }
         li.addEventListener(
             "click",
@@ -43,8 +43,8 @@ export function initQuoteTabs(controller) {
                 const prev = Array.from(tabs).slice(0, index);
                 const ok = prev.every(
                     (p) =>
-                        p.classList.contains("ccn-tab-complete") ||
-                        p.classList.contains("ccn-tab-skip")
+                        p.classList.contains("ccn-status-filled") ||
+                        p.classList.contains("ccn-status-ack")
                 );
                 if (!ok) {
                     ev.preventDefault();
@@ -60,8 +60,8 @@ export function initQuoteTabs(controller) {
         );
         const observer = new MutationObserver(() => {
             if (pane.querySelector("table tbody tr")) {
-                li.classList.remove("ccn-tab-empty");
-                li.classList.add("ccn-tab-complete");
+                li.classList.remove("ccn-status-empty", "ccn-status-ack");
+                li.classList.add("ccn-status-filled");
             }
         });
         observer.observe(pane, { childList: true, subtree: true });
