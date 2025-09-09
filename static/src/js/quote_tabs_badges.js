@@ -29,10 +29,15 @@ function applyTabStatuses() {
         return;
       }
       const target = link.getAttribute("data-bs-target") || link.getAttribute("href");
-      if (!target) {
+      if (!target || target === "#") {
         return;
       }
-      const panel = notebook.querySelector(target);
+      let panel;
+      try {
+        panel = notebook.querySelector(target);
+      } catch (err) {
+        return;
+      }
       if (!panel) {
         return;
       }
