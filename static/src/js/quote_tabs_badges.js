@@ -1,26 +1,10 @@
 /** @odoo-module **/
 import { registry } from "@web/core/registry";
 
-const PAGES = [
-  "page_mano_obra",
-  "page_uniforme",
-  "page_epp",
-  "page_epp_alturas",
-  "page_equipo_especial_limpieza",
-  "page_comunicacion_computo",
-  "page_herr_menor_jardineria",
-  "page_material_limpieza",
-  "page_perfil_medico",
-  "page_maquinaria_limpieza",
-  "page_maquinaria_jardineria",
-  "page_fertilizantes_tierra_lama",
-  "page_consumibles_jardineria",
-  "page_capacitacion",
-];
-
 // Si tienes checkboxes de "ack" por rubro, usa el name field: ack_<page>_empty
-function readAckForPage(panelEl, pageName) {
-  const ackField = `ack_${pageName.replace("page_", "")}_empty`;
+function readAckForPage(panelEl) {
+  const panelName = panelEl.getAttribute("name") || "";
+  const ackField = `ack_${panelName.replace("page_", "")}_empty`;
   const el = panelEl.querySelector(
     `.o_field_widget[name="${ackField}"] input[type="checkbox"], [name="${ackField}"] input[type="checkbox"]`
   );
@@ -33,29 +17,37 @@ function countRows(panelEl) {
   return rows.length || 0;
 }
 
-function linkForPanel(form, panelEl) {
-  const id = panelEl.getAttribute("id");
-  if (!id) return null;
-  return form.querySelector(`.o_notebook .nav-link[data-bs-target="#${id}"], .o_notebook .nav-link[href="#${id}"]`);
-}
-
 function applyTabStatuses() {
   document.querySelectorAll(".o_form_view.ccn-quote").forEach((form) => {
-    PAGES.forEach((pageName) => {
-      const panel = form.querySelector(`.o_notebook .o_notebook_page[name="${pageName}"]`);
-      if (!panel) return;
-      const link = linkForPanel(form, panel);
-      if (!link) return;
-      const tab = link.closest("li");
-      if (!tab) return;
+    const notebook = form.querySelector(".o_notebook");
+    if (!notebook) {
+      return;
+    }
+    notebook.querySelectorAll(":scope > ul.nav-tabs > li").forEach((tab) => {
+      const link = tab.querySelector(".nav-link");
+      if (!link) {
+        return;
+      }
+      const target = link.getAttribute("data-bs-target") || link.getAttribute("href");
+      if (!target) {
+        return;
+      }
+      const panel = notebook.querySelector(target);
+      if (!panel) {
+        return;
+      }
 
       const count = countRows(panel);
-      const ack = readAckForPage(panel, pageName);
+      const ack = readAckForPage(panel);
 
       tab.classList.remove("ccn-tab-empty", "ccn-tab-skip", "ccn-tab-complete");
-      if (count > 0)      tab.classList.add("ccn-tab-complete");
-      else if (ack)       tab.classList.add("ccn-tab-skip");
-      else                tab.classList.add("ccn-tab-empty");
+      if (count > 0) {
+        tab.classList.add("ccn-tab-complete");
+      } else if (ack) {
+        tab.classList.add("ccn-tab-skip");
+      } else {
+        tab.classList.add("ccn-tab-empty");
+      }
     });
   });
 }
