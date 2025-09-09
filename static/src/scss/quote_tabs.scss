@@ -1,4 +1,9 @@
 /* SOLO en Service Quote (form con clase ccn-quote) */
+form.ccn-quote .o_notebook {
+  /* en algunos temas el contenedor oculta el chevrón */
+  overflow: visible !important;
+}
+
 form.ccn-quote .o_notebook .nav-tabs {
   /* por si el chevrón se corta en algunos temas */
   overflow: visible !important;
