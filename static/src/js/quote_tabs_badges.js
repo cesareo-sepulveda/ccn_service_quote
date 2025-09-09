@@ -59,14 +59,24 @@ function applyTabStatusesIn(form) {
     if (!panel) return;
     const link = linkForPanel(form, panel);
     if (!link) return;
+    const li = link.closest("li");
+    const targets = li ? [link, li] : [link];
 
     const count = countRows(panel);
     const ack   = readAckForPage(panel, pageName);
 
-    link.classList.remove("ccn-status-empty","ccn-status-ack","ccn-status-filled");
-    if (count > 0)       link.classList.add("ccn-status-filled");
-    else if (ack)        link.classList.add("ccn-status-ack");
-    else                 link.classList.add("ccn-status-empty");
+    targets.forEach((el) =>
+      el.classList.remove(
+        "ccn-status-empty",
+        "ccn-status-ack",
+        "ccn-status-filled"
+      )
+    );
+    if (count > 0)
+      targets.forEach((el) => el.classList.add("ccn-status-filled"));
+    else if (ack)
+      targets.forEach((el) => el.classList.add("ccn-status-ack"));
+    else targets.forEach((el) => el.classList.add("ccn-status-empty"));
   });
 }
 
