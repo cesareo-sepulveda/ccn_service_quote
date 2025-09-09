@@ -67,6 +67,78 @@ class ServiceQuote(models.Model):
     # Líneas (todas las de la cotización)
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
+    # Líneas separadas por rubro para edición en pestañas
+    line_mano_obra_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Mano de Obra',
+        domain=[('rubro_code', '=', 'mano_obra')],
+    )
+    line_uniforme_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Uniforme',
+        domain=[('rubro_code', '=', 'uniforme')],
+    )
+    line_epp_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas EPP',
+        domain=[('rubro_code', '=', 'epp')],
+    )
+    line_epp_alturas_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas EPP Alturas',
+        domain=[('rubro_code', '=', 'epp_alturas')],
+    )
+    line_equipo_especial_limpieza_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Equipo Especial de Limpieza',
+        domain=[('rubro_code', '=', 'equipo_especial_limpieza')],
+    )
+    line_comunicacion_computo_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Comunicación y Cómputo',
+        domain=[('rubro_code', '=', 'comunicacion_computo')],
+    )
+    line_herramienta_menor_jardineria_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Herr. Menor Jardinería',
+        domain=[('rubro_code', '=', 'herramienta_menor_jardineria')],
+    )
+    line_material_limpieza_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Material de Limpieza',
+        domain=[('rubro_code', '=', 'material_limpieza')],
+    )
+    line_perfil_medico_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Perfil Médico',
+        domain=[('rubro_code', '=', 'perfil_medico')],
+    )
+    line_maquinaria_limpieza_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Maquinaria Limpieza',
+        domain=[('rubro_code', '=', 'maquinaria_limpieza')],
+    )
+    line_maquinaria_jardineria_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Maquinaria Jardinería',
+        domain=[('rubro_code', '=', 'maquinaria_jardineria')],
+    )
+    line_fertilizantes_tierra_lama_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Fertilizantes Tierra Lama',
+        domain=[('rubro_code', '=', 'fertilizantes_tierra_lama')],
+    )
+    line_consumibles_jardineria_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Consumibles Jardinería',
+        domain=[('rubro_code', '=', 'consumibles_jardineria')],
+    )
+    line_capacitacion_ids = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        string='Líneas Capacitacion',
+        domain=[('rubro_code', '=', 'capacitacion')],
+    )
+
     # --- Reconocimiento del usuario de que NO cargará datos en ese rubro ---
     ack_mano_obra_empty = fields.Boolean(string="No aplica Mano de Obra")
     ack_uniforme_empty  = fields.Boolean(string="No aplica Uniforme")
