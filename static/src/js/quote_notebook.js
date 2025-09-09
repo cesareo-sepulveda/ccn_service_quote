@@ -16,6 +16,9 @@ function initQuoteTabs(controller) {
     tabs.forEach((li, index) => {
         li.classList.add("ccn-tab-angle");
         const a = li.querySelector("a");
+        if (!a) {
+            return;
+        }
         const pane = notebook.querySelector(a.getAttribute("href"));
         if (!pane || pane.querySelector(".ccn-skip")) {
             return;
