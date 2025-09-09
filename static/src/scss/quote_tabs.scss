@@ -15,19 +15,19 @@
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
 }
 
-.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-tab-empty .nav-link {
+.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-status-empty .nav-link {
   background: #e74c3c !important;
   color: #fff !important;
   border-color: #c0392b !important;
 }
 
-.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-tab-skip .nav-link {
+.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-status-ack .nav-link {
   background: #f1c40f !important;
   color: #4a3d00 !important;
   border-color: #d4ac0d !important;
 }
 
-.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-tab-complete .nav-link {
+.o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-status-filled .nav-link {
   background: #2ecc71 !important;
   color: #fff !important;
   border-color: #27ae60 !important;

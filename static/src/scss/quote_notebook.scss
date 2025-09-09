@@ -28,26 +28,14 @@
 }
 
 // Status colours for each step and matching arrow colour
-.ccn-tab-empty > a {
-    background-color: #ffdddd !important;
+.ccn-tab-angle.ccn-status-empty::after {
+    border-left-color: #e74c3c;
 }
 
-.ccn-tab-empty.ccn-tab-angle::after {
-    border-left-color: #ffdddd;
+.ccn-tab-angle.ccn-status-ack::after {
+    border-left-color: #f1c40f;
 }
 
-.ccn-tab-skip > a {
-    background-color: #fff4c2 !important;
-}
-
-.ccn-tab-skip.ccn-tab-angle::after {
-    border-left-color: #fff4c2;
-}
-
-.ccn-tab-complete > a {
-    background-color: #d4f9d4 !important;
-}
-
-.ccn-tab-complete.ccn-tab-angle::after {
-    border-left-color: #d4f9d4;
+.ccn-tab-angle.ccn-status-filled::after {
+    border-left-color: #2ecc71;
 }
