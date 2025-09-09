@@ -70,8 +70,7 @@ let t;
 function scheduleApply() { clearTimeout(t); t = setTimeout(applyAll, 60); }
 
 // Servicio webclient — asegura ejecución al iniciar el cliente
-const service = {
-  name: "ccn_quote_tabs_service",
+export const ccnQuoteTabsService = {
   start() {
     const root = document.body;
     if (!root) return;
@@ -87,4 +86,4 @@ const service = {
     window.__ccnTabsDebug = { applyAll, installed: () => true };
   },
 };
-registry.category("services").add("ccn_quote_tabs_service", service);
+registry.category("services").add("ccn_quote_tabs_service", ccnQuoteTabsService);

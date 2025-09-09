@@ -4,7 +4,7 @@ import { patch } from "@web/core/utils/patch";
 import { FormController } from "@web/views/form/form_controller";
 import { _t } from "@web/core/l10n/translation";
 
-function initQuoteTabs(controller) {
+export function initQuoteTabs(controller) {
     if (!controller.model || controller.model.name !== "ccn.service.quote") {
         return;
     }
