@@ -2,11 +2,11 @@
 {
     "name": "CCN Service Quote",
     "summary": "Wizard para cotizar servicios CCN",
-    "version": "18.0.9.2.2",
+    "version": "18.0.9.2.3",
     "author": "Witann Technologies",
     "license": "LGPL-3",
     "category": "Sales/Sales",
-    "depends": ["base","product","sale","account"],
+    "depends": ["base", "web", "product", "sale", "account"],
     "data": [
         "data/ccn_quote_attach_xmlid.xml",
         "views/ccn_quote_form_scope.xml",

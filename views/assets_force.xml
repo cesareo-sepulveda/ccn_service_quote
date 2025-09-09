@@ -1,10 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data>
-    <template id="assets_backend_inherit" inherit_id="web.assets_backend" name="CCN SQ forced assets">
+    <!-- Herencia correcta de QWeb assets -->
+    <template id="assets_backend_inherit"
+              inherit_id="web.assets_backend"
+              name="CCN SQ forced assets">
       <xpath expr="." position="inside">
+        <!-- JS mínimo para saber si el bundle está cargando -->
         <script type="module" src="/ccn_service_quote/static/src/js/ping.js"/>
+        <!-- Tu script que pinta tabs -->
         <script type="module" src="/ccn_service_quote/static/src/js/quote_tabs_badges.js"/>
-        <link rel="stylesheet" href="/ccn_service_quote/static/src/scss/quote_tabs.scss"/>
+        <!-- SCSS: declara el tipo para compilarlo -->
+        <link rel="stylesheet" type="text/scss" href="/ccn_service_quote/static/src/scss/quote_tabs.scss"/>
       </xpath>
     </template>
   </data>
