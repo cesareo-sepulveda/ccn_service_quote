@@ -23,6 +23,17 @@
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
 }
 
+/* Asegurarse de que el chevrón conserve su color de fondo */
+.o_form_view.ccn-quote .o_notebook .nav-tabs li {
+  position: relative;
+}
+
+@for $i from 1 through 20 {
+  .o_form_view.ccn-quote .o_notebook .nav-tabs li:nth-child(#{$i}) {
+    z-index: #{21 - $i};
+  }
+}
+
 /* hover */
 .o_form_view.ccn-quote .o_notebook .nav-tabs li .nav-link:hover,
 .o_form_view.ccn-quote .o_notebook .nav-tabs .nav-link:hover {
