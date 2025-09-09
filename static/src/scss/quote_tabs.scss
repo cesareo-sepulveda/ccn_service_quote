@@ -12,7 +12,7 @@
 .o_form_view.ccn-quote .o_notebook .nav-tabs li:not(:first-child) .nav-link {
   margin-left: -16px;
   padding-left: 2.25rem;
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
 }
 
 .o_form_view.ccn-quote .o_notebook .nav-tabs li.ccn-tab-empty .nav-link {
