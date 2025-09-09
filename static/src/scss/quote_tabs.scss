@@ -20,12 +20,39 @@ form.ccn-quote .o_notebook .nav-tabs .nav-link {
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%);
 }
 
+/* chevrón visual en cada tab */
+form.ccn-quote .o_notebook .nav-tabs li .nav-link::after,
+form.ccn-quote .o_notebook .nav-tabs .nav-link::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-50%) rotate(-45deg);
+}
+
 /* encadenamiento visual (chevrón continuo) */
 form.ccn-quote .o_notebook .nav-tabs li:not(:first-child) .nav-link,
 form.ccn-quote .o_notebook .nav-tabs .nav-link + .nav-link {
   margin-left: -16px;
   padding-left: 2.25rem;
   clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%);
+}
+
+form.ccn-quote .o_notebook .nav-tabs li:not(:first-child) .nav-link::before,
+form.ccn-quote .o_notebook .nav-tabs .nav-link + .nav-link::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 6px;
+  width: 6px;
+  height: 6px;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: translateY(-50%) rotate(135deg);
 }
 
 /* ESTADOS — cubre clase en <li> y/o en <a> */
