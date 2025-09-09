@@ -6,11 +6,11 @@
               inherit_id="web.assets_backend"
               name="CCN SQ forced assets">
       <xpath expr="." position="inside">
-        <!-- JS mínimo para saber si el bundle está cargando -->
+        <!-- JS mínimo para verificar carga -->
         <script type="module" src="/ccn_service_quote/static/src/js/ping.js"/>
-        <!-- Tu script que pinta tabs -->
+        <!-- Tu script de tabs -->
         <script type="module" src="/ccn_service_quote/static/src/js/quote_tabs_badges.js"/>
-        <!-- SCSS: declara el tipo para compilarlo -->
+        <!-- SCSS (declarar como SCSS para que compile) -->
         <link rel="stylesheet" type="text/scss" href="/ccn_service_quote/static/src/scss/quote_tabs.scss"/>
       </xpath>
     </template>
