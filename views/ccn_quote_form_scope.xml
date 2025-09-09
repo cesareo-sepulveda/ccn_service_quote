@@ -5,7 +5,7 @@
       <field name="model">ccn.service.quote</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_quote_form_1351"/>
       <field name="arch" type="xml">
-        <xpath expr="//div[contains(@class,'o_form_view')]" position="attributes">
+        <xpath expr="//form" position="attributes">
           <attribute name="class" add="ccn-quote" separator=" "/>
         </xpath>
       </field>
