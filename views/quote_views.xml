@@ -41,9 +41,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','mano_obra')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Uniforme" name="page_uniforme"
@@ -61,9 +60,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','uniforme')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="EPP" name="page_epp"
@@ -81,9 +79,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','epp')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="EPP Alturas" name="page_epp_alturas"
@@ -101,9 +98,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','epp_alturas')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Equipo Especial de Limpieza" name="page_equipo_especial_limpieza"
@@ -121,9 +117,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','equipo_especial_limpieza')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Comunicación y Cómputo" name="page_comunicacion_computo"
@@ -141,9 +136,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','comunicacion_computo')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
@@ -161,9 +155,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','herramienta_menor_jardineria')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Material de Limpieza" name="page_material_limpieza"
@@ -181,9 +174,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','material_limpieza')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Perfil Médico" name="page_perfil_medico"
@@ -201,9 +193,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','perfil_medico')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Maquinaria de Limpieza" name="page_maquinaria_limpieza"
@@ -221,9 +212,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','maquinaria_limpieza')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Maquinaria de Jardinería" name="page_maquinaria_jardineria"
@@ -241,9 +231,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','maquinaria_jardineria')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Fertilizantes y Tierra Lama" name="page_fertilizantes_tierra_lama"
@@ -261,9 +250,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','fertilizantes_tierra_lama')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Consumibles de Jardinería" name="page_consumibles_jardineria"
@@ -281,9 +269,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','consumibles_jardineria')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
               <page string="Capacitación" name="page_capacitacion"
@@ -301,9 +288,8 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('type','=', current_type),
-                         ('service_type','=', current_service_type),
-                         ('rubro_code','=','capacitacion')
-                       ]"/>
+                           ('service_type','=', current_service_type)
+                         ]"/>
               </page>
 
             </notebook>

@@ -125,6 +125,9 @@ export const ccnQuoteTabsService = {
     // Reaplicar al navegar entre tabs o cambiar campos
     root.addEventListener("click",  (ev) => { if (ev.target.closest(".o_form_view .nav-link")) scheduleApply(); });
     root.addEventListener("change", (ev) => { if (ev.target.closest(".o_form_view")) scheduleApply(); });
+    root.addEventListener("shown.bs.tab", (ev) => {
+      if (ev.target.closest(".o_form_view .nav-link")) scheduleApply();
+    });
     // Primera pasada
     scheduleApply();
     // Exponer helper para debug
