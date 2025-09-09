@@ -8,7 +8,7 @@
       <field name="arch" type="xml">
         <list editable="bottom" string="Líneas del rubro">
           <field name="rubro_id" invisible="1" column_invisible="1"/>
-          <field name="rubro_code" invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
 
           <!-- Producto/Servicio del rubro (filtro por rubro del template) -->
           <field name="product_id" required="1"

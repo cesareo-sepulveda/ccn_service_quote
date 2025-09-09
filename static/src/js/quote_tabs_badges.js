@@ -129,8 +129,12 @@ export const ccnQuoteTabsService = {
     // Observer de todo el webclient
     const obs = new MutationObserver(scheduleApply);
     obs.observe(root, { childList: true, subtree: true });
-    // Reaplicar al navegar entre tabs o cambiar campos
-    root.addEventListener("click",  (ev) => { if (ev.target.closest(".o_form_view .nav-link")) scheduleApply(); });
+    // Reaplicar al navegar entre tabs, marcar "No Aplica" o cambiar campos
+    root.addEventListener("click",  (ev) => {
+      if (ev.target.closest(".o_form_view .nav-link") || ev.target.closest(".o_form_view .ccn-skip")) {
+        scheduleApply();
+      }
+    });
     root.addEventListener("change", (ev) => { if (ev.target.closest(".o_form_view")) scheduleApply(); });
     root.addEventListener("shown.bs.tab", (ev) => {
       if (ev.target.closest(".o_form_view .nav-link")) scheduleApply();
