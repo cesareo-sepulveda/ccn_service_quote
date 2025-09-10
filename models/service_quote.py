@@ -23,7 +23,7 @@ class ServiceQuote(models.Model):
         [
             ('by_rubro', 'Acumulado por rubro'),
             ('total_only', 'Acumulado General'),
-            ('itemized', 'Itemizado'),
+            ('itemized', 'Resumen'),
         ],
         string='Modo de presentación',
         default='itemized',
