@@ -13,7 +13,7 @@ declare the helper methods.  The fields ``quote_id``, ``rubro_id`` and
 longer duplicated here.
 """
 
-from odoo import api, models
+from odoo import api, models, fields
 
 
 class CcnServiceQuoteLine(models.Model):
@@ -23,7 +23,7 @@ class CcnServiceQuoteLine(models.Model):
     site_id   = fields.Many2one('ccn.service.quote.site', index=True)
     rubro_id  = fields.Many2one('ccn.service.rubro', index=True)
     product_id= fields.Many2one('product.product', index=True)
-    type      = fields.Selection([...], index=True)  # añade index=True en el Selection
+    #type      = fields.Selection([...], index=True)  # añade index=True en el Selection
     
     @api.model
     def default_get(self, fields_list):
