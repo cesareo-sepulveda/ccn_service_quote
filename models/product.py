@@ -6,9 +6,9 @@ class ProductTemplate(models.Model):
 
     # Oculta “placeholders” en el selector del quote
     ccn_exclude_from_quote = fields.Boolean(
-        string="Excluir de CCN Quote",
+        string="Excluir del Cotizador",
         default=False,
-        help="Si está activo, este producto no aparecerá en el selector de cotización CCN."
+        help="Si está activo, este producto no aparecerá en el selector del cotizador."
     )
 
     # Relación con Rubros para filtrar productos por rubro en las líneas del quote
@@ -17,5 +17,5 @@ class ProductTemplate(models.Model):
         "ccn_rubro_product_rel",
         "product_tmpl_id",
         "rubro_id",
-        string="Rubros CCN"
+        string="Rubros Cotizador"
     )
