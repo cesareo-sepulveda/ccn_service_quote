@@ -2,7 +2,7 @@
 <odoo>
   <data>
     <!-- Menú raíz SIN acción -->
-    <menuitem id="ccn_root_menu" name="CCN Service Quote" sequence="20"/>
+    <menuitem id="ccn_root_menu" name="Cotizador Especial CCN" sequence="20"/>
     <!-- Acción válida (la que corresponde a 478 si la tienes creada desde XML) -->
     <record id="ccn_action_quotes" model="ir.actions.act_window">
         <field name="name">Cotizaciones de Servicio</field>

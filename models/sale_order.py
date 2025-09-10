@@ -8,7 +8,7 @@ class SaleOrder(models.Model):
     _inherit = "sale.order"
 
     def action_ccn_add_service_quote(self):
-        """Abrir selector de CCN Service Quote, filtrando por cliente y corrigiendo context."""
+        """Abrir selector de Cotizador Especial CCN, filtrando por cliente y corrigiendo context."""
         self.ensure_one()
 
         # Lee la acción del wizard/selector

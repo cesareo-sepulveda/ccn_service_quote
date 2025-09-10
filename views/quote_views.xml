@@ -7,7 +7,7 @@
       <field name="model">ccn.service.quote</field>
       <field name="type">form</field>
       <field name="arch" type="xml">
-        <form string="CCN Service Quote">
+        <form string="Cotizador Especial CCN">
           <sheet>
 
             <!-- Cabecera -->
