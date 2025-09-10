@@ -19,7 +19,7 @@
       <field name="name">ccn.rubro.form</field>
       <field name="model">ccn.service.rubro</field>
       <field name="arch" type="xml">
-        <form string="Rubro CCN">
+        <form string="Rubro Cotizador">
           <sheet>
             <group>
               <field name="name"/>

@@ -20,7 +20,7 @@ RUBRO_CODES = [
 
 class CCNServiceRubro(models.Model):
     _name = "ccn.service.rubro"
-    _description = "Rubro CCN"
+    _description = "Rubro Cotizador"
     _order = "sequence, name"
 
     name = fields.Char(required=True)
