@@ -19,6 +19,12 @@ from odoo import api, models
 class CcnServiceQuoteLine(models.Model):
     _inherit = 'ccn.service.quote.line'
 
+    quote_id  = fields.Many2one('ccn.service.quote', index=True)          # ya suele venir indexado, lo explicitamos
+    site_id   = fields.Many2one('ccn.service.quote.site', index=True)
+    rubro_id  = fields.Many2one('ccn.service.rubro', index=True)
+    product_id= fields.Many2one('product.product', index=True)
+    type      = fields.Selection([...], index=True)  # añade index=True en el Selection
+    
     @api.model
     def default_get(self, fields_list):
         vals = super().default_get(fields_list)
