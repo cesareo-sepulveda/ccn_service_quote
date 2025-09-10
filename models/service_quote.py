@@ -53,7 +53,7 @@ class ServiceQuote(models.Model):
             ('almacenaje', 'Almacenaje'),
             ('fletes', 'Fletes'),
         ],
-        string='Tipo de Servicio actual',
+        string='Tipo de Servicio/Vista',
     )
     current_type = fields.Selection(
         [
@@ -170,7 +170,7 @@ class ServiceQuote(models.Model):
 
     @api.onchange('current_service_type')
     def _onchange_current_service_type(self):
-        """Ajusta automáticamente el tipo servicio/material según el tipo de servicio."""
+        """Ajusta automáticamente el tipo servicio/material según el tipo de servicio o vista."""
         for quote in self:
             if quote.current_service_type == 'materiales':
                 quote.current_type = 'material'
@@ -211,7 +211,7 @@ class ServiceQuoteLine(models.Model):
         ('servicios_especiales', 'Servicios Especiales'),
         ('almacenaje', 'Almacenaje'),
         ('fletes', 'Fletes'),
-    ], string='Tipo de Servicio')
+    ], string='Tipo de Servicio/Vista')
     type = fields.Selection([
         ('servicio', 'Servicio'),
         ('material', 'Material'),
