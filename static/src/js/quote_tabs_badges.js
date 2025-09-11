@@ -22,6 +22,29 @@ function ensureScopeClass() {
   });
 }
 
+function linkCode(link) {
+  // Prefer explicit name="page_CODE"
+  const nameAttr = link.getAttribute("name") || link.dataset.name || "";
+  let m = nameAttr.match(/^page_(.+)$/);
+  if (m) return m[1];
+  // Fallback to target id (aria-controls / data-bs-target / href)
+  const target = (
+    link.getAttribute("aria-controls") ||
+    link.getAttribute("data-bs-target") ||
+    link.getAttribute("data-target") ||
+    link.getAttribute("href") ||
+    ""
+  ).replace(/^#/, "");
+  m = target.match(/^page_(.+)$/);
+  if (m) return m[1];
+  return null;
+}
+
+function readComputedState(form, code) {
+  const el = form.querySelector(`[name="rubro_state_${code}"]`);
+  return el ? (el.value || el.getAttribute("value") || "") : "";
+}
+
 function countRows(panelEl) {
   let rows = panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row");
   if (rows.length) return rows.length;
@@ -63,20 +86,29 @@ function linkForPanel(form, panelEl) {
 }
 
 function applyInForm(form) {
-  const panels = form.querySelectorAll(".o_notebook .o_notebook_page");
-  panels.forEach((panel) => {
-    const link = linkForPanel(form, panel);
-    if (!link) return;
+  // Iterate over nav links to color tabs even if panes are not yet mounted
+  const links = form.querySelectorAll(".o_notebook .nav-tabs .nav-link");
+  const activePane = form.querySelector(".o_notebook .tab-content .tab-pane.active");
+  links.forEach((link) => {
+    const code = linkCode(link);
+    if (!code) return;
     const li = link.closest("li");
     const targets = li ? [link, li] : [link];
 
-    const count = countRows(panel);
-    const ack   = readAck(panel);
-
+    // Remove previous state classes
     targets.forEach((el) => el.classList.remove("ccn-status-empty","ccn-status-ack","ccn-status-filled"));
-    if (count > 0)       targets.forEach((el) => el.classList.add("ccn-status-filled"));
-    else if (ack)        targets.forEach((el) => el.classList.add("ccn-status-ack"));
-    else                 targets.forEach((el) => el.classList.add("ccn-status-empty"));
+
+    // Prefer computed state from hidden fields; fallback to counting rows when available
+    let state = readComputedState(form, code);
+    if (!state && activePane) {
+      const count = countRows(activePane);
+      const ack = readAck(activePane);
+      state = count > 0 ? "ok" : ack ? "yellow" : "red";
+    }
+
+    if (state === "ok")      targets.forEach((el) => el.classList.add("ccn-status-filled"));
+    else if (state === "yellow") targets.forEach((el) => el.classList.add("ccn-status-ack"));
+    else                        targets.forEach((el) => el.classList.add("ccn-status-empty"));
   });
 }
 
