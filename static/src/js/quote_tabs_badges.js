@@ -5,12 +5,19 @@ import { registry } from "@web/core/registry";
 function log(...a) { (window.__ccnLog = window.__ccnLog || []).push(a); try { console.log("[CCN Tabs]", ...a); } catch(e){} }
 
 function ensureScopeClass() {
-  document.querySelectorAll(".o_form_view:not(.ccn-quote)").forEach((form) => {
-    const hasQuotePages  = form.querySelector('.o_notebook .o_notebook_page[name^="page_"]');
-    const hasCurrentSite = form.querySelector('.o_field_widget[name="current_site_id"], [name="current_site_id"]');
+  document.querySelectorAll(".o_form_view").forEach((wrapper) => {
+    const hasQuotePages  = wrapper.querySelector('.o_notebook .o_notebook_page[name^="page_"]');
+    const hasCurrentSite = wrapper.querySelector('.o_field_widget[name="current_site_id"], [name="current_site_id"]');
     if (hasQuotePages || hasCurrentSite) {
-      form.classList.add("ccn-quote");
-      log("scope class added to form");
+      if (!wrapper.classList.contains("ccn-quote")) {
+        wrapper.classList.add("ccn-quote");
+        log("scope class added to .o_form_view");
+      }
+      const innerForm = wrapper.querySelector("form");
+      if (innerForm && !innerForm.classList.contains("ccn-quote")) {
+        innerForm.classList.add("ccn-quote");
+        log("scope class added to <form>");
+      }
     }
   });
 }
@@ -76,7 +83,7 @@ function applyInForm(form) {
 function applyAll() {
   try {
     ensureScopeClass();
-    const forms = document.querySelectorAll(".o_form_view.ccn-quote");
+    const forms = document.querySelectorAll(".o_form_view.ccn-quote, form.ccn-quote");
     if (!forms.length) { log("no .ccn-quote forms found yet"); return; }
     forms.forEach(applyInForm);
     log("applyAll OK on", forms.length, "form(s)");
