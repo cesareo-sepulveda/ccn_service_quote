@@ -4,10 +4,13 @@ import { patch } from "@web/core/utils/patch";
 import { FormController } from "@web/views/form/form_controller";
 import { _t } from "@web/core/l10n/translation";
 
-function panelCode(pane) {
-    const name = pane.getAttribute("name") || pane.dataset.name || "";
-    const m = name.match(/^page_(.+)$/);
-    return m ? m[1] : null;
+function normalizeCode(code) {
+    switch (code) {
+        case "herr_menor_jardineria":
+            return "herramienta_menor_jardineria";
+        default:
+            return code;
+    }
 }
 
 export function initQuoteTabs(controller) {
@@ -18,40 +21,44 @@ export function initQuoteTabs(controller) {
     if (!notebook) {
         return;
     }
-    notebook.querySelectorAll(".o_notebook_page").forEach((pane) => {
-        if (pane.querySelector(".ccn-skip")) {
-            return;
-        }
-        const code = panelCode(pane);
-        if (!code) {
-            return;
-        }
-        // Estado inicial desde campos rubro_state_*
+    const links = notebook.querySelectorAll('.nav-tabs .nav-link[name^="page_"]');
+    links.forEach((a) => {
+        const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
+        if (!m) return;
+        const raw = m[1];
+        const code = normalizeCode(raw);
+        const cont = notebook.querySelector(`[name="line_${code}_ids"]`);
+        if (!cont) return; // pane aún no montado
+        const pane = cont.closest('.tab-pane') || notebook;
+        if (pane.querySelector('.ccn-skip')) return;
+
+        // Estado inicial según campos rubro_state_*
         const stateField = `rubro_state_${code}`;
-        const state = controller.model.root.data[stateField];
-        if (state === "yellow") {
-            pane.dataset.ccnAck = "1";
+        const state = controller.model.root && controller.model.root.data ? controller.model.root.data[stateField] : null;
+        if (state === 'yellow') {
+            pane.dataset.ccnAck = '1';
         }
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.className = "btn btn-secondary ccn-skip";
-        btn.textContent = pane.dataset.ccnAck === "1" ? _t("Quitar No Aplica") : _t("No Aplica");
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-secondary ccn-skip';
+        btn.textContent = pane.dataset.ccnAck === '1' ? _t('Quitar No Aplica') : _t('No Aplica');
         pane.prepend(btn);
-        btn.addEventListener("click", async () => {
-            const ack = pane.dataset.ccnAck === "1";
-            const method = ack ? "action_unmark_rubro_empty" : "action_mark_rubro_empty";
+        btn.addEventListener('click', async () => {
+            const ack = pane.dataset.ccnAck === '1';
+            const method = ack ? 'action_unmark_rubro_empty' : 'action_mark_rubro_empty';
             const orm = controller.model.orm || controller.orm;
             await orm.call(
-                "ccn.service.quote",
+                'ccn.service.quote',
                 method,
                 [[controller.model.root.data.id]],
                 { context: { rubro_code: code } }
             );
-            pane.dataset.ccnAck = ack ? "0" : "1";
-            btn.textContent = pane.dataset.ccnAck === "1" ? _t("Quitar No Aplica") : _t("No Aplica");
+            pane.dataset.ccnAck = ack ? '0' : '1';
+            btn.textContent = pane.dataset.ccnAck === '1' ? _t('Quitar No Aplica') : _t('No Aplica');
             const stateInput = controller.el.querySelector(`[name="rubro_state_${code}"]`);
             if (stateInput) {
-                stateInput.value = pane.dataset.ccnAck === "1" ? "yellow" : "red";
+                stateInput.setAttribute('value', pane.dataset.ccnAck === '1' ? 'yellow' : 'red');
+                stateInput.value = pane.dataset.ccnAck === '1' ? 'yellow' : 'red';
             }
             if (window.__ccnTabsDebug && window.__ccnTabsDebug.applyAll) {
                 window.__ccnTabsDebug.applyAll();

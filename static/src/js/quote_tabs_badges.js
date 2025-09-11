@@ -40,9 +40,98 @@ function linkCode(link) {
   return null;
 }
 
+function normalizeCode(code) {
+  switch (code) {
+    case "herr_menor_jardineria":
+      return "herramienta_menor_jardineria";
+    default:
+      return code;
+  }
+}
+
+function readStateSmart(form, code) {
+  const norm = normalizeCode(code);
+  const el = form.querySelector(`[name="rubro_state_${norm}"]`);
+  if (el) {
+    const direct = el.getAttribute("data-value") || (el.dataset && el.dataset.value) || el.value || el.getAttribute("value");
+    if (direct) return String(direct).toLowerCase();
+    const innerData = el.querySelector && el.querySelector("[data-value]");
+    if (innerData) return String(innerData.getAttribute("data-value") || "").toLowerCase();
+    const select = el.matches && el.matches("select") ? el : el.querySelector && el.querySelector("select");
+    if (select && select.value) return String(select.value).toLowerCase();
+    const input = el.matches && el.matches("input") ? el : el.querySelector && el.querySelector("input");
+    if (input && input.value) return String(input.value).toLowerCase();
+    const txt = (el.textContent || "").toLowerCase();
+    if (/(^|\s)ok(\s|$)/.test(txt)) return "ok";
+    if (txt.includes("amarillo")) return "yellow";
+    if (txt.includes("rojo")) return "red";
+  }
+  return "";
+}
+
+function applyInFormSmart(form) {
+  const links = form.querySelectorAll(".o_notebook .nav-tabs .nav-link");
+  links.forEach((link) => {
+    const raw = linkCode(link);
+    const code = normalizeCode(raw || "");
+    if (!code) return;
+    const li = link.closest("li");
+    const targets = li ? [link, li] : [link];
+
+    targets.forEach((el) => el.classList.remove("ccn-status-empty","ccn-status-ack","ccn-status-filled"));
+
+    let state = readStateSmart(form, code);
+    if (!state) {
+      const cont = form.querySelector(`.o_notebook .tab-content [name="line_${code}_ids"]`);
+      if (cont) {
+        const pane = cont.closest && cont.closest('.tab-pane');
+        const count = pane ? countRows(pane) : countRows(cont);
+        state = count > 0 ? "ok" : "red";
+      } else {
+        state = "red";
+      }
+    }
+
+    if (state === "ok")      targets.forEach((el) => el.classList.add("ccn-status-filled"));
+    else if (state === "yellow") targets.forEach((el) => el.classList.add("ccn-status-ack"));
+    else                        targets.forEach((el) => el.classList.add("ccn-status-empty"));
+  });
+}
+
 function readComputedState(form, code) {
   const el = form.querySelector(`[name="rubro_state_${code}"]`);
-  return el ? (el.value || el.getAttribute("value") || "") : "";
+  if (!el) return "";
+  // try multiple ways typical in Odoo widgets
+  const direct = el.getAttribute("data-value") || (el.dataset && el.dataset.value) || el.value || el.getAttribute("value");
+  if (direct) return normalizeState(direct);
+  const innerData = el.querySelector("[data-value]");
+  if (innerData) return normalizeState(innerData.getAttribute("data-value"));
+  const select = el.matches && el.matches("select") ? el : el.querySelector && el.querySelector("select");
+  if (select && select.value) return normalizeState(select.value);
+  const input = el.matches && el.matches("input") ? el : el.querySelector && el.querySelector("input");
+  if (input && input.value) return normalizeState(input.value);
+  const txt = (el.textContent || "").toLowerCase();
+  if (/(^|\s)ok(\s|$)/.test(txt)) return "ok";
+  if (txt.includes("amarillo")) return "yellow";
+  if (txt.includes("rojo")) return "red";
+  return "";
+}
+
+function normalizeState(v) {
+  const s = String(v).toLowerCase().trim();
+  if (s === "ok" || s === "green" || s === "verde") return "ok";
+  if (s.startsWith("yell") || s === "amarillo") return "yellow";
+  if (s === "red" || s === "rojo") return "red";
+  return s;
+}
+
+function countRowsForCode(form, code) {
+  const container = form.querySelector(`.o_notebook .tab-content .tab-pane [name="line_${code}_ids"]`);
+  if (!container) return 0;
+  let rows = container.querySelectorAll(".o_list_view tbody tr.o_data_row");
+  if (rows.length) return rows.length;
+  rows = container.querySelectorAll(".o_list_view tbody tr:not(.o_list_record_add)");
+  return rows.length || 0;
 }
 
 function countRows(panelEl) {
@@ -88,22 +177,22 @@ function linkForPanel(form, panelEl) {
 function applyInForm(form) {
   // Iterate over nav links to color tabs even if panes are not yet mounted
   const links = form.querySelectorAll(".o_notebook .nav-tabs .nav-link");
-  const activePane = form.querySelector(".o_notebook .tab-content .tab-pane.active");
   links.forEach((link) => {
     const code = linkCode(link);
     if (!code) return;
     const li = link.closest("li");
     const targets = li ? [link, li] : [link];
+    // Ensure class for chevron arrow styling
+    if (li) li.classList.add("ccn-tab-angle"); else link.classList.add("ccn-tab-angle");
 
     // Remove previous state classes
     targets.forEach((el) => el.classList.remove("ccn-status-empty","ccn-status-ack","ccn-status-filled"));
 
-    // Prefer computed state from hidden fields; fallback to counting rows when available
+    // Prefer computed state from hidden fields; fallback to counting rows for this code
     let state = readComputedState(form, code);
-    if (!state && activePane) {
-      const count = countRows(activePane);
-      const ack = readAck(activePane);
-      state = count > 0 ? "ok" : ack ? "yellow" : "red";
+    if (!state) {
+      const count = countRowsForCode(form, code);
+      state = count > 0 ? "ok" : "red";
     }
 
     if (state === "ok")      targets.forEach((el) => el.classList.add("ccn-status-filled"));
@@ -117,7 +206,7 @@ function applyAll() {
     ensureScopeClass();
     const forms = document.querySelectorAll(".o_form_view.ccn-quote, form.ccn-quote");
     if (!forms.length) { log("no .ccn-quote forms found yet"); return; }
-    forms.forEach(applyInForm);
+    forms.forEach(applyInFormSmart);
     log("applyAll OK on", forms.length, "form(s)");
   } catch (e) {
     log("applyAll ERROR", e);
