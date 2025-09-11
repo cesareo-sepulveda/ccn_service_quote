@@ -22,7 +22,9 @@ export function initQuoteTabs(controller) {
         return;
     }
     const links = notebook.querySelectorAll('.nav-tabs .nav-link[name^="page_"]');
-    // Publicar mapa de estados en múltiples nodos para facilitar lectura
+    // Publicar mapa de estados en múltiples nodos para facilitar lectura y para consumo
+    // del servicio de badges. El mapa resultante se serializa una vez y se expone en
+    // distintos nodos para que otros componentes puedan leerlo sin recalcularlo.
     const states = {};
     links.forEach((a) => {
         const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
@@ -41,18 +43,6 @@ export function initQuoteTabs(controller) {
         const innerForm = controller.el.querySelector && controller.el.querySelector('form');
         if (innerForm) innerForm.dataset.ccnStates = jsonStates;
     } catch(e) {}
-    // Publicar mapa de estados para consumo por el servicio de badges
-    const states = {};
-    links.forEach((a) => {
-        const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
-        if (!m) return;
-        const raw = m[1];
-        const code = normalizeCode(raw);
-        const field = `rubro_state_${code}`;
-        const val = controller.model.root && controller.model.root.data ? controller.model.root.data[field] : null;
-        if (val) states[code] = val;
-    });
-    try { controller.el.dataset.ccnStates = JSON.stringify(states); } catch(e) {}
     links.forEach((a) => {
         const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
         if (!m) return;
