@@ -30,11 +30,29 @@ function readAck(panelEl) {
 }
 
 function linkForPanel(form, panelEl) {
+  // Try by panel id first (Bootstrap tabs usually link via aria-controls or data-bs-target)
   const id = panelEl.getAttribute("id");
-  if (!id) return null;
-  return form.querySelector(
-    `.o_notebook .nav-link[data-bs-target="#${id}"], .o_notebook .nav-link[href="#${id}"]`
-  );
+  const name = panelEl.getAttribute("name") || panelEl.dataset.name || "";
+  const selectors = [];
+  if (id) {
+    selectors.push(
+      `.o_notebook .nav-link[aria-controls="${id}"]`,
+      `.o_notebook .nav-link[data-bs-target="#${id}"]`,
+      `.o_notebook .nav-link[data-target="#${id}"]`,
+      `.o_notebook .nav-link[href="#${id}"]`
+    );
+  }
+  if (name) {
+    // Fallback by name for cases where controls reference uses the pane name
+    selectors.push(
+      `.o_notebook .nav-link[aria-controls="${name}"]`,
+      `.o_notebook .nav-link[data-bs-target="#${name}"]`,
+      `.o_notebook .nav-link[data-target="#${name}"]`,
+      `.o_notebook .nav-link[href="#${name}"]`
+    );
+  }
+  if (!selectors.length) return null;
+  return form.querySelector(selectors.join(", "));
 }
 
 function applyInForm(form) {
