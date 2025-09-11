@@ -55,14 +55,10 @@ class CCNServiceQuote(models.Model):
 
     def _get_state_for(self, site, typ, rubro):
         self.ensure_one()
-        Line = self.env["ccn.service.quote.line"]
-        cnt = Line.search_count([
-            ("quote_id", "=", self.id),
-            ("site_id", "=", site.id),
-            ("type", "=", typ),
-            ("rubro_id", "=", rubro.id),
-        ])
-        if cnt > 0:
+        lines = self.line_ids.filtered(
+            lambda l: l.site_id.id == site.id and l.type == typ and l.rubro_id.id == rubro.id
+        )
+        if lines:
             return "ok"
         ack = self.ack_ids.filtered(
             lambda a: a.site_id.id == site.id and a.type == typ and a.rubro_id.id == rubro.id
