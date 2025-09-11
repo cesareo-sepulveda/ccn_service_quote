@@ -22,6 +22,18 @@ export function initQuoteTabs(controller) {
         return;
     }
     const links = notebook.querySelectorAll('.nav-tabs .nav-link[name^="page_"]');
+    // Publicar mapa de estados para consumo por el servicio de badges
+    const states = {};
+    links.forEach((a) => {
+        const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
+        if (!m) return;
+        const raw = m[1];
+        const code = normalizeCode(raw);
+        const field = `rubro_state_${code}`;
+        const val = controller.model.root && controller.model.root.data ? controller.model.root.data[field] : null;
+        if (val) states[code] = val;
+    });
+    try { controller.el.dataset.ccnStates = JSON.stringify(states); } catch(e) {}
     links.forEach((a) => {
         const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
         if (!m) return;
@@ -60,6 +72,12 @@ export function initQuoteTabs(controller) {
                 stateInput.setAttribute('value', pane.dataset.ccnAck === '1' ? 'yellow' : 'red');
                 stateInput.value = pane.dataset.ccnAck === '1' ? 'yellow' : 'red';
             }
+            // Refrescar dataset de estados
+            try {
+                const map = JSON.parse(controller.el.dataset.ccnStates || '{}');
+                map[code] = pane.dataset.ccnAck === '1' ? 'yellow' : 'red';
+                controller.el.dataset.ccnStates = JSON.stringify(map);
+            } catch(e) {}
             if (window.__ccnTabsDebug && window.__ccnTabsDebug.applyAll) {
                 window.__ccnTabsDebug.applyAll();
             }

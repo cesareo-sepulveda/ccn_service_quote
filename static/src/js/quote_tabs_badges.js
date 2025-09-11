@@ -49,7 +49,24 @@ function normalizeCode(code) {
   }
 }
 
+function getStatesMap(form) {
+  const wrapper = form.closest ? (form.closest('.o_form_view') || form) : form;
+  const raw = wrapper && wrapper.dataset ? wrapper.dataset.ccnStates : null;
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch (e) {
+    return null;
+  }
+}
+
 function readStateSmart(form, code) {
+  // First, try states provided by FormController (authoritative)
+  const states = getStatesMap(form);
+  if (states) {
+    const v = states[normalizeCode(code)];
+    if (v) return String(v).toLowerCase();
+  }
   const norm = normalizeCode(code);
   const el = form.querySelector(`[name="rubro_state_${norm}"]`);
   if (el) {
@@ -88,13 +105,14 @@ function applyInFormSmart(form) {
         const count = pane ? countRows(pane) : countRows(cont);
         state = count > 0 ? "ok" : "red";
       } else {
-        state = "red";
+        // Unknown; avoid forcing a wrong color
+        state = "";
       }
     }
 
-    if (state === "ok")      targets.forEach((el) => el.classList.add("ccn-status-filled"));
-    else if (state === "yellow") targets.forEach((el) => el.classList.add("ccn-status-ack"));
-    else                        targets.forEach((el) => el.classList.add("ccn-status-empty"));
+    if (state === "ok")           targets.forEach((el) => el.classList.add("ccn-status-filled"));
+    else if (state === "yellow")  targets.forEach((el) => el.classList.add("ccn-status-ack"));
+    else if (state === "red")     targets.forEach((el) => el.classList.add("ccn-status-empty"));
   });
 }
 

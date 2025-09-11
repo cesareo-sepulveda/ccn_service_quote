@@ -14,7 +14,9 @@
   border: 1px solid #d9e1ea !important;
   border-radius: 0 !important;
   display: block;
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+  z-index: 1;
+  /* Parallelogram with right chevron head; both sides slant to the right */
+  clip-path: polygon(12px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 12px 100%, 0 100%, 0 0);
 }
 
 /* continuidad del chevrón entre tabs */
@@ -22,12 +24,14 @@
 .ccn-quote .o_notebook .nav-tabs .nav-link + .nav-link {
   margin-left: -16px;
   padding-left: 2.25rem;
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+  clip-path: polygon(12px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 12px 100%, 0 100%, 0 0);
 }
 
 /* Asegurarse de que el chevrón conserve su color de fondo */
 .ccn-quote .o_notebook .nav-tabs li {
   position: relative;
+  background: transparent !important;
+  overflow: visible;
 }
 
 @for $i from 1 through 20 {
