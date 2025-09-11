@@ -22,6 +22,25 @@ export function initQuoteTabs(controller) {
         return;
     }
     const links = notebook.querySelectorAll('.nav-tabs .nav-link[name^="page_"]');
+    // Publicar mapa de estados en múltiples nodos para facilitar lectura
+    const states = {};
+    links.forEach((a) => {
+        const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
+        if (!m) return;
+        const raw = m[1];
+        const code = normalizeCode(raw);
+        const field = `rubro_state_${code}`;
+        const val = controller.model.root && controller.model.root.data ? controller.model.root.data[field] : null;
+        if (val) states[code] = val;
+    });
+    const jsonStates = JSON.stringify(states);
+    try {
+        controller.el.dataset.ccnStates = jsonStates;
+        const wrapper = controller.el.closest ? (controller.el.closest('.o_form_view') || controller.el) : controller.el;
+        if (wrapper) wrapper.dataset.ccnStates = jsonStates;
+        const innerForm = controller.el.querySelector && controller.el.querySelector('form');
+        if (innerForm) innerForm.dataset.ccnStates = jsonStates;
+    } catch(e) {}
     // Publicar mapa de estados para consumo por el servicio de badges
     const states = {};
     links.forEach((a) => {

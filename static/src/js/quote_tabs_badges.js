@@ -101,11 +101,10 @@ function applyInFormSmart(form) {
     if (!state) {
       const cont = form.querySelector(`.o_notebook .tab-content [name="line_${code}_ids"]`);
       if (cont) {
-        const pane = cont.closest && cont.closest('.tab-pane');
-        const count = pane ? countRows(pane) : countRows(cont);
+        const count = countRows(cont);
         state = count > 0 ? "ok" : "red";
       } else {
-        // Unknown; avoid forcing a wrong color
+        // Pane no montado aún; evitar forzar un color incorrecto
         state = "";
       }
     }
@@ -153,9 +152,8 @@ function countRowsForCode(form, code) {
 }
 
 function countRows(panelEl) {
-  let rows = panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row");
-  if (rows.length) return rows.length;
-  rows = panelEl.querySelectorAll(".o_list_view tbody tr:not(.o_list_record_add)");
+  // Cuenta solo filas de datos reales (tr.o_data_row)
+  const rows = panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row");
   return rows.length || 0;
 }
 
