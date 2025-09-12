@@ -1,43 +1,29 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
+import { rpc } from "@web/core/network/rpc";
+
+/* -------------------- Config -------------------- */
+const FIELDS = [
+  "rubro_state_mano_obra",
+  "rubro_state_uniforme",
+  "rubro_state_epp",
+  "rubro_state_epp_alturas",
+  "rubro_state_equipo_especial_limpieza",
+  "rubro_state_comunicacion_computo",
+  "rubro_state_herramienta_menor_jardineria",
+  "rubro_state_material_limpieza",
+  "rubro_state_perfil_medico",
+  "rubro_state_maquinaria_limpieza",
+  "rubro_state_maquinaria_jardineria",
+  "rubro_state_fertilizantes_tierra_lama",
+  "rubro_state_consumibles_jardineria",
+  "rubro_state_capacitacion",
+];
 
 /* -------------------- Helpers -------------------- */
-
 function normCode(code) {
   return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
-}
-
-/** Acepta números (0/1/2) y textos; devuelve: "ok" | "yellow" | "red" */
-function normState(raw) {
-  if (raw === null || raw === undefined) return "red";
-
-  // Si ya es número:
-  if (typeof raw === "number" && Number.isFinite(raw)) {
-    if (raw === 2) return "yellow";
-    if (raw === 1) return "ok";
-    return "red";
-  }
-
-  // Como string:
-  const s = String(raw).trim().toLowerCase();
-
-  // Mapeo exacto numérico en string
-  if (s === "2") return "yellow";
-  if (s === "1") return "ok";
-  if (s === "0") return "red";
-
-  // Sinónimos habituales
-  if (s === "ok" || s === "green" || s === "verde" || s === "true" || s === "si" || s === "sí") return "ok";
-  if (s.startsWith("yell") || s === "amarillo" || s === "ack" || s === "na" || s.includes("no aplica")) return "yellow";
-  if (s === "red" || s === "rojo" || s === "empty" || s === "false" || s === "" || s === "none" || s === "null") return "red";
-
-  // Por defecto
-  return "red";
-}
-
-function classFor(state) {
-  return state === "ok" ? "ccn-status-filled" : state === "yellow" ? "ccn-status-ack" : "ccn-status-empty";
 }
 
 function linkCode(a) {
@@ -45,7 +31,6 @@ function linkCode(a) {
   const nameAttr = a.getAttribute("name") || a.dataset.name || "";
   let m = nameAttr.match(/^page_(.+)$/);
   if (m) return m[1];
-
   // aria-controls / data-bs-target / href="#page_CODE"
   const tgt = (
     a.getAttribute("aria-controls") ||
@@ -58,41 +43,15 @@ function linkCode(a) {
   return m ? m[1] : null;
 }
 
-/** Lee el mapa de estados desde los <field name="rubro_state_*"> ocultos en el form */
-function readStatesFromHidden(form) {
-  // Intenta localizar el contenedor de fields ocultos que ya pusiste en tu XML
-  const box =
-    form.querySelector(".o_ccn_rubro_states") ||
-    form.querySelector('.d-none .o_ccn_rubro_states') ||
-    form.querySelector('[name="rubro_state_mano_obra"]')?.closest?.("div");
-  if (!box) return null;
+/** Mapea 0/1/2 (y strings) -> "red" | "ok" | "yellow" */
+function toState(raw) {
+  if (raw === 2 || raw === "2") return "yellow";
+  if (raw === 1 || raw === "1") return "ok";
+  return "red"; // 0, null, undefined, "", etc.
+}
 
-  const map = {};
-  box.querySelectorAll('[name^="rubro_state_"], [data-name^="rubro_state_"]').forEach((el) => {
-    const name = el.getAttribute("name") || el.getAttribute("data-name") || "";
-    const code = name.replace(/^rubro_state_/, "");
-    // Busca valor en data-value, value o texto (según widget)
-    const raw =
-      el.getAttribute("data-value") ??
-      el.dataset?.value ??
-      (el.value !== undefined ? el.value : null) ??
-      el.getAttribute("value") ??
-      el.textContent;
-
-    // Intenta castear a número si parece numérico
-    let val = raw;
-    if (raw !== null && raw !== undefined) {
-      const s = String(raw).trim();
-      if (/^-?\d+$/.test(s)) {
-        val = parseInt(s, 10);
-      }
-    }
-
-    const st = normState(val);
-    if (code) map[code] = st; // guardamos ya normalizado
-  });
-
-  return Object.keys(map).length ? map : null;
+function clsFor(state) {
+  return state === "ok" ? "ccn-status-filled" : state === "yellow" ? "ccn-status-ack" : "ccn-status-empty";
 }
 
 function clearTab(a, li) {
@@ -101,58 +60,102 @@ function clearTab(a, li) {
   if (li) li.classList.remove(...rm);
 }
 
-/* -------------------- Núcleo -------------------- */
+/** Intenta obtener el ID actual del registro de varias formas */
+function getRecordId() {
+  // 1) Odoo debug services (cuando existen)
+  try {
+    const rid = odoo?.__DEBUG__?.services?.action?.currentController?.model?.root?.data?.id;
+    if (Number.isFinite(rid)) return rid;
+  } catch {}
+  // 2) data-res-id en el DOM
+  try {
+    const el = document.querySelector(".o_form_view[data-res-id]");
+    const rid = el && parseInt(el.getAttribute("data-res-id"), 10);
+    if (Number.isFinite(rid)) return rid;
+  } catch {}
+  // 3) Hash/URL (#id= / #res_id= / #active_id=)
+  try {
+    const h = location.hash || "";
+    const m = h.match(/[?&#](?:id|res_id|active_id)=([0-9]+)/);
+    if (m) return parseInt(m[1], 10);
+  } catch {}
+  return null;
+}
 
-function applyInForm(form) {
+/* -------------------- Núcleo -------------------- */
+async function fetchStates(id) {
+  const res = await rpc("/web/dataset/call_kw/ccn.service.quote/read", {
+    model: "ccn.service.quote",
+    method: "read",
+    args: [[id], FIELDS],
+    kwargs: {},
+  });
+  const rec = Array.isArray(res) ? res[0] : null;
+  if (!rec) return null;
+
+  const map = {};
+  for (const f of FIELDS) {
+    const code = f.replace(/^rubro_state_/, "");
+    map[code] = toState(rec[f]);
+  }
+  return map;
+}
+
+function paintWithMap(form, map) {
   const notebook = form.querySelector(".o_notebook");
   if (!notebook) return;
 
   const links = notebook.querySelectorAll(".nav-tabs .nav-link");
-  if (!links.length) return;
-
-  const map = readStatesFromHidden(form);
-  if (!map) return;
-
   links.forEach((a) => {
     const li = a.closest("li");
     clearTab(a, li);
 
     const raw = linkCode(a);
     if (!raw) return;
-
     const code = normCode(raw);
+
     let st = map[code];
     if (!st && code === "herr_menor_jardineria") st = map["herramienta_menor_jardineria"];
-    // st ya viene normalizado por readStatesFromHidden; igual lo reforzamos:
-    st = normState(st);
+    if (!st) st = "red";
 
-    const cls = classFor(st);
+    const cls = clsFor(st);
     a.classList.add(cls);
     if (li) li.classList.add(cls);
   });
 }
 
-function applyAll() {
-  document.querySelectorAll(".o_form_view").forEach(applyInForm);
+async function applyAll() {
+  const form = document.querySelector(".o_form_view");
+  if (!form) return;
+
+  const id = getRecordId();
+  if (!id) return;
+
+  try {
+    const map = await fetchStates(id);
+    if (map) paintWithMap(form, map);
+  } catch (e) {
+    // silencioso pero visible en consola si estás en dev
+    // console.warn("[ccn tabs] no se pudieron obtener estados", e);
+  }
 }
 
 /* -------------------- Servicio -------------------- */
-
-let t0, t1;
+let t0, t1, t2;
 function schedule() {
-  clearTimeout(t0); clearTimeout(t1);
+  [t0, t1, t2].forEach((t) => t && clearTimeout(t));
   t0 = setTimeout(applyAll, 0);
-  t1 = setTimeout(applyAll, 120); // ganar a los toggles del tab
+  t1 = setTimeout(applyAll, 120);
+  t2 = setTimeout(applyAll, 400); // gana a toggles/animaciones
 }
 
 const service = {
-  name: "ccn_quote_tabs_service", // mismo nombre; reemplaza el previo
+  name: "ccn_quote_tabs_service", // mismo nombre → reemplaza el previo
   start() {
     const root = document.body;
     const mo = new MutationObserver(schedule);
     mo.observe(root, { childList: true, subtree: true });
 
-    // Eventos de tabs (Bootstrap) y clicks
     root.addEventListener("shown.bs.tab", schedule, true);
     root.addEventListener("hidden.bs.tab", schedule, true);
     root.addEventListener("click", (e) => {
