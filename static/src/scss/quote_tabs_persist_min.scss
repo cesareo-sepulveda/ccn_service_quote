@@ -1,0 +1,57 @@
+/* ==========================================================================
+   CCN – Persistencia de color en tabs INACTIVOS sin tocar geometría
+   Usa el atributo data-ccn-state que pone el JS.
+   Mantiene el look del ACTIVO tal cual.
+   ========================================================================== */
+
+:root {
+  --ccn-ok:    #16a34a; /* verde */
+  --ccn-warn:  #ca8a04; /* ámbar */
+  --ccn-empty: #dc2626; /* rojo */
+}
+
+/* --------- OK --------- */
+.o_notebook .nav-tabs .nav-link[data-ccn-state="ok"]:not(.active),
+.o_notebook .nav-tabs li[data-ccn-state="ok"]:not(.active) > .nav-link {
+  background: var(--ccn-ok) !important;
+  border-color: var(--ccn-ok) !important;
+  color: #fff !important;
+  background-image: none !important;
+}
+/* chevron */
+.o_notebook .nav-tabs .nav-link[data-ccn-state="ok"]:not(.active)::after,
+.o_notebook .nav-tabs li[data-ccn-state="ok"]:not(.active)::after,
+.o_notebook .nav-tabs li[data-ccn-state="ok"]:not(.active) > .nav-link::after {
+  border-left-color: var(--ccn-ok) !important;
+  background-color: var(--ccn-ok) !important;
+}
+
+/* --------- YELLOW --------- */
+.o_notebook .nav-tabs .nav-link[data-ccn-state="yellow"]:not(.active),
+.o_notebook .nav-tabs li[data-ccn-state="yellow"]:not(.active) > .nav-link {
+  background: var(--ccn-warn) !important;
+  border-color: var(--ccn-warn) !important;
+  color: #1f2937 !important; /* texto oscuro sobre ámbar */
+  background-image: none !important;
+}
+.o_notebook .nav-tabs .nav-link[data-ccn-state="yellow"]:not(.active)::after,
+.o_notebook .nav-tabs li[data-ccn-state="yellow"]:not(.active)::after,
+.o_notebook .nav-tabs li[data-ccn-state="yellow"]:not(.active) > .nav-link::after {
+  border-left-color: var(--ccn-warn) !important;
+  background-color: var(--ccn-warn) !important;
+}
+
+/* --------- RED --------- */
+.o_notebook .nav-tabs .nav-link[data-ccn-state="red"]:not(.active),
+.o_notebook .nav-tabs li[data-ccn-state="red"]:not(.active) > .nav-link {
+  background: var(--ccn-empty) !important;
+  border-color: var(--ccn-empty) !important;
+  color: #fff !important;
+  background-image: none !important;
+}
+.o_notebook .nav-tabs .nav-link[data-ccn-state="red"]:not(.active)::after,
+.o_notebook .nav-tabs li[data-ccn-state="red"]:not(.active)::after,
+.o_notebook .nav-tabs li[data-ccn-state="red"]:not(.active) > .nav-link::after {
+  border-left-color: var(--ccn-empty) !important;
+  background-color: var(--ccn-empty) !important;
+}
