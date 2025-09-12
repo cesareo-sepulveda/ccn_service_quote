@@ -1,6 +1,7 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
+import { rpc } from "@web/core/network/rpc";
 
 function log(...a) { (window.__ccnLog = window.__ccnLog || []).push(a); try { console.log("[CCN Tabs]", ...a); } catch(e){} }
 
@@ -60,24 +61,83 @@ function getStatesMap(form) {
   }
 }
 
+function getRecordIdFromHash() {
+  try {
+    const h = window.location.hash || "";
+    const q = h.includes("?") ? h.split("?")[1] : h.replace(/^#/, "");
+    const params = new URLSearchParams(q);
+    const id = parseInt(params.get("id"), 10);
+    return Number.isFinite(id) ? id : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+async function ensureStatesForForm(form) {
+  // Skip if already present
+  if (getStatesMap(form)) return;
+  if (form.__ccnStatesLoading) return;
+  // Try to read from DOM first
+  const states = {};
+  const sels = '[name^="rubro_state_"], [data-name^="rubro_state_"], .o_field_widget[name^="rubro_state_"], .o_field_widget[data-name^="rubro_state_"]';
+  const fields = Array.from(form.querySelectorAll(sels));
+  fields.forEach((el) => {
+    const name = el.getAttribute("name") || el.getAttribute("data-name") || "";
+    const code = name.replace(/^rubro_state_/, "");
+    const val = (el.getAttribute("data-value") || (el.dataset && el.dataset.value) || el.getAttribute("value") || (el.querySelector && (el.querySelector('[data-value]')?.getAttribute('data-value') || el.querySelector('select')?.value || el.querySelector('input')?.value)) || (el.textContent || "").trim() || "").toLowerCase();
+    if (code) states[code] = val;
+  });
+  if (Object.keys(states).length) {
+    try { (form.closest('.o_form_view') || form).dataset.ccnStates = JSON.stringify(states); } catch(e) {}
+    // Reaplicar ahora que ya tenemos estados del DOM
+    try { scheduleApply(); } catch(e) {}
+    return;
+  }
+  // Fallback: fetch via RPC from record id in URL
+  const id = getRecordIdFromHash();
+  if (!id) return;
+  const links = form.querySelectorAll('.o_notebook .nav-tabs .nav-link[name^="page_"]');
+  const codes = Array.from(links).map((a) => (a.getAttribute('name') || '').replace(/^page_/, ''));
+  const uniqCodes = Array.from(new Set(codes));
+  const stateFields = uniqCodes.map((c) => `rubro_state_${normalizeCode(c)}`);
+  form.__ccnStatesLoading = true;
+  try {
+    const res = await rpc('/web/dataset/call_kw/ccn.service.quote/get_rubro_states', {
+      model: 'ccn.service.quote', method: 'get_rubro_states', args: [[id]], kwargs: {},
+    });
+    if (res && typeof res === 'object') {
+      const s = {};
+      uniqCodes.forEach((c) => { const v = (res[c] || '').toLowerCase(); if (v) s[c] = v; });
+      try { (form.closest('.o_form_view') || form).dataset.ccnStates = JSON.stringify(s); } catch(e) {}
+      try { scheduleApply(); } catch(e) {}
+    }
+  } catch (e) {
+    log('RPC states fetch failed', e);
+  } finally {
+    form.__ccnStatesLoading = false;
+  }
+}
+
 function readStateSmart(form, code) {
   // First, try states provided by FormController (authoritative)
   const states = getStatesMap(form);
   if (states) {
     const v = states[normalizeCode(code)];
-    if (v) return String(v).toLowerCase();
+    if (v) return normalizeState(String(v));
   }
   const norm = normalizeCode(code);
-  const el = form.querySelector(`[name="rubro_state_${norm}"]`);
+  const el = form.querySelector(
+    `[name="rubro_state_${norm}"], [data-name="rubro_state_${norm}"], .o_field_widget[name="rubro_state_${norm}"], .o_field_widget[data-name="rubro_state_${norm}"]`
+  );
   if (el) {
     const direct = el.getAttribute("data-value") || (el.dataset && el.dataset.value) || el.value || el.getAttribute("value");
-    if (direct) return String(direct).toLowerCase();
+    if (direct) return normalizeState(String(direct));
     const innerData = el.querySelector && el.querySelector("[data-value]");
-    if (innerData) return String(innerData.getAttribute("data-value") || "").toLowerCase();
+    if (innerData) return normalizeState(String(innerData.getAttribute("data-value") || ""));
     const select = el.matches && el.matches("select") ? el : el.querySelector && el.querySelector("select");
-    if (select && select.value) return String(select.value).toLowerCase();
+    if (select && select.value) return normalizeState(String(select.value));
     const input = el.matches && el.matches("input") ? el : el.querySelector && el.querySelector("input");
-    if (input && input.value) return String(input.value).toLowerCase();
+    if (input && input.value) return normalizeState(String(input.value));
     const txt = (el.textContent || "").toLowerCase();
     if (/(^|\s)ok(\s|$)/.test(txt)) return "ok";
     if (txt.includes("amarillo")) return "yellow";
@@ -104,7 +164,8 @@ function applyInFormSmart(form) {
         const count = countRows(cont);
         state = count > 0 ? "ok" : "red";
       } else {
-        // Pane no montado aún; evitar forzar un color incorrecto
+        // Pane no montado; intenta cargar estados y no fuerces color en este tick
+        ensureStatesForForm(form);
         state = "";
       }
     }
@@ -222,6 +283,7 @@ function applyAll() {
     ensureScopeClass();
     const forms = document.querySelectorAll(".o_form_view.ccn-quote, form.ccn-quote");
     if (!forms.length) { log("no .ccn-quote forms found yet"); return; }
+    forms.forEach((f) => { ensureStatesForForm(f); });
     forms.forEach(applyInFormSmart);
     log("applyAll OK on", forms.length, "form(s)");
   } catch (e) {

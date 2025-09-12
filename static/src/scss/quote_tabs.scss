@@ -10,13 +10,13 @@
   margin-right: 10px;
   padding-right: 2.25rem;
   color: #1f2d3d !important;
-  background: #d2e7fe !important;
+  background: #eef2f7 !important;
   border: 1px solid #d9e1ea !important;
   border-radius: 0 !important;
   display: block;
   z-index: 1;
-  /* Chevrons en ambos lados apuntando a la derecha */
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+  /* Forma original que funcionó bien: punta derecha */
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%) !important;
 }
 
 /* continuidad del chevrón entre tabs */
@@ -24,7 +24,8 @@
 .ccn-quote .o_notebook .nav-tabs .nav-link + .nav-link {
   margin-left: -16px;
   padding-left: 2.25rem;
-  clip-path: polygon(16px 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 16px 100%, 0 50%);
+  /* Muesca izquierda que apunta a la derecha */
+  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%) !important;
 }
 
 /* Asegurarse de que el chevrón conserve su color de fondo */
@@ -35,9 +36,7 @@
 }
 
 @for $i from 1 through 20 {
-  .ccn-quote .o_notebook .nav-tabs li:nth-child(#{$i}) {
-    z-index: #{21 - $i};
-  }
+  .ccn-quote .o_notebook .nav-tabs li:nth-child(#{$i}) .nav-link { z-index: #{21 - $i}; }
 }
 
 /* hover */

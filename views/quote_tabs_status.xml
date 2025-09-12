@@ -5,22 +5,24 @@
       <field name="model">ccn.service.quote</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
       <field name="arch" type="xml">
-        <!-- Campos invisibles para estados por rubro -->
+        <!-- Publicar estados por rubro en el DOM (ocultos por CSS, no por invisibility) -->
         <xpath expr="//sheet/group" position="inside">
-          <field name="rubro_state_mano_obra" invisible="1"/>
-          <field name="rubro_state_uniforme" invisible="1"/>
-          <field name="rubro_state_epp" invisible="1"/>
-          <field name="rubro_state_epp_alturas" invisible="1"/>
-          <field name="rubro_state_equipo_especial_limpieza" invisible="1"/>
-          <field name="rubro_state_comunicacion_computo" invisible="1"/>
-          <field name="rubro_state_herramienta_menor_jardineria" invisible="1"/>
-          <field name="rubro_state_material_limpieza" invisible="1"/>
-          <field name="rubro_state_perfil_medico" invisible="1"/>
-          <field name="rubro_state_maquinaria_limpieza" invisible="1"/>
-          <field name="rubro_state_maquinaria_jardineria" invisible="1"/>
-          <field name="rubro_state_fertilizantes_tierra_lama" invisible="1"/>
-          <field name="rubro_state_consumibles_jardineria" invisible="1"/>
-          <field name="rubro_state_capacitacion" invisible="1"/>
+          <div class="d-none o_ccn_rubro_states">
+            <field name="rubro_state_mano_obra"/>
+            <field name="rubro_state_uniforme"/>
+            <field name="rubro_state_epp"/>
+            <field name="rubro_state_epp_alturas"/>
+            <field name="rubro_state_equipo_especial_limpieza"/>
+            <field name="rubro_state_comunicacion_computo"/>
+            <field name="rubro_state_herramienta_menor_jardineria"/>
+            <field name="rubro_state_material_limpieza"/>
+            <field name="rubro_state_perfil_medico"/>
+            <field name="rubro_state_maquinaria_limpieza"/>
+            <field name="rubro_state_maquinaria_jardineria"/>
+            <field name="rubro_state_fertilizantes_tierra_lama"/>
+            <field name="rubro_state_consumibles_jardineria"/>
+            <field name="rubro_state_capacitacion"/>
+          </div>
         </xpath>
       </field>
     </record>

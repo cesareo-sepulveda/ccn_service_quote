@@ -53,38 +53,51 @@ class CCNServiceQuote(models.Model):
     rubro_state_consumibles_jardineria = fields.Selection([("red","Rojo"),("yellow","Amarillo"),("ok","OK")], compute="_compute_rubro_states")
     rubro_state_capacitacion           = fields.Selection([("red","Rojo"),("yellow","Amarillo"),("ok","OK")], compute="_compute_rubro_states")
 
-    def _get_state_for(self, site, typ, rubro):
+    def _get_state_for(self, code):
         self.ensure_one()
         Line = self.env["ccn.service.quote.line"]
-        cnt = Line.search_count([
-            ("quote_id", "=", self.id),
-            ("site_id", "=", site.id),
-            ("type", "=", typ),
-            ("rubro_id", "=", rubro.id),
-        ])
+        # Reproducir el dominio de la vista: contar por rubro_code
+        domain = [("quote_id", "=", self.id), ("rubro_code", "=", code)]
+        # Alineamos los filtros con los usados en la vista (site, type, service_type)
+        if "current_site_id" in self._fields:
+            domain.append(("site_id", "=", self.current_site_id.id or False))
+        if "current_type" in self._fields and self.current_type:
+            domain.append(("type", "=", self.current_type))
+        if "current_service_type" in self._fields and self.current_service_type:
+            domain.append(("service_type", "=", self.current_service_type))
+        cnt = Line.search_count(domain)
         if cnt > 0:
             return "ok"
-        ack = self.ack_ids.filtered(
-            lambda a: a.site_id.id == site.id and a.type == typ and a.rubro_id.id == rubro.id
-        )
+        # ack: sólo aplica cuando hay sitio/tipo seleccionados (como en la UI)
+        ack = False
+        if self.current_site_id and self.current_type:
+            rubro = self.env.ref(f"ccn_service_quote.ccn_rubro_{code}", raise_if_not_found=False)
+            if rubro:
+                ack = self.ack_ids.filtered(
+                    lambda a: a.site_id.id == self.current_site_id.id and a.type == self.current_type and a.rubro_id.id == rubro.id
+                )
         return "yellow" if ack else "red"
 
-    @api.depends("line_ids", "current_site_id", "current_type", "ack_ids")
+    @api.depends(
+        "line_ids",
+        "line_ids.rubro_code",
+        "line_ids.site_id",
+        "line_ids.type",
+        "line_ids.service_type",
+        "current_site_id",
+        "current_type",
+        "current_service_type",
+        "ack_ids",
+        "ack_ids.site_id",
+        "ack_ids.type",
+        "ack_ids.rubro_id",
+    )
     def _compute_rubro_states(self):
         for q in self:
             vals = {}
-            site = q.current_site_id
-            typ = q.current_type
             for code in RUBRO_CODES:
                 field_name = f"rubro_state_{code}"
-                if not site or not typ:
-                    vals[field_name] = "red"
-                    continue
-                rubro = q.env.ref(f"ccn_service_quote.rubro_{code}", raise_if_not_found=False)
-                if not rubro:
-                    vals[field_name] = "red"
-                    continue
-                vals[field_name] = q._get_state_for(site, typ, rubro)
+                vals[field_name] = q._get_state_for(code)
             q.update(vals)
 
     # --------- Acciones desde botones en las pestañas ----------
@@ -98,13 +111,16 @@ class CCNServiceQuote(models.Model):
         ]
 
     def action_mark_rubro_empty(self):
+        # Ejecutar con contexto que omita la restricción mientras se marca
+        self = self.with_context(skip_ccn_red_constraint=True)
         self.ensure_one()
         code = self.env.context.get("rubro_code")
-        rubro = self.env.ref(f"ccn_service_quote.rubro_{code}")
+        rubro = self.env.ref(f"ccn_service_quote.ccn_rubro_{code}")
         if not self.current_site_id or not self.current_type:
             raise ValidationError(_("Selecciona primero Sitio y Tipo actuales."))
-        if not self.env["ccn.service.quote.ack"].search(self._ack_domain_ctx(rubro), limit=1):
-            self.env["ccn.service.quote.ack"].create({
+        Ack = self.env["ccn.service.quote.ack"].with_context(skip_ccn_red_constraint=True)
+        if not Ack.search(self._ack_domain_ctx(rubro), limit=1):
+            Ack.create({
                 "quote_id": self.id,
                 "site_id": self.current_site_id.id,
                 "type": self.current_type,
@@ -113,16 +129,22 @@ class CCNServiceQuote(models.Model):
         return True
 
     def action_unmark_rubro_empty(self):
+        # Ejecutar con contexto que omita la restricción mientras se desmarca
+        self = self.with_context(skip_ccn_red_constraint=True)
         self.ensure_one()
         code = self.env.context.get("rubro_code")
-        rubro = self.env.ref(f"ccn_service_quote.rubro_{code}")
-        recs = self.env["ccn.service.quote.ack"].search(self._ack_domain_ctx(rubro))
+        rubro = self.env.ref(f"ccn_service_quote.ccn_rubro_{code}")
+        Ack = self.env["ccn.service.quote.ack"].with_context(skip_ccn_red_constraint=True)
+        recs = Ack.search(self._ack_domain_ctx(rubro))
         recs.unlink()
         return True
 
     # --------- Restricción: no permitir guardar con algún rubro rojo (sitio/tipo actual) ----------
     @api.constrains("line_ids", "ack_ids", "current_site_id", "current_type")
     def _constrains_no_red_in_current(self):
+        # Permite operaciones intermedias (p.ej., marcar "No Aplica") sin bloquear por esta validación
+        if self.env.context.get("skip_ccn_red_constraint"):
+            return
         for q in self:
             if not q.current_site_id or not q.current_type:
                 continue
@@ -133,3 +155,13 @@ class CCNServiceQuote(models.Model):
                         "Aún hay rubros en ROJO para el sitio/tipo actuales. "
                         "Completa líneas o marca explícitamente como 'Sin contenido'."
                     ))
+
+    # --------- API: estados por rubro (para JS) ----------
+    def get_rubro_states(self):
+        self.ensure_one()
+        # Aprovechamos los campos compute ya presentes en el record
+        res = {}
+        for code in RUBRO_CODES:
+            val = getattr(self, f"rubro_state_{code}", False)
+            res[code] = val or "red"
+        return res
