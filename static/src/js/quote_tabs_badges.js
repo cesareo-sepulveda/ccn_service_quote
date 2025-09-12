@@ -22,58 +22,49 @@ const FIELDS = [
 ];
 
 /* -------------------- Helpers -------------------- */
-function normCode(code) {
-  return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
-}
+const CODE_ALIAS = { "herr_menor_jardineria": "herramienta_menor_jardineria" };
+const toCode = (c) => CODE_ALIAS[c] || c;
 
-function linkCode(a) {
-  // name="page_CODE"
+function tabCode(a) {
   const nameAttr = a.getAttribute("name") || a.dataset.name || "";
   let m = nameAttr.match(/^page_(.+)$/);
   if (m) return m[1];
-  // aria-controls / data-bs-target / href="#page_CODE"
-  const tgt = (
-    a.getAttribute("aria-controls") ||
-    a.getAttribute("data-bs-target") ||
-    a.getAttribute("data-target") ||
-    a.getAttribute("href") ||
-    ""
-  ).replace(/^#/, "");
-  m = tgt.match(/^page_(.+)$/);
+  const t = (a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/, "");
+  m = t.match(/^page_(.+)$/);
   return m ? m[1] : null;
 }
 
-/** Mapea 0/1/2 (y strings) -> "red" | "ok" | "yellow" */
-function toState(raw) {
-  if (raw === 2 || raw === "2") return "yellow";
-  if (raw === 1 || raw === "1") return "ok";
-  return "red"; // 0, null, undefined, "", etc.
+/** 0/1/2 (o string) -> "red" | "ok" | "yellow" */
+function toState(v) {
+  if (v === 2 || v === "2") return "yellow";
+  if (v === 1 || v === "1") return "ok";
+  return "red";
 }
+const clsFor = (s) => (s === "ok" ? "ccn-status-filled" : s === "yellow" ? "ccn-status-ack" : "ccn-status-empty");
 
-function clsFor(state) {
-  return state === "ok" ? "ccn-status-filled" : state === "yellow" ? "ccn-status-ack" : "ccn-status-empty";
-}
-
-function clearTab(a, li) {
-  const rm = ["ccn-status-filled", "ccn-status-ack", "ccn-status-empty"];
-  a.classList.remove(...rm);
-  if (li) li.classList.remove(...rm);
-}
-
-/** Intenta obtener el ID actual del registro de varias formas */
+/* ---------- ID del registro, lo sacamos de donde sea ---------- */
 function getRecordId() {
-  // 1) Odoo debug services (cuando existen)
+  // 1) OWL debug services (si existen)
   try {
-    const rid = odoo?.__DEBUG__?.services?.action?.currentController?.model?.root?.data?.id;
+    const rid =
+      odoo?.__DEBUG__?.services?.action?.currentController?.props?.resId ??
+      odoo?.__DEBUG__?.services?.action?.currentController?.model?.root?.data?.id ??
+      odoo?.__DEBUG__?.services?.action?.currentController?.model?.root?.resId;
     if (Number.isFinite(rid)) return rid;
   } catch {}
-  // 2) data-res-id en el DOM
+  // 2) Atributo del DOM
   try {
-    const el = document.querySelector(".o_form_view[data-res-id]");
-    const rid = el && parseInt(el.getAttribute("data-res-id"), 10);
+    const el = document.querySelector('.o_form_view[data-res-model="ccn.service.quote"][data-res-id]');
+    const rid = el ? parseInt(el.getAttribute("data-res-id"), 10) : NaN;
     if (Number.isFinite(rid)) return rid;
   } catch {}
-  // 3) Hash/URL (#id= / #res_id= / #active_id=)
+  // 3) Dentro de widgets
+  try {
+    const any = document.querySelector('.o_form_view [data-res-id]');
+    const rid = any ? parseInt(any.getAttribute("data-res-id"), 10) : NaN;
+    if (Number.isFinite(rid)) return rid;
+  } catch {}
+  // 4) URL/hash
   try {
     const h = location.hash || "";
     const m = h.match(/[?&#](?:id|res_id|active_id)=([0-9]+)/);
@@ -82,14 +73,16 @@ function getRecordId() {
   return null;
 }
 
-/* -------------------- Núcleo -------------------- */
-async function fetchStates(id) {
-  const res = await rpc("/web/dataset/call_kw/ccn.service.quote/read", {
+/* ---------- RPC: lee estados confiables desde el servidor ---------- */
+async function fetchStates(resId) {
+  // Usa el endpoint genérico para máxima compatibilidad
+  const payload = {
     model: "ccn.service.quote",
     method: "read",
-    args: [[id], FIELDS],
-    kwargs: {},
-  });
+    args: [[resId]],
+    kwargs: { fields: FIELDS },
+  };
+  const res = await rpc("/web/dataset/call_kw", payload);
   const rec = Array.isArray(res) ? res[0] : null;
   if (!rec) return null;
 
@@ -101,21 +94,25 @@ async function fetchStates(id) {
   return map;
 }
 
-function paintWithMap(form, map) {
-  const notebook = form.querySelector(".o_notebook");
-  if (!notebook) return;
+/* ---------- Pintado ---------- */
+function clearTab(a, li) {
+  const rm = ["ccn-status-filled", "ccn-status-ack", "ccn-status-empty"];
+  a.classList.remove(...rm);
+  if (li) li.classList.remove(...rm);
+}
 
-  const links = notebook.querySelectorAll(".nav-tabs .nav-link");
+function paintWithMap(form, map) {
+  const links = form.querySelectorAll(".o_notebook .nav-tabs .nav-link");
   links.forEach((a) => {
     const li = a.closest("li");
     clearTab(a, li);
 
-    const raw = linkCode(a);
+    const raw = tabCode(a);
     if (!raw) return;
-    const code = normCode(raw);
+    const code = toCode(raw);
 
     let st = map[code];
-    if (!st && code === "herr_menor_jardineria") st = map["herramienta_menor_jardineria"];
+    if (!st && CODE_ALIAS[raw]) st = map[CODE_ALIAS[raw]];
     if (!st) st = "red";
 
     const cls = clsFor(st);
@@ -125,7 +122,7 @@ function paintWithMap(form, map) {
 }
 
 async function applyAll() {
-  const form = document.querySelector(".o_form_view");
+  const form = document.querySelector('.o_form_view[data-res-model="ccn.service.quote"]') || document.querySelector(".o_form_view");
   if (!form) return;
 
   const id = getRecordId();
@@ -135,22 +132,22 @@ async function applyAll() {
     const map = await fetchStates(id);
     if (map) paintWithMap(form, map);
   } catch (e) {
-    // silencioso pero visible en consola si estás en dev
-    // console.warn("[ccn tabs] no se pudieron obtener estados", e);
+    // Si algo falla, no rompemos la UI
+    // console.warn("[ccn tabs] error al cargar estados", e);
   }
 }
 
-/* -------------------- Servicio -------------------- */
+/* ---------- Servicio ---------- */
 let t0, t1, t2;
 function schedule() {
   [t0, t1, t2].forEach((t) => t && clearTimeout(t));
   t0 = setTimeout(applyAll, 0);
   t1 = setTimeout(applyAll, 120);
-  t2 = setTimeout(applyAll, 400); // gana a toggles/animaciones
+  t2 = setTimeout(applyAll, 400);
 }
 
 const service = {
-  name: "ccn_quote_tabs_service", // mismo nombre → reemplaza el previo
+  name: "ccn_quote_tabs_service", // mismo nombre => reemplaza
   start() {
     const root = document.body;
     const mo = new MutationObserver(schedule);
