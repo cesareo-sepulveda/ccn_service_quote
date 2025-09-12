@@ -2,7 +2,7 @@
 {
     "name": "Cotizador Especial CCN",
     "summary": "Wizard para cotizar servicios CCN",
-    "version": "18.0.9.3.40",
+    "version": "18.0.9.3.41",
     "author": "Witann Technologies",
     "license": "LGPL-3",
     "category": "Sales/Sales",
@@ -37,6 +37,8 @@
             "ccn_service_quote/static/src/scss/quote_tabs_color_persist.scss",
             "ccn_service_quote/static/src/js/quote_tabs_color_inline.js",
             "ccn_service_quote/static/src/scss/quote_tabs_color_inline.scss",
+            "ccn_service_quote/static/src/js/quote_tabs_color_map.js",
+            "ccn_service_quote/static/src/scss/quote_tabs_color_map.scss",
         ]
     },
     "installable": True,
