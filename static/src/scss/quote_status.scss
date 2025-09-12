@@ -1,15 +1,37 @@
-/* Generic status background classes for CCN */
-.ccn-status-empty {
-  background-color: #e74c3c !important;
-  color: #fff !important;
+/* ==========================================================================
+   CCN Service Quote – Estados (genéricos)
+   Aplica estilos base a clases de estado reutilizables en toda la UI.
+   ========================================================================== */
+
+:root {
+  --ccn-ok:    #16a34a; /* verde */
+  --ccn-warn:  #ca8a04; /* ámbar */
+  --ccn-empty: #dc2626; /* rojo */
+  --ccn-fg:    #0f172a; /* slate-900 para contrastes en fondos claros */
 }
 
-.ccn-status-ack {
-  background-color: #f1c40f !important;
-  color: #4a3d00 !important;
+/* Utilidades de color por estado (texto) */
+.ccn-status-filled { color: var(--ccn-ok); }
+.ccn-status-ack    { color: var(--ccn-warn); }
+.ccn-status-empty  { color: var(--ccn-empty); }
+
+/* Badges “píldora” por estado (p.ej. <span class="ccn-badge ccn-status-filled">OK</span>) */
+.ccn-badge {
+  display: inline-block;
+  padding: .15rem .5rem;
+  border-radius: 999px;
+  font-size: .75rem;
+  line-height: 1;
+  border: 1px solid currentColor;
+  background: color-mix(in oklab, currentColor 12%, white 88%);
 }
 
-.ccn-status-filled {
-  background-color: #2ecc71 !important;
-  color: #fff !important;
+/* Leyenda de estados (opcional) */
+.ccn-legend {
+  display: inline-flex; gap: .75rem; align-items: center; flex-wrap: wrap;
+  .item { display: inline-flex; align-items: center; gap: .375rem; }
+  .dot  { width: .55rem; height: .55rem; border-radius: 999px; display: inline-block; }
+  .ok   .dot { background: var(--ccn-ok); }
+  .ack  .dot { background: var(--ccn-warn); }
+  .empty .dot { background: var(--ccn-empty); }
 }
