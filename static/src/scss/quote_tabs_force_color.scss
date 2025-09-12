@@ -1,0 +1,33 @@
+/* ==========================================================================
+   CCN — Forzar color en tabs inactivos (sin cambiar geometría)
+   - Quita background-image que tapa el fondo
+   - Tiñe el chevron en <a>::after y/o <li>::after
+   ========================================================================== */
+
+/* Fondo/texto/borde del INACTIVO ya teñido por JS */
+.o_notebook .nav-tabs .nav-link[data-ccn-dyed]:not(.active) {
+  background-image: none !important;
+  background-color: var(--ccn-tab-bg) !important;
+  color: var(--ccn-tab-fg, #fff) !important;
+  border-color: var(--ccn-tab-bg) !important;
+}
+
+/* Si el tema pinta el fondo en el <li> */
+.o_notebook .nav-tabs li[data-ccn-dyed]:not(.active) {
+  background-image: none !important;
+  background-color: var(--ccn-tab-bg) !important;
+  border-color: var(--ccn-tab-bg) !important;
+}
+
+/* Chevron en <a>::after */
+.o_notebook .nav-tabs .nav-link[data-ccn-dyed]:not(.active)::after {
+  border-left-color: var(--ccn-tab-bg) !important;
+  background-color: var(--ccn-tab-bg) !important;
+}
+
+/* Chevron en <li>::after o dependiente del <li> */
+.o_notebook .nav-tabs li[data-ccn-dyed]:not(.active)::after,
+.o_notebook .nav-tabs li[data-ccn-dyed]:not(.active) > .nav-link::after {
+  border-left-color: var(--ccn-tab-bg) !important;
+  background-color: var(--ccn-tab-bg) !important;
+}
