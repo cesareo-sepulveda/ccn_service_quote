@@ -1,6 +1,38 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models, _
 
+# ------------------------------------------------------------
+# Constantes de rubros y mapeo a los One2many ya definidos
+# ------------------------------------------------------------
+RUBRO_CODES = [
+    'mano_obra', 'uniforme', 'epp', 'epp_alturas',
+    'equipo_especial_limpieza', 'comunicacion_computo',
+    'herramienta_menor_jardineria', 'material_limpieza',
+    'perfil_medico', 'maquinaria_limpieza', 'maquinaria_jardineria',
+    'fertilizantes_tierra_lama', 'consumibles_jardineria', 'capacitacion',
+]
+
+RUBRO_LINES = {
+    'mano_obra': 'line_mano_obra_ids',
+    'uniforme': 'line_uniforme_ids',
+    'epp': 'line_epp_ids',
+    'epp_alturas': 'line_epp_alturas_ids',
+    'equipo_especial_limpieza': 'line_equipo_especial_limpieza_ids',
+    'comunicacion_computo': 'line_comunicacion_computo_ids',
+    'herramienta_menor_jardineria': 'line_herramienta_menor_jardineria_ids',
+    'material_limpieza': 'line_material_limpieza_ids',
+    'perfil_medico': 'line_perfil_medico_ids',
+    'maquinaria_limpieza': 'line_maquinaria_limpieza_ids',
+    'maquinaria_jardineria': 'line_maquinaria_jardineria_ids',
+    'fertilizantes_tierra_lama': 'line_fertilizantes_tierra_lama_ids',
+    'consumibles_jardineria': 'line_consumibles_jardineria_ids',
+    'capacitacion': 'line_capacitacion_ids',
+}
+
+def _state_field(code): return f"rubro_state_{code}"
+def _ack_field(code):   return f"ack_{code}_empty"
+
+
 # ---------------------------------------------------------------------------
 # QUOTE (encabezado)
 # ---------------------------------------------------------------------------
@@ -15,6 +47,7 @@ class ServiceQuote(models.Model):
         required=True,
         default=lambda self: self.env.company.currency_id.id,
     )
+
     # Sitios
     site_ids = fields.One2many('ccn.service.quote.site', 'quote_id', string='Sitios')
 
@@ -140,25 +173,111 @@ class ServiceQuote(models.Model):
     )
 
     # --- Reconocimiento del usuario de que NO cargará datos en ese rubro ---
-    ack_mano_obra_empty = fields.Boolean(string="No aplica Mano de Obra")
-    ack_uniforme_empty  = fields.Boolean(string="No aplica Uniforme")
+    # Ya tenías estas dos; las conservo y agrego las demás:
+    ack_mano_obra_empty = fields.Boolean(string="No aplica Mano de Obra", default=False)
+    ack_uniforme_empty  = fields.Boolean(string="No aplica Uniforme", default=False)
+    ack_epp_empty = fields.Boolean(string="No aplica EPP", default=False)
+    ack_epp_alturas_empty = fields.Boolean(string="No aplica EPP Alturas", default=False)
+    ack_equipo_especial_limpieza_empty = fields.Boolean(string="No aplica Equipo Especial Limpieza", default=False)
+    ack_comunicacion_computo_empty = fields.Boolean(string="No aplica Comunicación y Cómputo", default=False)
+    ack_herramienta_menor_jardineria_empty = fields.Boolean(string="No aplica Herr. Menor Jardinería", default=False)
+    ack_material_limpieza_empty = fields.Boolean(string="No aplica Material Limpieza", default=False)
+    ack_perfil_medico_empty = fields.Boolean(string="No aplica Perfil Médico", default=False)
+    ack_maquinaria_limpieza_empty = fields.Boolean(string="No aplica Maquinaria Limpieza", default=False)
+    ack_maquinaria_jardineria_empty = fields.Boolean(string="No aplica Maquinaria Jardinería", default=False)
+    ack_fertilizantes_tierra_lama_empty = fields.Boolean(string="No aplica Fertilizantes/Tierra Lama", default=False)
+    ack_consumibles_jardineria_empty = fields.Boolean(string="No aplica Consumibles Jardinería", default=False)
+    ack_capacitacion_empty = fields.Boolean(string="No aplica Capacitación", default=False)
 
-    # --- Conteos de líneas por rubro (para pintar tabs). No es necesario store=True. ---
+    # --- Estados por rubro (selection) que el frontend lee para pintar tabs ---
+    rubro_state_mano_obra = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_uniforme  = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_epp       = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_epp_alturas = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_equipo_especial_limpieza = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_comunicacion_computo = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_herramienta_menor_jardineria = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_material_limpieza = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_perfil_medico = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_maquinaria_limpieza = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_maquinaria_jardineria = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_fertilizantes_tierra_lama = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_consumibles_jardineria = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+    rubro_state_capacitacion = fields.Selection([('red','red'),('yellow','yellow'),('ok','ok')], default='red', compute='_compute_rubro_states', store=True)
+
+    # --- Conteos de líneas por rubro (no imprescindibles; los dejo como tenías) ---
     mano_obra_count = fields.Integer(compute='_compute_rubro_counts')
     uniforme_count  = fields.Integer(compute='_compute_rubro_counts')
 
     @api.depends('line_ids', 'line_ids.rubro_id')
     def _compute_rubro_counts(self):
         for rec in self:
-            # Ajusta los filtros de acuerdo a tu definición de líneas (site, type, service_type, etc.)
-            lines = rec.line_ids  # ya tienes las líneas en memoria
+            lines = rec.line_ids
             rec.mano_obra_count = len(lines.filtered(lambda l: getattr(l.rubro_id, 'code', False) == 'mano_obra'))
             rec.uniforme_count  = len(lines.filtered(lambda l: getattr(l.rubro_id, 'code', False) == 'uniforme'))
 
+    # --- Compute del estado por rubro (usa 'No Aplica' + conteo filtrado como en las pestañas) ---
+    @api.depends(
+        'line_ids', 'line_ids.rubro_id', 'line_ids.site_id', 'line_ids.type', 'line_ids.service_type',
+        'current_site_id', 'current_type', 'current_service_type',
+        'ack_mano_obra_empty', 'ack_uniforme_empty', 'ack_epp_empty', 'ack_epp_alturas_empty',
+        'ack_equipo_especial_limpieza_empty', 'ack_comunicacion_computo_empty',
+        'ack_herramienta_menor_jardineria_empty', 'ack_material_limpieza_empty',
+        'ack_perfil_medico_empty', 'ack_maquinaria_limpieza_empty', 'ack_maquinaria_jardineria_empty',
+        'ack_fertilizantes_tierra_lama_empty', 'ack_consumibles_jardineria_empty', 'ack_capacitacion_empty',
+    )
+    def _compute_rubro_states(self):
+        for rec in self:
+            for code in RUBRO_CODES:
+                # 1) Si hay “No Aplica” → amarillo
+                if getattr(rec, _ack_field(code), False):
+                    val = 'yellow'
+                else:
+                    # 2) Conteo de líneas de ese rubro, alineado a los filtros de la vista
+                    lines_field = RUBRO_LINES.get(code)
+                    lines = getattr(rec, lines_field)
+                    if rec.current_site_id:
+                        lines = lines.filtered(lambda l: l.site_id == rec.current_site_id)
+                    if rec.current_type:
+                        lines = lines.filtered(lambda l: (l.type or '') == rec.current_type)
+                    if rec.current_service_type:
+                        lines = lines.filtered(lambda l: (l.service_type or '') == rec.current_service_type)
+                    val = 'ok' if len(lines) > 0 else 'red'
+                setattr(rec, _state_field(code), val)
+
+    # --- Acciones usadas por los botones “No Aplica” / “Quitar No Aplica” en las pestañas ---
+    def action_mark_rubro_empty(self):
+        self.ensure_one()
+        code = self.env.context.get('rubro_code')
+        if code:
+            if hasattr(self, _ack_field(code)):
+                self.write({ _ack_field(code): True })
+            else:
+                self.write({ _state_field(code): 'yellow' })
+
+    def action_unmark_rubro_empty(self):
+        self.ensure_one()
+        code = self.env.context.get('rubro_code')
+        if code:
+            if hasattr(self, _ack_field(code)):
+                self.write({ _ack_field(code): False })
+            else:
+                # El compute recalculará a 'ok' si hay líneas, 'red' si no
+                self.write({ _state_field(code): 'red' })
+
+    # --- RPC para que el frontend pueda leer el mapa de estados si aún no está en el DOM ---
+    def get_rubro_states(self, ids):
+        rec = self.browse(ids[:1])
+        res = {}
+        for code in RUBRO_CODES:
+            res[code] = getattr(rec, _state_field(code)) or ''
+        # Alias para el tab XML page_herr_menor_jardineria (frontend lo normaliza igual)
+        res['herr_menor_jardineria'] = res.get('herramienta_menor_jardineria', '')
+        return res
+
     @api.model_create_multi
     def create(self, vals_list):
-        """Asegura que cada cotización tenga al menos un sitio y lo establezca
-        como actual."""
+        """Asegura que cada cotización tenga al menos un sitio y lo establezca como actual."""
         for vals in vals_list:
             if not vals.get('site_ids'):
                 vals['site_ids'] = [(0, 0, {'name': _('Sitio Default')})]
@@ -172,10 +291,7 @@ class ServiceQuote(models.Model):
     def _onchange_current_service_type(self):
         """Ajusta automáticamente el tipo servicio/material según el tipo de servicio o vista."""
         for quote in self:
-            if quote.current_service_type == 'materiales':
-                quote.current_type = 'material'
-            else:
-                quote.current_type = 'servicio'
+            quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
 
 # ---------------------------------------------------------------------------
@@ -253,12 +369,8 @@ class ServiceQuoteLine(models.Model):
     # -------------------- Computes --------------------
     @api.depends('product_id')
     def _compute_product_base_price(self):
-        """Toma el precio base del producto sin usar related para evitar errores
-        de tipo con product.template.list_price entre instalaciones."""
         for line in self:
-            # lst_price existe en product.product y refleja list_price del template
             base = line.product_id.list_price if line.product_id else 0.0
-            # Redondeamos con moneda de la cotización si existe
             if line.quote_id.currency_id:
                 base = line.quote_id.currency_id.round(base)
             line.product_base_price = base
@@ -278,7 +390,6 @@ class ServiceQuoteLine(models.Model):
         tax_model = self.env.get('account.tax')
         for line in self:
             txt = ''
-            # Solo si existe account.tax y el producto tiene taxes_id
             taxes = getattr(line.product_id, 'taxes_id', False)
             if tax_model and taxes:
                 txt = ', '.join(taxes.mapped('name'))
@@ -296,8 +407,6 @@ class ServiceQuoteLine(models.Model):
     # -------------------- Defaults vía contexto --------------------
     @api.model
     def default_get(self, fields_list):
-        """Permite que, al crear una línea desde una pestaña, se asignen
-        quote_id/site_id/type y rubro desde el contexto."""
         res = super().default_get(fields_list)
         ctx = self.env.context or {}
         if 'default_quote_id' in ctx and 'quote_id' in self._fields:

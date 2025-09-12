@@ -24,11 +24,9 @@ function ensureScopeClass() {
 }
 
 function linkCode(link) {
-  // Prefer explicit name="page_CODE"
   const nameAttr = link.getAttribute("name") || link.dataset.name || "";
   let m = nameAttr.match(/^page_(.+)$/);
   if (m) return m[1];
-  // Fallback to target id (aria-controls / data-bs-target / href)
   const target = (
     link.getAttribute("aria-controls") ||
     link.getAttribute("data-bs-target") ||
@@ -50,56 +48,69 @@ function normalizeCode(code) {
   }
 }
 
+function normalizeState(v) {
+  const s = String(v || "").toLowerCase().trim();
+  if (s === "ok" || s === "green" || s === "verde") return "ok";
+  if (s.startsWith("yell") || s === "amarillo") return "yellow";
+  if (s === "red" || s === "rojo") return "red";
+  return s;
+}
+
 function getStatesMap(form) {
   const wrapper = form.closest ? (form.closest('.o_form_view') || form) : form;
   const raw = wrapper && wrapper.dataset ? wrapper.dataset.ccnStates : null;
   if (!raw) return null;
-  try {
-    return JSON.parse(raw);
-  } catch (e) {
-    return null;
-  }
+  try { return JSON.parse(raw); } catch { return null; }
 }
 
 function getRecordIdFromHash() {
   try {
-    const h = window.location.hash || "";
-    const q = h.includes("?") ? h.split("?")[1] : h.replace(/^#/, "");
-    const params = new URLSearchParams(q);
-    const id = parseInt(params.get("id"), 10);
-    return Number.isFinite(id) ? id : null;
-  } catch (e) {
-    return null;
-  }
+    const rawHash = window.location.hash || "";
+    const hash = rawHash.startsWith("#") ? rawHash.slice(1) : rawHash;
+    const queryish = hash.includes("?") ? hash.split("?")[1] : hash;
+    const params = new URLSearchParams(queryish);
+    for (const k of ["id", "res_id", "active_id"]) {
+      const v = parseInt(params.get(k), 10);
+      if (Number.isFinite(v)) return v;
+    }
+    let m = rawHash.match(/[?&#](?:id|res_id|active_id)=([0-9]+)/);
+    if (m) return +m[1];
+    m = rawHash.match(/(?:^|#|\/)(?:ccn\.service\.quote)\/(\d+)(?:[/?#]|$)/);
+    if (m) return +m[1];
+  } catch {}
+  try {
+    const c = odoo?.__DEBUG__?.services?.action?.currentController;
+    const rid = c?.model?.root?.data?.id;
+    if (Number.isFinite(rid)) return rid;
+  } catch {}
+  return null;
 }
 
 async function ensureStatesForForm(form) {
-  // Skip if already present
   if (getStatesMap(form)) return;
   if (form.__ccnStatesLoading) return;
-  // Try to read from DOM first
-  const states = {};
+
+  // 1) Intento DOM: leer cualquier campo rubro_state_*
   const sels = '[name^="rubro_state_"], [data-name^="rubro_state_"], .o_field_widget[name^="rubro_state_"], .o_field_widget[data-name^="rubro_state_"]';
   const fields = Array.from(form.querySelectorAll(sels));
+  const states = {};
   fields.forEach((el) => {
     const name = el.getAttribute("name") || el.getAttribute("data-name") || "";
     const code = name.replace(/^rubro_state_/, "");
-    const val = (el.getAttribute("data-value") || (el.dataset && el.dataset.value) || el.getAttribute("value") || (el.querySelector && (el.querySelector('[data-value]')?.getAttribute('data-value') || el.querySelector('select')?.value || el.querySelector('input')?.value)) || (el.textContent || "").trim() || "").toLowerCase();
-    if (code) states[code] = val;
+    const direct = el.getAttribute("data-value") || el.dataset?.value || el.value || el.getAttribute("value");
+    const txt = (el.textContent || "").toLowerCase();
+    const v = normalizeState(direct || (txt.includes("amarillo") ? "yellow" : (/(^|\\s)ok(\\s|$)/.test(txt) ? "ok" : (txt.includes("rojo") ? "red" : ""))));
+    if (code && v) states[code] = v;
   });
   if (Object.keys(states).length) {
-    try { (form.closest('.o_form_view') || form).dataset.ccnStates = JSON.stringify(states); } catch(e) {}
-    // Reaplicar ahora que ya tenemos estados del DOM
-    try { scheduleApply(); } catch(e) {}
+    try { (form.closest('.o_form_view') || form).dataset.ccnStates = JSON.stringify(states); } catch {}
+    scheduleApply();
     return;
   }
-  // Fallback: fetch via RPC from record id in URL
+
+  // 2) Fallback RPC: leer del servidor
   const id = getRecordIdFromHash();
   if (!id) return;
-  const links = form.querySelectorAll('.o_notebook .nav-tabs .nav-link[name^="page_"]');
-  const codes = Array.from(links).map((a) => (a.getAttribute('name') || '').replace(/^page_/, ''));
-  const uniqCodes = Array.from(new Set(codes));
-  const stateFields = uniqCodes.map((c) => `rubro_state_${normalizeCode(c)}`);
   form.__ccnStatesLoading = true;
   try {
     const res = await rpc('/web/dataset/call_kw/ccn.service.quote/get_rubro_states', {
@@ -107,9 +118,9 @@ async function ensureStatesForForm(form) {
     });
     if (res && typeof res === 'object') {
       const s = {};
-      uniqCodes.forEach((c) => { const v = (res[c] || '').toLowerCase(); if (v) s[c] = v; });
-      try { (form.closest('.o_form_view') || form).dataset.ccnStates = JSON.stringify(s); } catch(e) {}
-      try { scheduleApply(); } catch(e) {}
+      Object.keys(res).forEach((c) => { const v = normalizeState(res[c]); if (v) s[c] = v; });
+      try { (form.closest('.o_form_view') || form).dataset.ccnStates = JSON.stringify(s); } catch {}
+      scheduleApply();
     }
   } catch (e) {
     log('RPC states fetch failed', e);
@@ -118,32 +129,30 @@ async function ensureStatesForForm(form) {
   }
 }
 
-function readStateSmart(form, code) {
-  // First, try states provided by FormController (authoritative)
+function readStateSmart(form, rawCode) {
+  const code = normalizeCode(rawCode || "");
   const states = getStatesMap(form);
   if (states) {
-    const v = states[normalizeCode(code)];
+    const v = states[code];
     if (v) return normalizeState(String(v));
   }
-  const norm = normalizeCode(code);
   const el = form.querySelector(
-    `[name="rubro_state_${norm}"], [data-name="rubro_state_${norm}"], .o_field_widget[name="rubro_state_${norm}"], .o_field_widget[data-name="rubro_state_${norm}"]`
+    `[name="rubro_state_${code}"], [data-name="rubro_state_${code}"], .o_field_widget[name="rubro_state_${code}"], .o_field_widget[data-name="rubro_state_${code}"]`
   );
   if (el) {
-    const direct = el.getAttribute("data-value") || (el.dataset && el.dataset.value) || el.value || el.getAttribute("value");
+    const direct = el.getAttribute("data-value") || el.dataset?.value || el.value || el.getAttribute("value");
     if (direct) return normalizeState(String(direct));
-    const innerData = el.querySelector && el.querySelector("[data-value]");
+    const innerData = el.querySelector?.("[data-value]");
     if (innerData) return normalizeState(String(innerData.getAttribute("data-value") || ""));
-    const select = el.matches && el.matches("select") ? el : el.querySelector && el.querySelector("select");
-    if (select && select.value) return normalizeState(String(select.value));
-    const input = el.matches && el.matches("input") ? el : el.querySelector && el.querySelector("input");
-    if (input && input.value) return normalizeState(String(input.value));
-    const txt = (el.textContent || "").toLowerCase();
-    if (/(^|\s)ok(\s|$)/.test(txt)) return "ok";
-    if (txt.includes("amarillo")) return "yellow";
-    if (txt.includes("rojo")) return "red";
   }
   return "";
+}
+
+function countRowsForCode(form, code) {
+  const container = form.querySelector(`.o_notebook .tab-content .tab-pane [name="line_${code}_ids"]`);
+  if (!container) return 0;
+  const rows = container.querySelectorAll(".o_list_view tbody tr.o_data_row");
+  return rows.length || 0;
 }
 
 function applyInFormSmart(form) {
@@ -152,133 +161,25 @@ function applyInFormSmart(form) {
     const raw = linkCode(link);
     const code = normalizeCode(raw || "");
     if (!code) return;
+
     const li = link.closest("li");
     const targets = li ? [link, li] : [link];
-
+    if (li) li.classList.add("ccn-tab-angle"); else link.classList.add("ccn-tab-angle");
     targets.forEach((el) => el.classList.remove("ccn-status-empty","ccn-status-ack","ccn-status-filled"));
 
     let state = readStateSmart(form, code);
-    if (!state) {
-      const cont = form.querySelector(`.o_notebook .tab-content [name="line_${code}_ids"]`);
-      if (cont) {
-        const count = countRows(cont);
-        state = count > 0 ? "ok" : "red";
-      } else {
-        // Pane no montado; intenta cargar estados y no fuerces color en este tick
-        ensureStatesForForm(form);
-        state = "";
-      }
+
+    // Fallback por conteo si no hay state o si viene 'red' pero sí hay líneas visibles
+    if (!state || state === "red") {
+      const count = countRowsForCode(form, code);
+      if (!state && count > 0) state = "ok";
+      if (state === "red" && count > 0) state = "ok";
+      if (!state && count === 0) state = "red";
     }
 
     if (state === "ok")           targets.forEach((el) => el.classList.add("ccn-status-filled"));
     else if (state === "yellow")  targets.forEach((el) => el.classList.add("ccn-status-ack"));
-    else if (state === "red")     targets.forEach((el) => el.classList.add("ccn-status-empty"));
-  });
-}
-
-function readComputedState(form, code) {
-  const el = form.querySelector(`[name="rubro_state_${code}"]`);
-  if (!el) return "";
-  // try multiple ways typical in Odoo widgets
-  const direct = el.getAttribute("data-value") || (el.dataset && el.dataset.value) || el.value || el.getAttribute("value");
-  if (direct) return normalizeState(direct);
-  const innerData = el.querySelector("[data-value]");
-  if (innerData) return normalizeState(innerData.getAttribute("data-value"));
-  const select = el.matches && el.matches("select") ? el : el.querySelector && el.querySelector("select");
-  if (select && select.value) return normalizeState(select.value);
-  const input = el.matches && el.matches("input") ? el : el.querySelector && el.querySelector("input");
-  if (input && input.value) return normalizeState(input.value);
-  const txt = (el.textContent || "").toLowerCase();
-  if (/(^|\s)ok(\s|$)/.test(txt)) return "ok";
-  if (txt.includes("amarillo")) return "yellow";
-  if (txt.includes("rojo")) return "red";
-  return "";
-}
-
-function normalizeState(v) {
-  const s = String(v).toLowerCase().trim();
-  if (s === "ok" || s === "green" || s === "verde") return "ok";
-  if (s.startsWith("yell") || s === "amarillo") return "yellow";
-  if (s === "red" || s === "rojo") return "red";
-  return s;
-}
-
-function countRowsForCode(form, code) {
-  const container = form.querySelector(`.o_notebook .tab-content .tab-pane [name="line_${code}_ids"]`);
-  if (!container) return 0;
-  let rows = container.querySelectorAll(".o_list_view tbody tr.o_data_row");
-  if (rows.length) return rows.length;
-  rows = container.querySelectorAll(".o_list_view tbody tr:not(.o_list_record_add)");
-  return rows.length || 0;
-}
-
-function countRows(panelEl) {
-  // Cuenta filas de datos reales, incluyendo registros recién agregados
-  let rows = panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row");
-  if (rows.length) return rows.length;
-  rows = panelEl.querySelectorAll(
-    ".o_list_view tbody tr:not(.o_list_record_add)"
-  );
-  return rows.length || 0;
-}
-
-function readAck(panelEl) {
-  const el = panelEl.querySelector(
-    '.o_field_widget input[type="checkbox"][name$="_empty"], input[type="checkbox"][name$="_empty"]'
-  );
-  return el ? !!el.checked : false;
-}
-
-function linkForPanel(form, panelEl) {
-  // Try by panel id first (Bootstrap tabs usually link via aria-controls or data-bs-target)
-  const id = panelEl.getAttribute("id");
-  const name = panelEl.getAttribute("name") || panelEl.dataset.name || "";
-  const selectors = [];
-  if (id) {
-    selectors.push(
-      `.o_notebook .nav-link[aria-controls="${id}"]`,
-      `.o_notebook .nav-link[data-bs-target="#${id}"]`,
-      `.o_notebook .nav-link[data-target="#${id}"]`,
-      `.o_notebook .nav-link[href="#${id}"]`
-    );
-  }
-  if (name) {
-    // Fallback by name for cases where controls reference uses the pane name
-    selectors.push(
-      `.o_notebook .nav-link[aria-controls="${name}"]`,
-      `.o_notebook .nav-link[data-bs-target="#${name}"]`,
-      `.o_notebook .nav-link[data-target="#${name}"]`,
-      `.o_notebook .nav-link[href="#${name}"]`
-    );
-  }
-  if (!selectors.length) return null;
-  return form.querySelector(selectors.join(", "));
-}
-
-function applyInForm(form) {
-  // Iterate over nav links to color tabs even if panes are not yet mounted
-  const links = form.querySelectorAll(".o_notebook .nav-tabs .nav-link");
-  links.forEach((link) => {
-    const code = linkCode(link);
-    if (!code) return;
-    const li = link.closest("li");
-    const targets = li ? [link, li] : [link];
-    // Ensure class for chevron arrow styling
-    if (li) li.classList.add("ccn-tab-angle"); else link.classList.add("ccn-tab-angle");
-
-    // Remove previous state classes
-    targets.forEach((el) => el.classList.remove("ccn-status-empty","ccn-status-ack","ccn-status-filled"));
-
-    // Prefer computed state from hidden fields; fallback to counting rows for this code
-    let state = readComputedState(form, code);
-    if (!state) {
-      const count = countRowsForCode(form, code);
-      state = count > 0 ? "ok" : "red";
-    }
-
-    if (state === "ok")      targets.forEach((el) => el.classList.add("ccn-status-filled"));
-    else if (state === "yellow") targets.forEach((el) => el.classList.add("ccn-status-ack"));
-    else                        targets.forEach((el) => el.classList.add("ccn-status-empty"));
+    else                          targets.forEach((el) => el.classList.add("ccn-status-empty"));
   });
 }
 
@@ -296,7 +197,7 @@ function applyAll() {
 }
 
 let t;
-function scheduleApply() { clearTimeout(t); t = setTimeout(applyAll, 80); }
+function scheduleApply() { clearTimeout(t); t = setTimeout(applyAll, 120); }
 
 const service = {
   name: "ccn_quote_tabs_service",
@@ -310,9 +211,8 @@ const service = {
     root.addEventListener("click",  (ev) => { if (ev.target.closest(".o_form_view .nav-link")) scheduleApply(); });
     root.addEventListener("change", (ev) => { if (ev.target.closest(".o_form_view")) scheduleApply(); });
 
-    // primera pasada (doble por si tarda el render)
     setTimeout(scheduleApply, 0);
-    setTimeout(scheduleApply, 200);
+    setTimeout(scheduleApply, 300);
 
     window.__ccnTabsDebug = { applyAll, installed: () => true };
     log("debug helper exposed");
