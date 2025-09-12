@@ -1,0 +1,41 @@
+/* ==========================================================================
+   CCN – Persistencia de color en tabs inactivos (prudente)
+   - NO altera geometrías, paddings ni sombras del tema
+   - SOLO aplica color sólido en inactivos usando variables CSS
+   - Respeta el estilo del tab ACTIVO
+   ========================================================================== */
+
+:root {
+  /* Defaults por si no tienes definidas estas variables en tu tema */
+  --ccn-ok:    #16a34a; /* verde */
+  --ccn-warn:  #ca8a04; /* ámbar */
+  --ccn-empty: #dc2626; /* rojo */
+}
+
+/* Fondo/texto/borde del tab INACTIVO ya teñido por el JS (clase ccn-dyed) */
+.o_notebook .nav-tabs .nav-link.ccn-dyed:not(.active) {
+  background-color: var(--ccn-tab-bg) !important;
+  color: var(--ccn-tab-fg, #fff) !important;
+  border-color: var(--ccn-tab-bg) !important;
+  box-shadow: none !important; /* por si el tema añade un outline en inactivos */
+}
+
+/* Si el chevron lo dibuja el <a>::after */
+.o_notebook .nav-tabs .nav-link.ccn-dyed:not(.active)::after {
+  border-left-color: var(--ccn-tab-bg) !important;
+  background-color: var(--ccn-tab-bg) !important; /* por si el chevron es un rectángulo */
+}
+
+/* Si el chevron lo dibuja el <li>::after */
+.o_notebook .nav-tabs li.ccn-dyed:not(.active)::after,
+.o_notebook .nav-tabs li.ccn-dyed:not(.active) > .nav-link::after {
+  border-left-color: var(--ccn-tab-bg) !important;
+  background-color: var(--ccn-tab-bg) !important;
+}
+
+/* Compat extra: algunos temas pintan el fondo en el <li> y no en el <a> */
+.o_notebook .nav-tabs li.ccn-dyed:not(.active) > .nav-link {
+  background-color: var(--ccn-tab-bg) !important;
+  color: var(--ccn-tab-fg, #fff) !important;
+  border-color: var(--ccn-tab-bg) !important;
+}
