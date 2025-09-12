@@ -12,7 +12,6 @@ from . import (
     quote_line_related,
     quote_line_tax,
     quote_partner_user_fields,
-    quote_rubro_ack,
     rubro,
     rubro_flag,
     sale_order,
