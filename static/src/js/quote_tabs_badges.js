@@ -1,128 +1,118 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { rpc } from "@web/core/network/rpc";
 
-function normalizeCode(code) {
-    return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
+/* Helpers */
+function normCode(code) {
+  return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
 }
-function normalizeState(v) {
-    const s = String(v || "").toLowerCase().trim();
-    if (s === "ok" || s === "green" || s === "verde") return "ok";
-    if (s.startsWith("yell") || s === "amarillo") return "yellow";
-    if (s === "red" || s === "rojo") return "red";
-    return "";
+function normState(v) {
+  const s = String(v || "").toLowerCase().trim();
+  if (s === "ok" || s === "green" || s === "verde") return "ok";
+  if (s.startsWith("yell") || s === "amarillo") return "yellow";
+  if (s === "red" || s === "rojo") return "red";
+  return "";
 }
-
-function getStatesMap(form) {
-    const shells = [form, form.querySelector?.("form"), form.closest?.(".o_form_view")].filter(Boolean);
-    for (const el of shells) {
-        const raw = el?.dataset?.ccnStates;
-        if (!raw) continue;
-        try { const map = JSON.parse(raw); if (map && typeof map === "object") return map; } catch {}
-    }
-    return null;
-}
-
-function linkCode(link) {
-    const nameAttr = link.getAttribute("name") || link.dataset.name || "";
-    let m = nameAttr.match(/^page_(.+)$/);
-    if (m) return m[1];
-    const t = (link.getAttribute("aria-controls") || link.getAttribute("data-bs-target") || link.getAttribute("data-target") || link.getAttribute("href") || "").replace(/^#/, "");
-    m = t.match(/^page_(.+)$/);
-    if (m) return m[1];
-    return null;
+function linkCode(a) {
+  const nameAttr = a.getAttribute("name") || a.dataset.name || "";
+  let m = nameAttr.match(/^page_(.+)$/);
+  if (m) return m[1];
+  const tgt = (
+    a.getAttribute("aria-controls") ||
+    a.getAttribute("data-bs-target") ||
+    a.getAttribute("data-target") ||
+    a.getAttribute("href") || ""
+  ).replace(/^#/, "");
+  m = tgt.match(/^page_(.+)$/);
+  return m ? m[1] : null;
 }
 
-function getRecordId(form) {
-    try {
-        // Odoo 15/16: desde el controlador
-        const rid = odoo?.__DEBUG__?.services?.action?.currentController?.model?.root?.data?.id;
-        if (Number.isFinite(rid)) return rid;
-    } catch {}
-    try {
-        // Por hash URL
-        const raw = location.hash || "";
-        const m = raw.match(/[?&#](?:id|res_id|active_id)=([0-9]+)/);
-        if (m) return +m[1];
-    } catch {}
-    return null;
+/* Leemos SIEMPRE de los <field name="rubro_state_*"> ocultos (ya están en el DOM por tu XML) */
+function readStatesFromHidden(form) {
+  const box =
+    form.querySelector(".o_ccn_rubro_states") ||
+    form.querySelector('.d-none .o_ccn_rubro_states') ||
+    form.querySelector('[name="rubro_state_mano_obra"]')?.closest?.("div");
+  if (!box) return null;
+
+  const map = {};
+  box.querySelectorAll('[name^="rubro_state_"], [data-name^="rubro_state_"]').forEach((el) => {
+    const name = el.getAttribute("name") || el.getAttribute("data-name") || "";
+    const code = name.replace(/^rubro_state_/, "");
+    const raw = el.getAttribute("data-value") || el.dataset?.value || el.value || el.getAttribute("value") || el.textContent;
+    const v = normState(raw);
+    if (code && v) map[code] = v;
+  });
+  return Object.keys(map).length ? map : null;
 }
 
-async function ensureMap(form) {
-    let map = getStatesMap(form);
-    if (map) return map;
-
-    // Fallback: pide al servidor (NO contamos filas porque panes inactivos no están montados)
-    const id = getRecordId(form);
-    if (!id) return null;
-    try {
-        const res = await rpc('/web/dataset/call_kw/ccn.service.quote/get_rubro_states', {
-            model: 'ccn.service.quote', method: 'get_rubro_states', args: [[id]], kwargs: {},
-        });
-        if (res && typeof res === 'object') {
-            // Publica y devuelve
-            const json = JSON.stringify(res);
-            (form.closest('.o_form_view') || form).dataset.ccnStates = json;
-            return res;
-        }
-    } catch {}
-    return null;
+function clsFor(state) {
+  return state === "ok" ? "ccn-status-filled" : state === "yellow" ? "ccn-status-ack" : "ccn-status-empty";
 }
 
-function applyInForm(form, map) {
-    const notebook = form.querySelector(".o_notebook");
-    if (!notebook) return;
-    const links = notebook.querySelectorAll(".nav-tabs .nav-link");
-    links.forEach((link) => {
-        const li = link.closest("li");
-        // limpia
-        [link, li].forEach(el => {
-            if (!el) return;
-            el.classList.remove("ccn-status-filled","ccn-status-ack","ccn-status-empty");
-            el.removeAttribute("data-ccn-state");
-        });
-
-        const raw = linkCode(link);
-        if (!raw) return;
-        const code = normalizeCode(raw);
-        let state = map ? map[code] : null;
-        if (!state && code === "herr_menor_jardineria") state = map ? map["herramienta_menor_jardineria"] : null;
-        state = normalizeState(state) || "red";
-
-        const cls = state === "ok" ? "ccn-status-filled" : state === "yellow" ? "ccn-status-ack" : "ccn-status-empty";
-        [link, li].forEach(el => el && el.classList.add(cls));
-        [link, li].forEach(el => el && el.setAttribute("data-ccn-state", state));
-    });
+function clearTab(a, li) {
+  const rm = ["ccn-status-filled", "ccn-status-ack", "ccn-status-empty"];
+  a.classList.remove(...rm);
+  if (li) li.classList.remove(...rm);
 }
 
-async function applyAll() {
-    const forms = document.querySelectorAll(".o_form_view");
-    for (const form of forms) {
-        const map = await ensureMap(form);
-        if (map) applyInForm(form, map);
-    }
+/* Aplica clases de estado al <a> y también al <li> (clave para colorear inactivos) */
+function applyInForm(form) {
+  const notebook = form.querySelector(".o_notebook");
+  if (!notebook) return;
+
+  const links = notebook.querySelectorAll(".nav-tabs .nav-link");
+  if (!links.length) return;
+
+  const map = readStatesFromHidden(form);
+  if (!map) return;
+
+  links.forEach((a) => {
+    const li = a.closest("li");
+    clearTab(a, li);
+
+    const raw = linkCode(a);
+    if (!raw) return;
+
+    const code = normCode(raw);
+    let st = map[code];
+    if (!st && code === "herr_menor_jardineria") st = map["herramienta_menor_jardineria"];
+    st = normState(st) || "red";
+
+    const cls = clsFor(st);
+    a.classList.add(cls);
+    if (li) li.classList.add(cls);
+  });
 }
 
+function applyAll() {
+  document.querySelectorAll(".o_form_view").forEach(applyInForm);
+}
+
+/* Servicio */
 let t0, t1;
 function schedule() {
-    clearTimeout(t0); clearTimeout(t1);
-    t0 = setTimeout(applyAll, 0);
-    t1 = setTimeout(applyAll, 150); // ganar a Bootstrap al cambiar tab
+  clearTimeout(t0); clearTimeout(t1);
+  t0 = setTimeout(applyAll, 0);
+  t1 = setTimeout(applyAll, 120);
 }
 
 const service = {
-    name: "ccn_quote_tabs_service",
-    start() {
-        const root = document.body;
-        const mo = new MutationObserver(schedule);
-        mo.observe(root, { childList: true, subtree: true });
-        root.addEventListener("click",  (e) => { if (e.target.closest(".o_notebook .nav-tabs .nav-link")) schedule(); });
-        root.addEventListener("shown.bs.tab", schedule, true);
-        root.addEventListener("hidden.bs.tab", schedule, true);
-        schedule();
-        window.__ccnTabsDebug = { applyAll: schedule };
-    },
+  name: "ccn_quote_tabs_service",
+  start() {
+    const root = document.body;
+    const mo = new MutationObserver(schedule);
+    mo.observe(root, { childList: true, subtree: true });
+
+    root.addEventListener("shown.bs.tab", schedule, true);
+    root.addEventListener("hidden.bs.tab", schedule, true);
+    root.addEventListener("click", (e) => {
+      if (e.target.closest(".o_notebook .nav-tabs .nav-link")) schedule();
+    });
+
+    schedule();
+    window.__ccnTabsDebug = { applyAll: schedule };
+  },
 };
 
 registry.category("services").add("ccn_quote_tabs_service", service);

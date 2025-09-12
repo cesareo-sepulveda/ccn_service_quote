@@ -69,3 +69,71 @@
   color: #fff !important;
   border-color: #27ae60 !important;
 }
+
+/* ==========================================================================
+   CCN – Append-only: color persistente para tabs INACTIVOS (no toca geometría)
+   Requiere que el JS agregue ccn-status-(filled|ack|empty) al <a> y al <li>.
+   ========================================================================== */
+
+:root {
+  --ccn-ok:    #16a34a; /* verde */
+  --ccn-warn:  #ca8a04; /* ámbar */
+  --ccn-empty: #dc2626; /* rojo */
+}
+
+.o_notebook .nav-tabs {
+  /* OK */
+  li.ccn-status-filled:not(.active) > .nav-link,
+  .nav-link.ccn-status-filled:not(.active) {
+    background-color: var(--ccn-ok) !important;
+    border-color: var(--ccn-ok) !important;
+    color: #fff !important;
+    background-image: none !important; /* neutraliza degradados del tema */
+  }
+
+  /* YELLOW */
+  li.ccn-status-ack:not(.active) > .nav-link,
+  .nav-link.ccn-status-ack:not(.active) {
+    background-color: var(--ccn-warn) !important;
+    border-color: var(--ccn-warn) !important;
+    color: #1f2937 !important; /* texto oscuro */
+    background-image: none !important;
+  }
+
+  /* RED */
+  li.ccn-status-empty:not(.active) > .nav-link,
+  .nav-link.ccn-status-empty:not(.active) {
+    background-color: var(--ccn-empty) !important;
+    border-color: var(--ccn-empty) !important;
+    color: #fff !important;
+    background-image: none !important;
+  }
+
+  /* Chevrons típicos (solo color; NO tocamos tamaño/forma) */
+  li.ccn-status-filled:not(.active)::after,
+  li.ccn-status-filled:not(.active) > .nav-link::after,
+  .nav-link.ccn-status-filled:not(.active)::after {
+    border-left-color: var(--ccn-ok) !important;
+    background-color: var(--ccn-ok) !important;
+  }
+  li.ccn-status-ack:not(.active)::after,
+  li.ccn-status-ack:not(.active) > .nav-link::after,
+  .nav-link.ccn-status-ack:not(.active)::after {
+    border-left-color: var(--ccn-warn) !important;
+    background-color: var(--ccn-warn) !important;
+  }
+  li.ccn-status-empty:not(.active)::after,
+  li.ccn-status-empty:not(.active) > .nav-link::after,
+  .nav-link.ccn-status-empty:not(.active)::after {
+    border-left-color: var(--ccn-empty) !important;
+    background-color: var(--ccn-empty) !important;
+  }
+
+  /* Variantes usadas por algunos temas (span.o_chevron / .tab-chevron) */
+  li.ccn-status-filled:not(.active) .o_chevron,
+  li.ccn-status-filled:not(.active) .tab-chevron { border-left-color: var(--ccn-ok) !important; background-color: var(--ccn-ok) !important; }
+  li.ccn-status-ack:not(.active) .o_chevron,
+  li.ccn-status-ack:not(.active) .tab-chevron    { border-left-color: var(--ccn-warn) !important; background-color: var(--ccn-warn) !important; }
+  li.ccn-status-empty:not(.active) .o_chevron,
+  li.ccn-status-empty:not(.active) .tab-chevron  { border-left-color: var(--ccn-empty) !important; background-color: var(--ccn-empty) !important; }
+}
