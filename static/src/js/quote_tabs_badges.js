@@ -22,8 +22,8 @@ const FIELDS = [
 ];
 
 /* -------------------- Helpers -------------------- */
-const CODE_ALIAS = { "herr_menor_jardineria": "herramienta_menor_jardineria" };
-const toCode = (c) => CODE_ALIAS[c] || c;
+const ALIAS = { "herr_menor_jardineria": "herramienta_menor_jardineria" };
+const toCode = (c) => ALIAS[c] || c;
 
 function tabCode(a) {
   const nameAttr = a.getAttribute("name") || a.dataset.name || "";
@@ -42,29 +42,21 @@ function toState(v) {
 }
 const clsFor = (s) => (s === "ok" ? "ccn-status-filled" : s === "yellow" ? "ccn-status-ack" : "ccn-status-empty");
 
-/* ---------- ID del registro, lo sacamos de donde sea ---------- */
+/* ---------- ID del registro ---------- */
 function getRecordId() {
-  // 1) OWL debug services (si existen)
-  try {
-    const rid =
-      odoo?.__DEBUG__?.services?.action?.currentController?.props?.resId ??
-      odoo?.__DEBUG__?.services?.action?.currentController?.model?.root?.data?.id ??
-      odoo?.__DEBUG__?.services?.action?.currentController?.model?.root?.resId;
-    if (Number.isFinite(rid)) return rid;
-  } catch {}
-  // 2) Atributo del DOM
+  // 1) Atributo del DOM (forma más estable)
   try {
     const el = document.querySelector('.o_form_view[data-res-model="ccn.service.quote"][data-res-id]');
     const rid = el ? parseInt(el.getAttribute("data-res-id"), 10) : NaN;
     if (Number.isFinite(rid)) return rid;
   } catch {}
-  // 3) Dentro de widgets
+  // 2) Cualquier otro data-res-id en la vista
   try {
     const any = document.querySelector('.o_form_view [data-res-id]');
     const rid = any ? parseInt(any.getAttribute("data-res-id"), 10) : NaN;
     if (Number.isFinite(rid)) return rid;
   } catch {}
-  // 4) URL/hash
+  // 3) URL/hash
   try {
     const h = location.hash || "";
     const m = h.match(/[?&#](?:id|res_id|active_id)=([0-9]+)/);
@@ -73,16 +65,14 @@ function getRecordId() {
   return null;
 }
 
-/* ---------- RPC: lee estados confiables desde el servidor ---------- */
+/* ---------- RPC correcto: args [[id], FIELDS] ---------- */
 async function fetchStates(resId) {
-  // Usa el endpoint genérico para máxima compatibilidad
-  const payload = {
+  const res = await rpc("/web/dataset/call_kw/ccn.service.quote/read", {
     model: "ccn.service.quote",
     method: "read",
-    args: [[resId]],
-    kwargs: { fields: FIELDS },
-  };
-  const res = await rpc("/web/dataset/call_kw", payload);
+    args: [[resId], FIELDS],   // <- ESTA es la forma correcta
+    kwargs: {},
+  });
   const rec = Array.isArray(res) ? res[0] : null;
   if (!rec) return null;
 
@@ -112,7 +102,7 @@ function paintWithMap(form, map) {
     const code = toCode(raw);
 
     let st = map[code];
-    if (!st && CODE_ALIAS[raw]) st = map[CODE_ALIAS[raw]];
+    if (!st && ALIAS[raw]) st = map[ALIAS[raw]];
     if (!st) st = "red";
 
     const cls = clsFor(st);
@@ -132,8 +122,7 @@ async function applyAll() {
     const map = await fetchStates(id);
     if (map) paintWithMap(form, map);
   } catch (e) {
-    // Si algo falla, no rompemos la UI
-    // console.warn("[ccn tabs] error al cargar estados", e);
+    // opcional: console.warn("[ccn tabs] error al cargar estados", e);
   }
 }
 
@@ -147,7 +136,7 @@ function schedule() {
 }
 
 const service = {
-  name: "ccn_quote_tabs_service", // mismo nombre => reemplaza
+  name: "ccn_quote_tabs_service", // mismo nombre => reemplaza el previo
   start() {
     const root = document.body;
     const mo = new MutationObserver(schedule);
