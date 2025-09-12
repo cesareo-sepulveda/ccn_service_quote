@@ -1,0 +1,78 @@
+/* ==========================================================================
+   CCN Service Quote – Fix mínimo para color persistente en tabs inactivos
+   - No toca geometrías ni reset de tema
+   - No añade bullets ni bordes extra
+   - Mantiene color sólido y chevrons del tema original
+   - Debe cargarse DESPUÉS de tus SCSS originales de tabs
+   ========================================================================== */
+
+:root {
+  --ccn-ok:    #16a34a; /* verde */
+  --ccn-warn:  #ca8a04; /* ámbar */
+  --ccn-empty: #dc2626; /* rojo */
+}
+
+/* Helper: aplica color de fondo y texto (sin modificar paddings/bordes) */
+@mixin ccn-tab-solid($bg, $fg: #fff) {
+  background-color: $bg !important;
+  color: $fg !important;
+}
+
+/* ---------- Tabs INACTIVOS con estado (mismo look sólido que el activo) ---------- */
+/* Nota: usamos :not(.active) para no alterar el estilo que ya tienes en el activo. */
+.o_notebook {
+  .nav-tabs {
+
+    /* FILLED (ok) */
+    .nav-link.ccn-status-filled:not(.active) {
+      @include ccn-tab-solid(var(--ccn-ok));
+    }
+    /* Si tu chevron se dibuja con ::after (border-left-color), lo teñimos también */
+    .nav-link.ccn-status-filled:not(.active)::after,
+    li.ccn-status-filled:not(.active) > .nav-link::after {
+      border-left-color: var(--ccn-ok) !important;
+      /* Si tu chevron usa background: */
+      background-color: var(--ccn-ok) !important;
+    }
+
+    /* ACK (yellow) */
+    .nav-link.ccn-status-ack:not(.active) {
+      @include ccn-tab-solid(var(--ccn-warn), #1f2937); /* texto oscuro sobre ámbar */
+    }
+    .nav-link.ccn-status-ack:not(.active)::after,
+    li.ccn-status-ack:not(.active) > .nav-link::after {
+      border-left-color: var(--ccn-warn) !important;
+      background-color: var(--ccn-warn) !important;
+    }
+
+    /* EMPTY (red) */
+    .nav-link.ccn-status-empty:not(.active) {
+      @include ccn-tab-solid(var(--ccn-empty));
+    }
+    .nav-link.ccn-status-empty:not(.active)::after,
+    li.ccn-status-empty:not(.active) > .nav-link::after {
+      border-left-color: var(--ccn-empty) !important;
+      background-color: var(--ccn-empty) !important;
+    }
+
+    /* En algunos temas, el <li> tiene la clase y el <a> hereda fondo;
+       forzamos también el caso <li> → <a> para no romper chevrons. */
+    li.ccn-status-filled:not(.active) > .nav-link    { @include ccn-tab-solid(var(--ccn-ok)); }
+    li.ccn-status-ack:not(.active) > .nav-link       { @include ccn-tab-solid(var(--ccn-warn), #1f2937); }
+    li.ccn-status-empty:not(.active) > .nav-link     { @include ccn-tab-solid(var(--ccn-empty)); }
+
+    /* IMPORTANTÍSIMO: no tocar el activo; tu tema mantiene chevrons y sólido ahí */
+    .nav-link.active.ccn-status-filled   { /* sin cambios */ }
+    .nav-link.active.ccn-status-ack      { /* sin cambios */ }
+    .nav-link.active.ccn-status-empty    { /* sin cambios */ }
+  }
+}
+
+/* ---------- Compat extra: si el chevron está en el <li>::after en vez del <a>::after ---------- */
+.o_notebook .nav-tabs li.ccn-status-filled:not(.active)::after { border-left-color: var(--ccn-ok) !important; background-color: var(--ccn-ok) !important; }
+.o_notebook .nav-tabs li.ccn-status-ack:not(.active)::after    { border-left-color: var(--ccn-warn) !important; background-color: var(--ccn-warn) !important; }
+.o_notebook .nav-tabs li.ccn-status-empty:not(.active)::after  { border-left-color: var(--ccn-empty) !important; background-color: var(--ccn-empty) !important; }
+
+/* ---------- No tocamos bordes/padding/sombras del tema ---------- */
+/* (Si tu tema tiñe texto de tabs inactivos a gris pálido,
+    estas reglas ya fijan color; no añadimos outlines ni bullets.) */
