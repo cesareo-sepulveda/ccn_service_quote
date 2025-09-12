@@ -2,116 +2,61 @@
 
 import { patch } from "@web/core/utils/patch";
 import { FormController } from "@web/views/form/form_controller";
-import { _t } from "@web/core/l10n/translation";
 
 function normalizeCode(code) {
-    switch (code) {
-        case "herr_menor_jardineria":
-            return "herramienta_menor_jardineria";
-        default:
-            return code;
+    return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
+}
+
+function publishStates(controller) {
+    try {
+        if (!controller?.model || controller.model.name !== "ccn.service.quote") return;
+        const el = controller.el;
+        const notebook = el.querySelector(".o_notebook");
+        if (!notebook) return;
+
+        const links = notebook.querySelectorAll('.nav-tabs .nav-link[name^="page_"], .nav-tabs .nav-link[aria-controls^="page_"]');
+        const data = controller.model.root?.data || {};
+        const states = {};
+
+        links.forEach((a) => {
+            const nameAttr = a.getAttribute("name") || "";
+            const mName = nameAttr.match(/^page_(.+)$/);
+            let code = mName ? mName[1] : null;
+            if (!code) {
+                const t = (a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/, "");
+                const mT = t.match(/^page_(.+)$/);
+                code = mT ? mT[1] : null;
+            }
+            if (!code) return;
+            code = normalizeCode(code);
+            const field = `rubro_state_${code}`;
+            const v = data[field];
+            if (v) states[code] = v;
+        });
+
+        const json = JSON.stringify(states);
+        // Publica en 3 lugares por robustez
+        el.dataset.ccnStates = json;
+        (el.closest(".o_form_view") || el).dataset.ccnStates = json;
+        (el.querySelector("form") || el).dataset.ccnStates = json;
+    } catch (e) {
+        // silencioso
     }
 }
 
-export function initQuoteTabs(controller) {
-    if (!controller.model || controller.model.name !== "ccn.service.quote") {
-        return;
-    }
-    const notebook = controller.el.querySelector("div.o_notebook");
-    if (!notebook) {
-        return;
-    }
-
-    const links = notebook.querySelectorAll('.nav-tabs .nav-link[name^="page_"]');
-
-    // Publicar mapa de estados (derivado de los campos del record) en data-attrs
-    const states = {};
-    links.forEach((a) => {
-        const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
-        if (!m) return;
-        const raw = m[1];
-        const code = normalizeCode(raw);
-        const field = `rubro_state_${code}`;
-        const val = controller.model.root?.data ? controller.model.root.data[field] : null;
-        if (val) states[code] = val;
-    });
-    try {
-        const jsonStates = JSON.stringify(states);
-        controller.el.dataset.ccnStates = jsonStates;
-        const wrapper = controller.el.closest?.('.o_form_view') || controller.el;
-        if (wrapper) wrapper.dataset.ccnStates = jsonStates;
-        const innerForm = controller.el.querySelector?.('form');
-        if (innerForm) innerForm.dataset.ccnStates = jsonStates;
-    } catch(e) {}
-
-    // Botón "No Aplica" en cada pane (si ya está montado)
-    links.forEach((a) => {
-        const m = (a.getAttribute('name') || '').match(/^page_(.+)$/);
-        if (!m) return;
-        const raw = m[1];
-        const code = normalizeCode(raw);
-        const cont = notebook.querySelector(`[name="line_${code}_ids"]`);
-        if (!cont) return; // pane aún no montado
-
-        const pane = cont.closest('.tab-pane') || notebook;
-        if (pane.querySelector('.ccn-skip')) return;
-
-        // Estado inicial según campos rubro_state_*
-        const stateField = `rubro_state_${code}`;
-        const state = controller.model.root?.data ? controller.model.root.data[stateField] : null;
-        if (state === 'yellow') {
-            pane.dataset.ccnAck = '1';
-        }
-
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'btn btn-secondary ccn-skip';
-        btn.textContent = pane.dataset.ccnAck === '1' ? _t('Quitar No Aplica') : _t('No Aplica');
-        pane.prepend(btn);
-
-        btn.addEventListener('click', async () => {
-            const ack = pane.dataset.ccnAck === '1';
-            const method = ack ? 'action_unmark_rubro_empty' : 'action_mark_rubro_empty';
-            const orm = controller.model.orm || controller.orm;
-            await orm.call(
-                'ccn.service.quote',
-                method,
-                [[controller.model.root.data.id]],
-                { context: { rubro_code: code } }
-            );
-            pane.dataset.ccnAck = ack ? '0' : '1';
-            btn.textContent = pane.dataset.ccnAck === '1' ? _t('Quitar No Aplica') : _t('No Aplica');
-
-            // Refrescar dataset de estados local (amarillo si ack activo; si no, rojo y el servicio podrá sobreescribir a ok por conteo)
-            try {
-                const map = JSON.parse(controller.el.dataset.ccnStates || '{}');
-                map[code] = pane.dataset.ccnAck === '1' ? 'yellow' : 'red';
-                controller.el.dataset.ccnStates = JSON.stringify(map);
-            } catch(e) {}
-
-            if (window.__ccnTabsDebug && window.__ccnTabsDebug.applyAll) {
-                window.__ccnTabsDebug.applyAll();
-            }
-        });
-    });
-
-    if (window.__ccnTabsDebug && window.__ccnTabsDebug.applyAll) {
-        window.__ccnTabsDebug.applyAll();
-    }
+export function initQuoteNotebook(controller) {
+    if (controller?.model?.name !== "ccn.service.quote") return;
+    publishStates(controller);
 }
 
 patch(FormController.prototype, {
-    patchName: "ccn_quote_notebook",
+    patchName: "ccn_quote_notebook_publish_states",
     async onMounted() {
-        if (this._super) {
-            await this._super(...arguments);
-        }
-        initQuoteTabs(this);
+        if (this._super) await this._super(...arguments);
+        initQuoteNotebook(this);
     },
     async onWillUpdateProps() {
-        if (this._super) {
-            await this._super(...arguments);
-        }
-        initQuoteTabs(this);
+        if (this._super) await this._super(...arguments);
+        initQuoteNotebook(this);
     },
 });

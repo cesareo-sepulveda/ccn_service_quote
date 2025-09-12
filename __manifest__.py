@@ -2,7 +2,7 @@
 {
     "name": "Cotizador Especial CCN",
     "summary": "Wizard para cotizar servicios CCN",
-    "version": "18.0.9.3.43",
+    "version": "18.0.9.3.44",
     "author": "Witann Technologies",
     "license": "LGPL-3",
     "category": "Sales/Sales",
@@ -28,20 +28,10 @@
     ],
     "assets": {
         "web.assets_backend": [
-            "ccn_service_quote/static/src/scss/quote_status.scss",
             "ccn_service_quote/static/src/scss/quote_tabs.scss",
             "ccn_service_quote/static/src/js/quote_notebook.js",
             "ccn_service_quote/static/src/js/quote_tabs_badges.js",
-            "ccn_service_quote/static/src/scss/quote_tabs_fix.scss",
-            "ccn_service_quote/static/src/js/quote_tabs_color_persist.js",
-            "ccn_service_quote/static/src/scss/quote_tabs_color_persist.scss",
-            "ccn_service_quote/static/src/js/quote_tabs_color_inline.js",
-            "ccn_service_quote/static/src/scss/quote_tabs_color_inline.scss",
-            "ccn_service_quote/static/src/js/quote_tabs_color_map.js",
-            "ccn_service_quote/static/src/scss/quote_tabs_color_map.scss",
-            "ccn_service_quote/static/src/js/quote_tabs_color_map_v2.js",
-            "ccn_service_quote/static/src/scss/quote_tabs_force_color.scss",
-            "ccn_service_quote/static/src/scss/quote_tabs_persist_min.scss",
+            "ccn_service_quote/static/src/scss/quote_tabs_inactive_colors.scss",
         ]
     },
     "installable": True,

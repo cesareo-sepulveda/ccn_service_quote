@@ -1,0 +1,37 @@
+/* Mantener color en tabs INACTIVOS según state; ACTIVO queda como tu tema */
+:root {
+  --ccn-ok:    #16a34a;
+  --ccn-warn:  #ca8a04;
+  --ccn-empty: #dc2626;
+}
+
+.o_notebook .nav-tabs {
+  /* OK */
+  .nav-link[data-ccn-state="ok"]:not(.active),
+  li[data-ccn-state="ok"]:not(.active) > .nav-link {
+    background-color: var(--ccn-ok) !important;
+    border-color: var(--ccn-ok) !important;
+    color: #fff !important;
+  }
+  /* YELLOW */
+  .nav-link[data-ccn-state="yellow"]:not(.active),
+  li[data-ccn-state="yellow"]:not(.active) > .nav-link {
+    background-color: var(--ccn-warn) !important;
+    border-color: var(--ccn-warn) !important;
+    color: #1f2937 !important;
+  }
+  /* RED */
+  .nav-link[data-ccn-state="red"]:not(.active),
+  li[data-ccn-state="red"]:not(.active) > .nav-link {
+    background-color: var(--ccn-empty) !important;
+    border-color: var(--ccn-empty) !important;
+    color: #fff !important;
+  }
+
+  /* Chevrons (si tu tema los pinta con ::after; no cambiamos geometría) */
+  .nav-link[data-ccn-state]:not(.active)::after,
+  li[data-ccn-state]:not(.active)::after,
+  li[data-ccn-state]:not(.active) > .nav-link::after {
+    border-left-color: currentColor; /* hereda, usualmente no hace falta más */
+  }
+}
