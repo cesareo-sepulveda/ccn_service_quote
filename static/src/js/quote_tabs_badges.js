@@ -213,8 +213,12 @@ function countRowsForCode(form, code) {
 }
 
 function countRows(panelEl) {
-  // Cuenta solo filas de datos reales (tr.o_data_row)
-  const rows = panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row");
+  // Cuenta filas de datos reales, incluyendo registros recién agregados
+  let rows = panelEl.querySelectorAll(".o_list_view tbody tr.o_data_row");
+  if (rows.length) return rows.length;
+  rows = panelEl.querySelectorAll(
+    ".o_list_view tbody tr:not(.o_list_record_add)"
+  );
   return rows.length || 0;
 }
 

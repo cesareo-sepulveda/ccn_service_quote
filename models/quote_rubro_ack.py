@@ -55,6 +55,7 @@ class CCNServiceQuote(models.Model):
 
     def _get_state_for(self, code):
         self.ensure_one()
+<<<<<<< HEAD
         Line = self.env["ccn.service.quote.line"]
         # Reproducir el dominio de la vista: contar por rubro_code
         domain = [("quote_id", "=", self.id), ("rubro_code", "=", code)]
@@ -67,6 +68,12 @@ class CCNServiceQuote(models.Model):
             domain.append(("service_type", "=", self.current_service_type))
         cnt = Line.search_count(domain)
         if cnt > 0:
+=======
+        lines = self.line_ids.filtered(
+            lambda l: l.site_id.id == site.id and l.type == typ and l.rubro_id.id == rubro.id
+        )
+        if lines:
+>>>>>>> f8c65b9457aed1625658e9bde9e479c5098fc38b
             return "ok"
         # ack: sólo aplica cuando hay sitio/tipo seleccionados (como en la UI)
         ack = False
