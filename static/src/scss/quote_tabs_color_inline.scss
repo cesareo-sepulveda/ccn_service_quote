@@ -1,0 +1,21 @@
+/* ==========================================================================
+   CCN — Teñir chevron de tabs inactivos (usa variables que pone el JS)
+   - No toca paddings/sombras del tema
+   - Solo fija el color del chevron cuando el <a>/<li> tiene data-ccn-dyed
+   ========================================================================== */
+
+.o_notebook .nav-tabs {
+
+  /* Si el chevron está en el <a>::after */
+  .nav-link[data-ccn-dyed]:not(.active)::after {
+    border-left-color: var(--ccn-tab-bg) !important;
+    background-color: var(--ccn-tab-bg) !important; /* por si el chevron es sólido */
+  }
+
+  /* Si el chevron está en el <li>::after o depende del <li> */
+  li[data-ccn-dyed]:not(.active)::after,
+  li[data-ccn-dyed]:not(.active) > .nav-link::after {
+    border-left-color: var(--ccn-tab-bg) !important;
+    background-color: var(--ccn-tab-bg) !important;
+  }
+}
