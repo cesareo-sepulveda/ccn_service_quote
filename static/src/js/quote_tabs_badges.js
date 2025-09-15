@@ -3,9 +3,9 @@
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
 
-/* -------------------- Configuración -------------------- */
+/* -------------------- Config -------------------- */
 
-/** Mapa code ↔ one2many dentro del pane (según tu service_quote.py) */
+/** code ↔ one2many dentro del pane (según tu service_quote.py) */
 const O2M_BY_CODE = {
   mano_obra: "line_mano_obra_ids",
   uniforme: "line_uniforme_ids",
@@ -23,13 +23,13 @@ const O2M_BY_CODE = {
   capacitacion: "line_capacitacion_ids",
 };
 
-/** Solo estos dos tienen “No aplica” (ACK) */
+/** Solo estos 2 tienen “No aplica” (ACK) en tu modelo */
 const ACK_BY_CODE = {
   mano_obra: "ack_mano_obra_empty",
   uniforme: "ack_uniforme_empty",
 };
 
-/** Alias de código en los tabs */
+/** Alias de código en tabs */
 const CODE_ALIAS = { herr_menor_jardineria: "herramienta_menor_jardineria" };
 const toCode = (c) => CODE_ALIAS[c] || c;
 
@@ -59,29 +59,36 @@ function clearTab(link) {
 }
 
 function applyTabState(link, state) {
+  // No tocamos el look del activo (tu tema lo pinta); sí dejamos la clase por si tu SCSS la usa.
   const li = link.closest("li");
   const cls = clsFor(state);
-  if (!link.classList.contains("active")) { // no tocamos look del activo
-    link.classList.add(cls);
-  }
-  if (li && !li.classList.contains("active")) {
-    li.classList.add(cls);
-  }
+  link.classList.add(cls);
+  if (li) li.classList.add(cls);
 }
+
+function getResId() {
+  const el = document.querySelector('.o_form_view[data-res-model="ccn.service.quote"][data-res-id]');
+  if (el) {
+    const rid = parseInt(el.getAttribute("data-res-id"), 10);
+    if (Number.isFinite(rid)) return rid;
+  }
+  const h = location.hash || "";
+  const m = h.match(/[?&#](?:id|res_id|active_id)=([0-9]+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+/* -------------------- Pintado por contenido (solo cuando cambie) -------------------- */
 
 function countRowsInPane(pane, o2mName) {
   if (!pane || !o2mName) return 0;
   const box = pane.querySelector(`[name="${o2mName}"], [data-name="${o2mName}"]`);
   if (!box) return 0;
 
-  // List view embebido
+  // List embebida
   const tbody = box.querySelector(".o_list_view tbody");
-  if (tbody) {
-    // Filas de datos (excluye placeholders)
-    return tbody.querySelectorAll("tr.o_data_row, tr[data-id]").length;
-  }
+  if (tbody) return tbody.querySelectorAll("tr.o_data_row, tr[data-id]").length;
 
-  // Kanban (fallback simple)
+  // Kanban (fallback)
   const kan = box.querySelector(".o_kanban_view");
   if (kan) return kan.querySelectorAll(".o_kanban_record, .oe_kanban_card").length;
 
@@ -89,13 +96,11 @@ function countRowsInPane(pane, o2mName) {
 }
 
 function readAckFromDom(fieldName) {
-  // Checkbox estándar
   const cb =
     document.querySelector(`input[name="${fieldName}"]`) ||
     document.querySelector(`[name="${fieldName}"] .o_checkbox input`);
   if (cb && "checked" in cb) return !!cb.checked;
 
-  // Otros widgets → data-value/value/texto
   const el = document.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
   if (!el) return false;
   const raw = el.getAttribute("data-value") ?? el.getAttribute("value") ?? el.textContent ?? "";
@@ -103,7 +108,6 @@ function readAckFromDom(fieldName) {
   return s === "1" || s === "true" || s === "yes" || s === "sí" || s === "si";
 }
 
-/** Regla: filas>0 → ok; filas=0 y ACK → yellow; si no → red */
 function computeStateFor(link, code) {
   const pane = paneFor(link);
   const o2m = O2M_BY_CODE[code];
@@ -114,30 +118,50 @@ function computeStateFor(link, code) {
   return "red";
 }
 
-/* -------------------- Prefill opcional desde servidor (solo al inicio) -------------------- */
+/* -------------------- Pintado inicial desde servidor (una sola vez) -------------------- */
 
-async function tryServerPrefill() {
-  // Si existe el método get_rubro_states lo usamos para colorear TODO al inicio.
-  const el = document.querySelector('.o_form_view[data-res-model="ccn.service.quote"][data-res-id]');
-  const id = el ? parseInt(el.getAttribute("data-res-id"), 10) : NaN;
-  if (!Number.isFinite(id)) return null;
+async function fetchInitialMap(resId) {
+  // 1) Leer ACKs
+  let ack = { ack_mano_obra_empty: false, ack_uniforme_empty: false };
   try {
-    const res = await rpc("/web/dataset/call_kw/ccn.service.quote/get_rubro_states", {
+    const r = await rpc("/web/dataset/call_kw/ccn.service.quote/read", {
       model: "ccn.service.quote",
-      method: "get_rubro_states",
-      args: [[id]],
+      method: "read",
+      args: [[resId], ["ack_mano_obra_empty", "ack_uniforme_empty"]],
       kwargs: {},
     });
-    if (!res || typeof res !== "object") return null;
-    // Mapea 0/1/2 → red/ok/yellow
-    const map = {};
-    for (const [k, v] of Object.entries(res)) {
-      map[k] = v === 1 ? "ok" : v === 2 ? "yellow" : "red";
+    const rec = Array.isArray(r) ? r[0] : null;
+    if (rec) {
+      ack = {
+        ack_mano_obra_empty: !!rec.ack_mano_obra_empty,
+        ack_uniforme_empty: !!rec.ack_uniforme_empty,
+      };
     }
-    return map;
-  } catch {
-    return null; // si no existe el método, seguimos sin prefill
-  }
+  } catch {}
+
+  // 2) Contar líneas por rubro con search_count (un request por rubro; robusto y barato)
+  const codes = Object.keys(O2M_BY_CODE);
+  const counts = await Promise.all(
+    codes.map((code) =>
+      rpc("/web/dataset/call_kw/ccn.service.quote.line/search_count", {
+        model: "ccn.service.quote.line",
+        method: "search_count",
+        args: [[["quote_id", "=", resId], ["rubro_id.code", "=", code]]],
+        kwargs: {},
+      }).catch(() => 0)
+    )
+  );
+
+  // 3) Construir mapa de estado inicial: filas>0 → ok; si 0 y ack (cuando aplique) → yellow; si no → red
+  const map = {};
+  codes.forEach((code, i) => {
+    const n = counts[i] || 0;
+    if (n > 0) map[code] = "ok";
+    else if (code === "mano_obra" && ack.ack_mano_obra_empty) map[code] = "yellow";
+    else if (code === "uniforme" && ack.ack_uniforme_empty) map[code] = "yellow";
+    else map[code] = "red";
+  });
+  return map;
 }
 
 /* -------------------- Servicio principal -------------------- */
@@ -145,11 +169,26 @@ async function tryServerPrefill() {
 const service = {
   name: "ccn_quote_tabs_service",
   async start() {
-    const notebook = document.querySelector(".o_form_view .o_notebook");
-    if (!notebook) return;
+    // Esperar a que exista el notebook
+    const waitNotebook = () =>
+      new Promise((resolve) => {
+        const nb = document.querySelector(".o_form_view .o_notebook");
+        if (nb) return resolve(nb);
+        const mo = new MutationObserver(() => {
+          const n = document.querySelector(".o_form_view .o_notebook");
+          if (n) {
+            mo.disconnect();
+            resolve(n);
+          }
+        });
+        mo.observe(document.body, { childList: true, subtree: true });
+      });
+
+    const notebook = await waitNotebook();
+    const links = [...notebook.querySelectorAll(".nav-tabs .nav-link")];
+    if (!links.length) return;
 
     // Indexar tabs por code
-    const links = [...notebook.querySelectorAll(".nav-tabs .nav-link")];
     const byCode = {};
     for (const a of links) {
       const raw = tabCode(a);
@@ -157,18 +196,22 @@ const service = {
       byCode[toCode(raw)] = a;
     }
 
-    // 1) Pintado inicial (una sola vez):
-    //    - Si hay prefill de servidor: se aplica a todos.
-    //    - Además, para panes ya montados, calculamos por contenido (por si difiere).
-    const pre = await tryServerPrefill();
-    for (const [code, a] of Object.entries(byCode)) {
-      clearTab(a);
-      const st = pre?.[code] ?? computeStateFor(a, code);
-      applyTabState(a, st);
+    // ===== Pintado INICIAL (servidor) =====
+    const resId = getResId();
+    if (resId) {
+      try {
+        const initialMap = await fetchInitialMap(resId);
+        // Aplica el mapa a TODOS los tabs (activos e inactivos)
+        for (const [code, a] of Object.entries(byCode)) {
+          clearTab(a);
+          applyTabState(a, initialMap[code] || "red");
+        }
+      } catch {
+        // Si por alguna razón falla, no rompemos nada; seguiremos con repintado por contenido.
+      }
     }
 
-    // 2) SOLO repintamos cuando cambie el CONTENIDO de un pane o un ACK.
-    //    Observamos el contenedor de panes y reaccionamos a mutaciones.
+    // ===== Repintar SOLO ante cambios de CONTENIDO =====
     const dirty = new Set();
     let scheduled = false;
 
@@ -188,48 +231,72 @@ const service = {
       }, 60);
     }
 
-    function markDirtyByPane(pane) {
-      if (!pane?.id) return;
+    function codeFromPane(pane) {
+      if (!pane?.id) return null;
       const m = pane.id.match(/^page_(.+)$/);
-      if (!m) return;
-      const code = toCode(m[1]);
-      if (byCode[code]) {
-        dirty.add(code);
-        scheduleRepaint();
-      }
+      return m ? toCode(m[1]) : null;
     }
 
-    // Observa todo el contenido de tabs (altas/bajas de filas, montajes de panes, etc.)
+    // Observa cambios en los panes (altas/bajas, montajes/remontajes)
     const tabContent = notebook.querySelector(".tab-content") || notebook;
     const mo = new MutationObserver((mutations) => {
       for (const mut of mutations) {
-        // Si se añade un pane completo, o cambia su interior, marcamos su code
-        const added = [...mut.addedNodes].filter((n) => n.nodeType === 1);
-        for (const n of added) {
-          if (n.classList?.contains("tab-pane")) markDirtyByPane(n);
-          const pane = n.closest?.(".tab-pane");
-          if (pane) markDirtyByPane(pane);
+        const targetPane = mut.target?.closest?.(".tab-pane");
+        if (targetPane) {
+          const code = codeFromPane(targetPane);
+          if (code && byCode[code]) {
+            dirty.add(code);
+          }
         }
-        if (mut.target?.classList?.contains("tab-pane")) markDirtyByPane(mut.target);
-        const pane = mut.target?.closest?.(".tab-pane");
-        if (pane) markDirtyByPane(pane);
+        // Nodos añadidos que sean panes o estén dentro de panes
+        for (const n of [...mut.addedNodes]) {
+          if (n.nodeType !== 1) continue;
+          if (n.classList?.contains("tab-pane")) {
+            const code = codeFromPane(n);
+            if (code && byCode[code]) dirty.add(code);
+          } else {
+            const pane = n.closest?.(".tab-pane");
+            if (pane) {
+              const code = codeFromPane(pane);
+              if (code && byCode[code]) dirty.add(code);
+            }
+          }
+        }
       }
+      if (dirty.size) scheduleRepaint();
     });
     mo.observe(tabContent, { childList: true, subtree: true });
 
-    // 3) Cambios de ACK → repintar SOLO el tab relacionado
+    // Cambios de ACK → repintar SOLO el tab correspondiente
     document.body.addEventListener("change", (ev) => {
       const nm = ev.target?.getAttribute?.("name");
       if (!nm) return;
       for (const [code, field] of Object.entries(ACK_BY_CODE)) {
-        if (nm === field) {
-          if (byCode[code]) {
-            dirty.add(code);
-            scheduleRepaint();
-          }
+        if (nm === field && byCode[code]) {
+          dirty.add(code);
+          scheduleRepaint();
         }
       }
     });
+
+    // Exponer helper de depuración
+    window.__ccnTabsLive = {
+      repaint(code) {
+        if (code && byCode[code]) {
+          const a = byCode[code];
+          const st = computeStateFor(a, code);
+          clearTab(a);
+          applyTabState(a, st);
+          return;
+        }
+        // Repaint de todos
+        for (const [c, a] of Object.entries(byCode)) {
+          const st = computeStateFor(a, c);
+          clearTab(a);
+          applyTabState(a, st);
+        }
+      },
+    };
   },
 };
 
