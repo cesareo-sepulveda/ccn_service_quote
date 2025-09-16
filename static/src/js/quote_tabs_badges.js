@@ -3,9 +3,9 @@
 import { registry } from "@web/core/registry";
 import { rpc } from "@web/core/network/rpc";
 
-/* -------------------- Config -------------------- */
+/* ========= Config ========= */
 
-/** code ↔ one2many dentro del pane (según tu service_quote.py) */
+/** code ↔ one2many (según tu service_quote.py) */
 const O2M_BY_CODE = {
   mano_obra: "line_mano_obra_ids",
   uniforme: "line_uniforme_ids",
@@ -23,7 +23,7 @@ const O2M_BY_CODE = {
   capacitacion: "line_capacitacion_ids",
 };
 
-/** Solo estos 2 tienen “No aplica” (ACK) en tu modelo */
+/** ACK por code (sólo estos 2 en tu modelo) */
 const ACK_BY_CODE = {
   mano_obra: "ack_mano_obra_empty",
   uniforme: "ack_uniforme_empty",
@@ -33,16 +33,17 @@ const ACK_BY_CODE = {
 const CODE_ALIAS = { herr_menor_jardineria: "herramienta_menor_jardineria" };
 const toCode = (c) => CODE_ALIAS[c] || c;
 
-/* -------------------- Utilidades -------------------- */
+const clsFor = (st) =>
+  st === "ok" ? "ccn-status-filled" : st === "yellow" ? "ccn-status-ack" : "ccn-status-empty";
 
-const clsFor = (st) => (st === "ok" ? "ccn-status-filled" : st === "yellow" ? "ccn-status-ack" : "ccn-status-empty");
+/* ========= Utilidades DOM ========= */
 
 function tabCode(a) {
   const nameAttr = a.getAttribute("name") || a.dataset.name || "";
   let m = nameAttr.match(/^page_(.+)$/);
   if (m) return m[1];
-  const t = (a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/, "");
-  m = t.match(/^page_(.+)$/);
+  const target = (a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/, "");
+  m = target.match(/^page_(.+)$/);
   return m ? m[1] : null;
 }
 
@@ -59,7 +60,6 @@ function clearTab(link) {
 }
 
 function applyTabState(link, state) {
-  // No tocamos el look del activo (tu tema lo pinta); sí dejamos la clase por si tu SCSS la usa.
   const li = link.closest("li");
   const cls = clsFor(state);
   link.classList.add(cls);
@@ -77,14 +77,14 @@ function getResId() {
   return m ? parseInt(m[1], 10) : null;
 }
 
-/* -------------------- Pintado por contenido (solo cuando cambie) -------------------- */
+/* ========= Lectura de contenido (repintado por cambios) ========= */
 
 function countRowsInPane(pane, o2mName) {
   if (!pane || !o2mName) return 0;
   const box = pane.querySelector(`[name="${o2mName}"], [data-name="${o2mName}"]`);
   if (!box) return 0;
 
-  // List embebida
+  // Lista embebida
   const tbody = box.querySelector(".o_list_view tbody");
   if (tbody) return tbody.querySelectorAll("tr.o_data_row, tr[data-id]").length;
 
@@ -108,6 +108,7 @@ function readAckFromDom(fieldName) {
   return s === "1" || s === "true" || s === "yes" || s === "sí" || s === "si";
 }
 
+/** Regla de estado por contenido: filas>0 → ok; filas=0 & ACK → yellow; si no → red */
 function computeStateFor(link, code) {
   const pane = paneFor(link);
   const o2m = O2M_BY_CODE[code];
@@ -118,10 +119,12 @@ function computeStateFor(link, code) {
   return "red";
 }
 
-/* -------------------- Pintado inicial desde servidor (una sola vez) -------------------- */
+/* ========= Pintado inicial (RPC) ========= */
+/* Una sola vez: lee ACKs y hace search_count por rubro en servidor.
+   Así colorea todos los tabs desde el inicio, aunque los panes aún no estén montados. */
 
 async function fetchInitialMap(resId) {
-  // 1) Leer ACKs
+  // 1) ACKs
   let ack = { ack_mano_obra_empty: false, ack_uniforme_empty: false };
   try {
     const r = await rpc("/web/dataset/call_kw/ccn.service.quote/read", {
@@ -132,14 +135,14 @@ async function fetchInitialMap(resId) {
     });
     const rec = Array.isArray(r) ? r[0] : null;
     if (rec) {
-      ack = {
-        ack_mano_obra_empty: !!rec.ack_mano_obra_empty,
-        ack_uniforme_empty: !!rec.ack_uniforme_empty,
-      };
+      ack.ack_mano_obra_empty = !!rec.ack_mano_obra_empty;
+      ack.ack_uniforme_empty = !!rec.ack_uniforme_empty;
     }
-  } catch {}
+  } catch {
+    // seguimos sin ACKs
+  }
 
-  // 2) Contar líneas por rubro con search_count (un request por rubro; robusto y barato)
+  // 2) search_count por rubro
   const codes = Object.keys(O2M_BY_CODE);
   const counts = await Promise.all(
     codes.map((code) =>
@@ -152,7 +155,7 @@ async function fetchInitialMap(resId) {
     )
   );
 
-  // 3) Construir mapa de estado inicial: filas>0 → ok; si 0 y ack (cuando aplique) → yellow; si no → red
+  // 3) Construir mapa
   const map = {};
   codes.forEach((code, i) => {
     const n = counts[i] || 0;
@@ -164,12 +167,12 @@ async function fetchInitialMap(resId) {
   return map;
 }
 
-/* -------------------- Servicio principal -------------------- */
+/* ========= Servicio (Odoo 18) ========= */
 
 const service = {
   name: "ccn_quote_tabs_service",
   async start() {
-    // Esperar a que exista el notebook
+    // Espera a que exista el notebook para no romper UI
     const waitNotebook = () =>
       new Promise((resolve) => {
         const nb = document.querySelector(".o_form_view .o_notebook");
@@ -196,26 +199,24 @@ const service = {
       byCode[toCode(raw)] = a;
     }
 
-    // ===== Pintado INICIAL (servidor) =====
+    // ===== Pintado inicial (servidor) =====
     const resId = getResId();
     if (resId) {
       try {
         const initialMap = await fetchInitialMap(resId);
-        // Aplica el mapa a TODOS los tabs (activos e inactivos)
         for (const [code, a] of Object.entries(byCode)) {
           clearTab(a);
           applyTabState(a, initialMap[code] || "red");
         }
       } catch {
-        // Si por alguna razón falla, no rompemos nada; seguiremos con repintado por contenido.
+        // si falla, seguimos con el repintado por contenido
       }
     }
 
-    // ===== Repintar SOLO ante cambios de CONTENIDO =====
+    // ===== Repintar SÓLO cuando cambie el contenido o ACK =====
     const dirty = new Set();
     let scheduled = false;
-
-    function scheduleRepaint() {
+    const scheduleRepaint = () => {
       if (scheduled) return;
       scheduled = true;
       setTimeout(() => {
@@ -229,29 +230,26 @@ const service = {
         }
         dirty.clear();
       }, 60);
-    }
+    };
 
-    function codeFromPane(pane) {
+    const codeFromPane = (pane) => {
       if (!pane?.id) return null;
       const m = pane.id.match(/^page_(.+)$/);
       return m ? toCode(m[1]) : null;
-    }
+    };
 
-    // Observa cambios en los panes (altas/bajas, montajes/remontajes)
+    // Observa el contenido de tabs (altas/bajas, remontajes de panes, etc.)
     const tabContent = notebook.querySelector(".tab-content") || notebook;
     const mo = new MutationObserver((mutations) => {
       for (const mut of mutations) {
         const targetPane = mut.target?.closest?.(".tab-pane");
         if (targetPane) {
           const code = codeFromPane(targetPane);
-          if (code && byCode[code]) {
-            dirty.add(code);
-          }
+          if (code && byCode[code]) dirty.add(code);
         }
-        // Nodos añadidos que sean panes o estén dentro de panes
-        for (const n of [...mut.addedNodes]) {
-          if (n.nodeType !== 1) continue;
-          if (n.classList?.contains("tab-pane")) {
+        for (const n of mut.addedNodes) {
+          if (!(n instanceof Element)) continue;
+          if (n.classList.contains("tab-pane")) {
             const code = codeFromPane(n);
             if (code && byCode[code]) dirty.add(code);
           } else {
@@ -267,7 +265,7 @@ const service = {
     });
     mo.observe(tabContent, { childList: true, subtree: true });
 
-    // Cambios de ACK → repintar SOLO el tab correspondiente
+    // Cambios de ACK → recalcular SOLO el tab correspondiente
     document.body.addEventListener("change", (ev) => {
       const nm = ev.target?.getAttribute?.("name");
       if (!nm) return;
@@ -279,7 +277,7 @@ const service = {
       }
     });
 
-    // Exponer helper de depuración
+    // (Opcional) Depuración manual
     window.__ccnTabsLive = {
       repaint(code) {
         if (code && byCode[code]) {
@@ -289,7 +287,6 @@ const service = {
           applyTabState(a, st);
           return;
         }
-        // Repaint de todos
         for (const [c, a] of Object.entries(byCode)) {
           const st = computeStateFor(a, c);
           clearTab(a);
