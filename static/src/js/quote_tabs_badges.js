@@ -1,16 +1,45 @@
-/** CCN Quote Tabs Badges — Odoo 18 CE (sin imports)
- *  - Inicial: lee rubro_state_* (0=red, 1=ok, 2=yellow) desde ccn.service.quote.
- *  - Fallback: cuenta line_*_ids si los rubro_state_* no están disponibles.
- *  - Repinta solo ante cambios de contenido o ACK. No repinta al cambiar de pestaña.
+/** CCN Quote Tabs Badges — DOM only + montaje silencioso (Odoo 18 CE, sin imports)
+ *  - Inicial: recorre cada tab, lo activa un instante para que monte el pane, cuenta filas y pinta.
+ *    Luego regresa al tab original. No usa res_id ni llamadas RPC.
+ *  - Después: repinta SOLO cuando cambia contenido (altas/bajas) o cambian ACKs.
+ *  - No repinta al cambiar de pestaña.
+ *  - No toca tu SCSS (chevrons). Solo aplica: ccn-status-filled / ccn-status-ack / ccn-status-empty.
  */
 
 (function () {
   "use strict";
 
-  /* ===== Mapeos ===== */
+  /* ==== Mapeo etiqueta → código de rubro (ajusta si tus textos difieren) ==== */
+  function normalizeLabel(s) {
+    return String(s || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/\p{Diacritic}/gu, "")
+      .replace(/\s+/g, " ");
+  }
+  const LABEL_TO_CODE = {
+    "mano de obra": "mano_obra",
+    "uniforme": "uniforme",
+    "epp": "epp",
+    "epp alturas": "epp_alturas",
+    "equipo especial de limpieza": "equipo_especial_limpieza",
+    "comunicacion y computo": "comunicacion_computo",
+    "herr. menor jardineria": "herramienta_menor_jardineria",
+    "herramienta menor jardineria": "herramienta_menor_jardineria",
+    "material de limpieza": "material_limpieza",
+    "perfil medico": "perfil_medico",
+    "maquinaria limpieza": "maquinaria_limpieza",
+    "maquinaria de jardineria": "maquinaria_jardineria",
+    "maquinaria jardineria": "maquinaria_jardineria",
+    "fertilizantes y tierra lama": "fertilizantes_tierra_lama",
+    "consumibles de jardineria": "consumibles_jardineria",
+    "consumibles jardineria": "consumibles_jardineria",
+    "capacitacion": "capacitacion",
+  };
 
-  // Códigos de rubro ↔ O2M (para repintado por contenido y fallback)
-  var O2M_BY_CODE = {
+  /* ==== One2many por código (para contar filas dentro del pane) ==== */
+  const O2M_BY_CODE = {
     mano_obra: "line_mano_obra_ids",
     uniforme: "line_uniforme_ids",
     epp: "line_epp_ids",
@@ -26,336 +55,287 @@
     consumibles_jardineria: "line_consumibles_jardineria_ids",
     capacitacion: "line_capacitacion_ids",
   };
-  var ALL_CODES = Object.keys(O2M_BY_CODE);
 
-  // Campos de estado por rubro en el encabezado (lo que ya viste en shell)
-  var STATE_FIELD_BY_CODE = {
-    mano_obra: "rubro_state_mano_obra",
-    uniforme: "rubro_state_uniforme",
-    epp: "rubro_state_epp",
-    epp_alturas: "rubro_state_epp_alturas",
-    equipo_especial_limpieza: "rubro_state_equipo_especial_limpieza",
-    comunicacion_computo: "rubro_state_comunicacion_computo",
-    herramienta_menor_jardineria: "rubro_state_herramienta_menor_jardineria",
-    material_limpieza: "rubro_state_material_limpieza",
-    perfil_medico: "rubro_state_perfil_medico",
-    maquinaria_limpieza: "rubro_state_maquinaria_limpieza",
-    maquinaria_jardineria: "rubro_state_maquinaria_jardineria",
-    fertilizantes_tierra_lama: "rubro_state_fertilizantes_tierra_lama",
-    consumibles_jardineria: "rubro_state_consumibles_jardineria",
-    capacitacion: "rubro_state_capacitacion",
-  };
+  // ACK solo para estos dos
+  const ACK_BY_CODE = { mano_obra: "ack_mano_obra_empty", uniforme: "ack_uniforme_empty" };
 
-  // ACK sólo para estos dos (tu modelo)
-  var ACK_BY_CODE = { mano_obra: "ack_mano_obra_empty", uniforme: "ack_uniforme_empty" };
-
-  // Etiqueta visible de tab → código (para indexar aunque cambie el name/id del pane)
-  function normalizeLabel(s) {
-    return String(s || "")
-      .trim()
-      .toLowerCase()
-      .normalize("NFD")
-      .replace(/\p{Diacritic}/gu, "")
-      .replace(/\s+/g, " ");
+  /* ==== Helpers de estilo ==== */
+  function clsFor(state) {
+    // state: "ok" | "yellow" | "red"
+    return state === "ok" ? "ccn-status-filled" : state === "yellow" ? "ccn-status-ack" : "ccn-status-empty";
   }
-  var LABEL_TO_CODE = {
-    "mano de obra": "mano_obra",
-    uniforme: "uniforme",
-    epp: "epp",
-    "epp alturas": "epp_alturas",
-    "equipo especial de limpieza": "equipo_especial_limpieza",
-    "comunicacion y computo": "comunicacion_computo",
-    "herr. menor jardineria": "herramienta_menor_jardineria",
-    "herramienta menor jardineria": "herramienta_menor_jardineria",
-    "material de limpieza": "material_limpieza",
-    "perfil medico": "perfil_medico",
-    "maquinaria de jardineria": "maquinaria_jardineria",
-    "maquinaria jardineria": "maquinaria_jardineria",
-    "maquinaria limpieza": "maquinaria_limpieza",
-    "fertilizantes y tierra lama": "fertilizantes_tierra_lama",
-    "consumibles de jardineria": "consumibles_jardineria",
-    "consumibles jardineria": "consumibles_jardineria",
-    "capacitacion": "capacitacion",
-  };
-
-  /* ===== Helpers de estilo ===== */
-  function clsFor(st) { return st===1 ? "ccn-status-filled" : st===2 ? "ccn-status-ack" : "ccn-status-empty"; } // 0/1/2
-
-  function clearTab(link){
-    if(!link) return;
-    var li = link.closest ? link.closest("li") : null;
-    var rm = ["ccn-status-filled","ccn-status-ack","ccn-status-empty"];
-    link.classList.remove.apply(link.classList, rm);
-    if(li) li.classList.remove.apply(li.classList, rm);
+  function clearTab(link) {
+    if (!link) return;
+    const li = link.closest ? link.closest("li") : null;
+    const rm = ["ccn-status-filled", "ccn-status-ack", "ccn-status-empty"];
+    link.classList.remove(...rm);
+    if (li) li.classList.remove(...rm);
   }
-  function applyTabState(link, numericState){
-    if(!link) return;
-    var li = link.closest ? link.closest("li") : null;
-    var cls = clsFor(numericState);
-    link.classList.add(cls);
-    if(li) li.classList.add(cls);
+  function applyTabState(link, state) {
+    if (!link) return;
+    const li = link.closest ? link.closest("li") : null;
+    const c = clsFor(state);
+    link.classList.add(c);
+    if (li) li.classList.add(c);
   }
 
-  /* ===== DOM utils ===== */
-  function tabLabel(a){ return normalizeLabel(a ? a.textContent : ""); }
-
-  function paneFor(link){
-    if(!link) return null;
-    var id=(link.getAttribute("aria-controls")||link.getAttribute("data-bs-target")||link.getAttribute("href")||"").replace(/^#/,"");
+  /* ==== DOM utils ==== */
+  function tabLabel(link) {
+    return normalizeLabel(link ? link.textContent : "");
+  }
+  function paneFor(link) {
+    if (!link) return null;
+    const id = (link.getAttribute("aria-controls") || link.getAttribute("data-bs-target") || link.getAttribute("href") || "").replace(/^#/, "");
     return id ? document.getElementById(id) : null;
   }
 
+  /* ==== Contadores de contenido ==== */
   function countRowsInPane(pane, o2mName) {
     if (!pane || !o2mName) return 0;
-    var box = pane.querySelector('[name="'+o2mName+'"], [data-name="'+o2mName+'"]');
+    // Contenedor del widget x2many
+    const box =
+      pane.querySelector(`[name="${o2mName}"], [data-name="${o2mName}"], .o_field_widget[name="${o2mName}"]`) ||
+      pane.querySelector(`.o_field_x2many[name="${o2mName}"]`);
     if (!box) return 0;
-    var tbody = box.querySelector(".o_list_view tbody");
-    if (tbody) return tbody.querySelectorAll("tr.o_data_row, tr[data-id]").length;
-    var kan = box.querySelector(".o_kanban_view");
-    if (kan) return kan.querySelectorAll(".o_kanban_record, .oe_kanban_card").length;
+
+    // List view embebido
+    const tbody = box.querySelector(".o_list_view tbody, .o_list_renderer tbody");
+    if (tbody) {
+      // Odoo 18: filas reales tienen data-id o clase .o_data_row
+      return tbody.querySelectorAll("tr[data-id], tr.o_data_row").length;
+    }
+
+    // Kanban embebido
+    const kanban = box.querySelector(".o_kanban_view, .o_kanban_renderer");
+    if (kanban) {
+      return kanban.querySelectorAll(".o_kanban_record, .oe_kanban_card").length;
+    }
+
+    // Editable list (inline) puede no tener tbody aún
+    const rows = box.querySelectorAll('tr[role="row"][data-id], .o_data_row');
+    if (rows && rows.length) return rows.length;
+
     return 0;
   }
 
   function readAckFromDom(fieldName) {
-    var cb = document.querySelector('input[name="'+fieldName+'"]') ||
-             document.querySelector('[name="'+fieldName+'"] .o_checkbox input');
+    const cb =
+      document.querySelector(`input[name="${fieldName}"]`) ||
+      document.querySelector(`[name="${fieldName}"] .o_checkbox input`);
     if (cb && "checked" in cb) return !!cb.checked;
-    var el = document.querySelector('[name="'+fieldName+'"], [data-name="'+fieldName+'"]');
+
+    const el = document.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
     if (!el) return false;
-    var raw = el.getAttribute("data-value") || el.getAttribute("value") || el.textContent || "";
-    var s = String(raw).trim().toLowerCase();
-    return (s === "1" || s === "true" || s === "yes" || s === "sí" || s === "si");
+    const raw = el.getAttribute("data-value") || el.getAttribute("value") || el.textContent || "";
+    const s = String(raw).trim().toLowerCase();
+    return s === "1" || s === "true" || s === "yes" || s === "sí" || s === "si";
   }
 
-  /* ===== JSON-RPC correcto ===== */
-  function callKw(model, method, args, kwargs){
-    var payload={jsonrpc:"2.0",method:"call",params:{model,method,args:args||[],kwargs:kwargs||{}},id:Date.now()};
-    return fetch("/web/dataset/call_kw",{
-      method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify(payload),
-    }).then(r=>r.json()).then(j=>{ if(j&&j.error) throw j.error; return j?j.result:null; });
-  }
-
-  function getResId(){
-    var el = document.querySelector('.o_form_view[data-res-model="ccn.service.quote"][data-res-id]');
-    if (el) {
-      var rid = parseInt(el.getAttribute("data-res-id"), 10);
-      if (!isNaN(rid)) return rid;
+  function computeStateFromDom(link, code) {
+    try {
+      const pane = paneFor(link);
+      const o2m = O2M_BY_CODE[code];
+      const rows = countRowsInPane(pane, o2m);
+      if (rows > 0) return "ok";
+      // Sin filas → mirar ACK si aplica
+      const ackField = ACK_BY_CODE[code];
+      if (ackField && readAckFromDom(ackField)) return "yellow";
+      return "red";
+    } catch (e) {
+      return "red";
     }
-    var h = location.hash || "";
-    var m = h.match(/[?&#](?:id|res_id|active_id)=([0-9]+)/);
-    return m ? parseInt(m[1], 10) : null;
   }
 
-  /* ===== Pintado inicial por rubro_state_* (fallback a O2M) ===== */
+  /* ==== Montaje silencioso (activar un tab, esperar a que monte, medir y volver) ==== */
 
-  function fetchInitialMapFromStates(resId){
-    // lee todos los rubro_state_* de una
-    var stateFields = ALL_CODES.map(c => STATE_FIELD_BY_CODE[c]).filter(Boolean);
-    var ackFields = Object.values(ACK_BY_CODE);
-    var fields = stateFields.concat(ackFields);
-
-    return callKw("ccn.service.quote","read",[[resId], fields],{})
-      .then(function (r){
-        var rec = Array.isArray(r) ? r[0] : null;
-        if (!rec) return null;
-
-        var haveAnyState = stateFields.some(sf => rec.hasOwnProperty(sf) && rec[sf] !== false && rec[sf] !== null && rec[sf] !== undefined);
-
-        if (!haveAnyState) return null; // no existen los campos → dejar que el caller haga fallback
-
-        var map = {};
-        ALL_CODES.forEach(function(code){
-          var sf = STATE_FIELD_BY_CODE[code];
-          var v = rec[sf];
-          // valores esperados: 0|1|2 ; si viniera algo raro, tratamos como 0
-          var n = (v===0 || v===1 || v===2) ? v : 0;
-          // si el estado viniera 0 pero ACK está marcado (y aplica), forzamos 2 (amarillo)
-          if (n === 0) {
-            if (code === "mano_obra" && !!rec.ack_mano_obra_empty) n = 2;
-            if (code === "uniforme" && !!rec.ack_uniforme_empty) n = 2;
-          }
-          map[code] = n;
-        });
-        return map;
-      })
-      .catch(function(){ return null; });
+  function getActiveLink(nav) {
+    return nav.querySelector(".nav-link.active") || null;
   }
 
-  function fetchInitialMapFallbackO2M(resId){
-    // Leer los length de los line_*_ids en un solo read
-    var o2mFields = ALL_CODES.map(c => O2M_BY_CODE[c]);
-    var ackFields = Object.values(ACK_BY_CODE);
-    var fields = o2mFields.concat(ackFields);
-    return callKw("ccn.service.quote","read",[[resId], fields],{})
-      .then(function (r){
-        var rec = Array.isArray(r) ? r[0] : null;
-        if (!rec) return null;
-        var map = {};
-        ALL_CODES.forEach(function(code){
-          var arr = rec[ O2M_BY_CODE[code] ] || [];
-          var n = Array.isArray(arr) ? arr.length : 0;
-          if (n > 0) map[code] = 1; // ok
-          else if (code === "mano_obra" && !!rec.ack_mano_obra_empty) map[code] = 2;
-          else if (code === "uniforme" && !!rec.ack_uniforme_empty) map[code] = 2;
-          else map[code] = 0;
-        });
-        return map;
-      })
-      .catch(function(){ return null; });
-  }
+  function showTabAndWait(link, timeoutMs = 450) {
+    return new Promise((resolve) => {
+      if (!link) return resolve();
+      const pane = paneFor(link);
+      // Si ya hay contenido, no hace falta esperar
+      if (pane && (pane.querySelector(".o_list_view, .o_list_renderer, .o_kanban_view, .o_kanban_renderer"))) {
+        // Aún así activamos para no desincronizarnos
+        link.click?.();
+        return setTimeout(resolve, 0);
+      }
+      // Activar tab
+      link.click?.();
 
-  /* ===== Repintado por cambios de contenido / ACK (DOM) ===== */
-
-  function computeStateFromDom(link, code){
-    try{
-      var rows = countRowsInPane(paneFor(link), O2M_BY_CODE[code]);
-      if (rows > 0) return 1; // ok
-      var ackField = ACK_BY_CODE[code];
-      if (ackField && readAckFromDom(ackField)) return 2; // amarillo
-      return 0; // rojo
-    }catch(e){ return 0; }
-  }
-
-  /* ===== Arranque ===== */
-
-  function waitNotebook(cb){
-    var nb = document.querySelector(".o_form_view .o_notebook");
-    if (nb) return cb(nb);
-    var mo = new MutationObserver(function(){
-      var n = document.querySelector(".o_form_view .o_notebook");
-      if (n) { mo.disconnect(); cb(n); }
+      // Esperar a que aparezca contenido o hasta timeout
+      const started = Date.now();
+      const obs = new MutationObserver(() => {
+        if (!pane) return;
+        if (pane.querySelector(".o_list_view, .o_list_renderer, .o_kanban_view, .o_kanban_renderer")) {
+          obs.disconnect();
+          resolve();
+        } else if (Date.now() - started > timeoutMs) {
+          obs.disconnect();
+          resolve(); // seguimos aunque no veamos renderer (contaremos 0 si no montó)
+        }
+      });
+      if (pane) {
+        obs.observe(pane, { childList: true, subtree: true });
+      }
+      // Salvaguarda por si no hubo mutaciones
+      setTimeout(() => {
+        try { obs.disconnect(); } catch {}
+        resolve();
+      }, timeoutMs + 50);
     });
-    mo.observe(document.documentElement, { childList:true, subtree:true });
+  }
+
+  async function initialSweep(notebook, byCode) {
+    const nav = notebook.querySelector(".nav-tabs");
+    if (!nav) return;
+
+    const links = Object.values(byCode);
+    if (!links.length) return;
+
+    const activeBefore = getActiveLink(nav);
+
+    // Recorremos tabs: activar, esperar montaje, medir y pintar
+    for (const link of links) {
+      try {
+        await showTabAndWait(link);
+        const lbl = normalizeLabel(link.textContent);
+        const code = Object.keys(byCode).find((c) => byCode[c] === link);
+        if (!code) continue;
+        const state = computeStateFromDom(link, code);
+        clearTab(link);
+        applyTabState(link, state);
+      } catch (e) {
+        // pinta rojo si algo salió mal
+        clearTab(link);
+        applyTabState(link, "red");
+      }
+    }
+
+    // Volver al tab que estaba activo
+    if (activeBefore && activeBefore !== getActiveLink(nav)) {
+      try { activeBefore.click?.(); } catch {}
+    }
+  }
+
+  /* ==== Observadores de cambios (solo contenido / ACK) ==== */
+  function setupObservers(notebook, byCode) {
+    const tabContent = notebook.querySelector(".tab-content") || notebook;
+    let dirty = {};
+    let scheduled = false;
+
+    function schedule() {
+      if (scheduled) return;
+      scheduled = true;
+      setTimeout(() => {
+        scheduled = false;
+        try {
+          Object.keys(dirty).forEach((code) => {
+            const link = byCode[code];
+            if (!link) return;
+            const st = computeStateFromDom(link, code);
+            clearTab(link);
+            applyTabState(link, st);
+          });
+        } catch {}
+        dirty = {};
+      }, 60);
+    }
+
+    // Marca sucio el código cuyo pane recibió cambios en DOM
+    function markDirtyByPane(pane) {
+      if (!pane) return;
+      // Detectar el code por presencia del O2M en ese pane
+      for (const [code, o2m] of Object.entries(O2M_BY_CODE)) {
+        if (pane.querySelector(`[name="${o2m}"], [data-name="${o2m}"], .o_field_widget[name="${o2m}"]`)) {
+          if (byCode[code]) dirty[code] = true;
+        }
+      }
+    }
+
+    const mo = new MutationObserver((muts) => {
+      try {
+        for (const mut of muts) {
+          const pane = mut.target?.closest?.(".tab-pane");
+          if (pane) markDirtyByPane(pane);
+          for (const n of mut.addedNodes || []) {
+            if (!(n instanceof Element)) continue;
+            const p2 = n.classList?.contains("tab-pane") ? n : n.closest?.(".tab-pane");
+            if (p2) markDirtyByPane(p2);
+          }
+        }
+      } catch {}
+      if (Object.keys(dirty).length) schedule();
+    });
+    mo.observe(tabContent, { childList: true, subtree: true });
+
+    // Cambios de ACK → solo su tab
+    document.addEventListener("change", (ev) => {
+      try {
+        const nm = ev.target?.getAttribute?.("name");
+        if (!nm) return;
+        for (const [code, field] of Object.entries(ACK_BY_CODE)) {
+          if (nm === field && byCode[code]) {
+            dirty[code] = true;
+          }
+        }
+        if (Object.keys(dirty).length) schedule();
+      } catch {}
+    });
+  }
+
+  /* ==== Arranque ==== */
+  function waitNotebook(cb) {
+    const nb = document.querySelector(".o_form_view .o_notebook");
+    if (nb) return cb(nb);
+    const mo = new MutationObserver(() => {
+      const n = document.querySelector(".o_form_view .o_notebook");
+      if (n) {
+        mo.disconnect();
+        cb(n);
+      }
+    });
+    mo.observe(document.documentElement, { childList: true, subtree: true });
   }
 
   try {
-    waitNotebook(function (notebook){
-      var links = [].slice.call(notebook.querySelectorAll(".nav-tabs .nav-link"));
+    waitNotebook(async function (notebook) {
+      // Indexar tabs por etiqueta → código
+      const links = [...notebook.querySelectorAll(".nav-tabs .nav-link")];
       if (!links.length) return;
 
-      // Indexar TABS por etiqueta y por nombre de pane (page_<code>)
-      var byCode = {};
-      links.forEach(function (a){
-        var lbl = tabLabel(a);
-        var codeFromLabel = LABEL_TO_CODE[lbl];
-        if (codeFromLabel) byCode[codeFromLabel] = a;
-
-        // extra: si el href/name tiene page_<code>
-        var nameAttr = a.getAttribute("name") || (a.dataset ? a.dataset.name : "") || "";
-        var m = nameAttr.match(/^page_(.+)$/);
-        var raw = m ? m[1] : ((a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/,"") || "");
-        var m2 = raw.match(/^page_(.+)$/);
-        if (m2 && O2M_BY_CODE[m2[1]]) byCode[m2[1]] = byCode[m2[1]] || a;
-      });
-
-      var resId = getResId();
-
-      // Pintado inicial: primero intentamos rubro_state_*, si no, fallback a O2M.
-      (resId ? fetchInitialMapFromStates(resId) : Promise.resolve(null))
-        .then(function (mapStates){
-          if (mapStates) return mapStates;
-          if (!resId) return null;
-          return fetchInitialMapFallbackO2M(resId);
-        })
-        .then(function (initialMap){
-          try {
-            Object.keys(byCode).forEach(function (code){
-              var a = byCode[code];
-              clearTab(a);
-              var st = (initialMap && (initialMap[code] === 0 || initialMap[code] === 1 || initialMap[code] === 2))
-                ? initialMap[code]
-                : computeStateFromDom(a, code);
-              applyTabState(a, st);
-            });
-          } catch (e) {}
-        });
-
-      // Repintar sólo ante cambios de contenido / ACK
-      var dirty = {}; var scheduled = false;
-      function schedule(){
-        if (scheduled) return;
-        scheduled = true;
-        setTimeout(function(){
-          scheduled = false;
-          try {
-            Object.keys(dirty).forEach(function (code){
-              var a = byCode[code];
-              if (!a) return;
-              var st = computeStateFromDom(a, code);
-              clearTab(a); applyTabState(a, st);
-            });
-          } catch (e) {}
-          dirty = {};
-        }, 60);
+      const byCode = {};
+      for (const a of links) {
+        const code = LABEL_TO_CODE[normalizeLabel(a.textContent)];
+        if (code) byCode[code] = a;
       }
 
-      function codeFromPane(pane){
-        if (!pane) return null;
-        // detecta por presencia del o2m
-        for (var code in O2M_BY_CODE){
-          var o2m = O2M_BY_CODE[code];
-          if (pane.querySelector('[name="'+o2m+'"], [data-name="'+o2m+'"]')) return code;
-        }
-        return null;
-      }
+      // Barrido inicial (montaje silencioso + pintado)
+      await initialSweep(notebook, byCode);
 
-      var tabContent = notebook.querySelector(".tab-content") || notebook;
-      var mo = new MutationObserver(function (muts){
-        try{
-          for (var i=0;i<muts.length;i++){
-            var mut = muts[i];
-            var pane = (mut.target && mut.target.closest) ? mut.target.closest(".tab-pane") : null;
-            if (pane) {
-              var c = codeFromPane(pane);
-              if (c && byCode[c]) dirty[c] = true;
-            }
-            var added = [].slice.call(mut.addedNodes || []);
-            for (var j=0;j<added.length;j++){
-              var n = added[j];
-              if (!(n && n.nodeType === 1)) continue;
-              var p2 = n.classList && n.classList.contains("tab-pane") ? n : (n.closest && n.closest(".tab-pane"));
-              if (p2) {
-                var c2 = codeFromPane(p2);
-                if (c2 && byCode[c2]) dirty[c2] = true;
-              }
-            }
-          }
-        }catch(e){}
-        if (Object.keys(dirty).length) schedule();
-      });
-      mo.observe(tabContent, { childList:true, subtree:true });
-
-      document.addEventListener("change", function (ev){
-        try{
-          var nm = ev.target && ev.target.getAttribute && ev.target.getAttribute("name");
-          if (!nm) return;
-          Object.keys(ACK_BY_CODE).forEach(function (code){
-            if (nm === ACK_BY_CODE[code] && byCode[code]) {
-              dirty[code] = true;
-            }
-          });
-          if (Object.keys(dirty).length) schedule();
-        }catch(e){}
-      });
+      // Observadores para cambios reales de contenido / ACK
+      setupObservers(notebook, byCode);
 
       // Depuración opcional
       window.__ccnTabsLive = {
-        repaint: function (code) {
-          try{
-            if (code && byCode[code]){
-              var a = byCode[code];
-              var st = computeStateFromDom(a, code);
+        repaint(code) {
+          try {
+            if (code && byCode[code]) {
+              const a = byCode[code];
+              const st = computeStateFromDom(a, code);
               clearTab(a); applyTabState(a, st);
               return;
             }
-            Object.keys(byCode).forEach(function (c){
-              var a = byCode[c];
-              var st = computeStateFromDom(a, c);
+            Object.keys(byCode).forEach((c) => {
+              const a = byCode[c];
+              const st = computeStateFromDom(a, c);
               clearTab(a); applyTabState(a, st);
             });
-          }catch(e){}
-        }
+          } catch {}
+        },
       };
     });
-  } catch (e) { /* nunca romper el cliente */ }
+  } catch {}
 })();
