@@ -15,10 +15,11 @@ class ServiceQuote(models.Model):
         required=True,
         default=lambda self: self.env.company.currency_id.id,
     )
+
     # Sitios
     site_ids = fields.One2many('ccn.service.quote.site', 'quote_id', string='Sitios')
 
-    # Modo de presentación de la cotización
+    # Modo de presentación
     display_mode = fields.Selection(
         [
             ('by_rubro', 'Acumulado por rubro'),
@@ -30,14 +31,14 @@ class ServiceQuote(models.Model):
         required=True,
     )
 
-    # Parámetros porcentuales de la cotización
+    # Parámetros
     admin_percent = fields.Float(string='Administración (%)', default=0.0)
     utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
     transporte_rate = fields.Float(string='Tarifa Transporte P/P', default=0.0)
     bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
 
-    # Campos usados para filtrar la edición de líneas
+    # Filtros de edición
     current_site_id = fields.Many2one(
         'ccn.service.quote.site',
         string='Sitio actual',
@@ -64,111 +65,107 @@ class ServiceQuote(models.Model):
         default='servicio',
     )
 
-    # Líneas (todas las de la cotización)
+    # Líneas
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # Líneas separadas por rubro para edición en pestañas
-    line_mano_obra_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Mano de Obra',
-        domain=[('rubro_code', '=', 'mano_obra')],
-    )
-    line_uniforme_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Uniforme',
-        domain=[('rubro_code', '=', 'uniforme')],
-    )
-    line_epp_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas EPP',
-        domain=[('rubro_code', '=', 'epp')],
-    )
-    line_epp_alturas_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas EPP Alturas',
-        domain=[('rubro_code', '=', 'epp_alturas')],
-    )
-    line_equipo_especial_limpieza_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Equipo Especial de Limpieza',
-        domain=[('rubro_code', '=', 'equipo_especial_limpieza')],
-    )
-    line_comunicacion_computo_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Comunicación y Cómputo',
-        domain=[('rubro_code', '=', 'comunicacion_computo')],
-    )
-    line_herramienta_menor_jardineria_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Herr. Menor Jardinería',
-        domain=[('rubro_code', '=', 'herramienta_menor_jardineria')],
-    )
-    line_material_limpieza_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Material de Limpieza',
-        domain=[('rubro_code', '=', 'material_limpieza')],
-    )
-    line_perfil_medico_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Perfil Médico',
-        domain=[('rubro_code', '=', 'perfil_medico')],
-    )
-    line_maquinaria_limpieza_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Maquinaria Limpieza',
-        domain=[('rubro_code', '=', 'maquinaria_limpieza')],
-    )
-    line_maquinaria_jardineria_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Maquinaria Jardinería',
-        domain=[('rubro_code', '=', 'maquinaria_jardineria')],
-    )
-    line_fertilizantes_tierra_lama_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Fertilizantes Tierra Lama',
-        domain=[('rubro_code', '=', 'fertilizantes_tierra_lama')],
-    )
-    line_consumibles_jardineria_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Consumibles Jardinería',
-        domain=[('rubro_code', '=', 'consumibles_jardineria')],
-    )
-    line_capacitacion_ids = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        string='Líneas Capacitacion',
-        domain=[('rubro_code', '=', 'capacitacion')],
-    )
+    # Líneas separadas por rubro (para pestañas)
+    line_mano_obra_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra', domain=[('rubro_code', '=', 'mano_obra')])
+    line_uniforme_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme', domain=[('rubro_code', '=', 'uniforme')])
+    line_epp_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP', domain=[('rubro_code', '=', 'epp')])
+    line_epp_alturas_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas', domain=[('rubro_code', '=', 'epp_alturas')])
+    line_equipo_especial_limpieza_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial de Limpieza', domain=[('rubro_code', '=', 'equipo_especial_limpieza')])
+    line_comunicacion_computo_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación y Cómputo', domain=[('rubro_code', '=', 'comunicacion_computo')])
+    line_herramienta_menor_jardineria_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Herr. Menor Jardinería', domain=[('rubro_code', '=', 'herramienta_menor_jardineria')])
+    line_material_limpieza_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Material de Limpieza', domain=[('rubro_code', '=', 'material_limpieza')])
+    line_perfil_medico_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Perfil Médico', domain=[('rubro_code', '=', 'perfil_medico')])
+    line_maquinaria_limpieza_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Limpieza', domain=[('rubro_code', '=', 'maquinaria_limpieza')])
+    line_maquinaria_jardineria_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Jardinería', domain=[('rubro_code', '=', 'maquinaria_jardineria')])
+    line_fertilizantes_tierra_lama_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Fertilizantes Tierra Lama', domain=[('rubro_code', '=', 'fertilizantes_tierra_lama')])
+    line_consumibles_jardineria_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles Jardinería', domain=[('rubro_code', '=', 'consumibles_jardineria')])
+    line_capacitacion_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación', domain=[('rubro_code', '=', 'capacitacion')])
 
-    # --- Reconocimiento del usuario de que NO cargará datos en ese rubro (ACK de "No aplica") ---
-    ack_mano_obra_empty               = fields.Boolean(string="No aplica Mano de Obra")
-    ack_uniforme_empty                = fields.Boolean(string="No aplica Uniforme")
-    ack_epp_empty                     = fields.Boolean(string="No aplica EPP")
-    ack_epp_alturas_empty             = fields.Boolean(string="No aplica EPP Alturas")
-    ack_equipo_especial_limpieza_empty= fields.Boolean(string="No aplica Equipo Especial Limpieza")
-    ack_comunicacion_computo_empty    = fields.Boolean(string="No aplica Comunicación y Cómputo")
+    # --- ACK "No aplica" para TODOS los rubros ---
+    ack_mano_obra_empty                = fields.Boolean(string="No aplica Mano de Obra")
+    ack_uniforme_empty                 = fields.Boolean(string="No aplica Uniforme")
+    ack_epp_empty                      = fields.Boolean(string="No aplica EPP")
+    ack_epp_alturas_empty              = fields.Boolean(string="No aplica EPP Alturas")
+    ack_equipo_especial_limpieza_empty = fields.Boolean(string="No aplica Equipo Especial Limpieza")
+    ack_comunicacion_computo_empty     = fields.Boolean(string="No aplica Comunicación y Cómputo")
     ack_herramienta_menor_jardineria_empty = fields.Boolean(string="No aplica Herr. Menor Jardinería")
-    ack_material_limpieza_empty       = fields.Boolean(string="No aplica Material de Limpieza")
-    ack_perfil_medico_empty           = fields.Boolean(string="No aplica Perfil Médico")
-    ack_maquinaria_limpieza_empty     = fields.Boolean(string="No aplica Maquinaria de Limpieza")
-    ack_maquinaria_jardineria_empty   = fields.Boolean(string="No aplica Maquinaria de Jardinería")
-    ack_fertilizantes_tierra_lama_empty = fields.Boolean(string="No aplica Fertilizantes y Tierra Lama")
-    ack_consumibles_jardineria_empty  = fields.Boolean(string="No aplica Consumibles de Jardinería")
-    ack_capacitacion_empty            = fields.Boolean(string="No aplica Capacitación")
+    ack_material_limpieza_empty        = fields.Boolean(string="No aplica Material de Limpieza")
+    ack_perfil_medico_empty            = fields.Boolean(string="No aplica Perfil Médico")
+    ack_maquinaria_limpieza_empty      = fields.Boolean(string="No aplica Maquinaria de Limpieza")
+    ack_maquinaria_jardineria_empty    = fields.Boolean(string="No aplica Maquinaria de Jardinería")
+    ack_fertilizantes_tierra_lama_empty= fields.Boolean(string="No aplica Fertilizantes y Tierra Lama")
+    ack_consumibles_jardineria_empty   = fields.Boolean(string="No aplica Consumibles de Jardinería")
+    ack_capacitacion_empty             = fields.Boolean(string="No aplica Capacitación")
 
-    # --- Conteos de líneas por rubro (para depuración). No es necesario store=True. ---
+    # --- ESTADOS por rubro (0=rojo, 1=verde, 2=ámbar) ---
+    rubro_state_mano_obra                = fields.Integer(compute="_compute_rubro_states", string="Estado Mano de Obra")
+    rubro_state_uniforme                 = fields.Integer(compute="_compute_rubro_states", string="Estado Uniforme")
+    rubro_state_epp                      = fields.Integer(compute="_compute_rubro_states", string="Estado EPP")
+    rubro_state_epp_alturas              = fields.Integer(compute="_compute_rubro_states", string="Estado EPP Alturas")
+    rubro_state_equipo_especial_limpieza = fields.Integer(compute="_compute_rubro_states", string="Estado Equipo Especial Limpieza")
+    rubro_state_comunicacion_computo     = fields.Integer(compute="_compute_rubro_states", string="Estado Comunicación y Cómputo")
+    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states", string="Estado Herr. Menor Jardinería")
+    rubro_state_material_limpieza        = fields.Integer(compute="_compute_rubro_states", string="Estado Material de Limpieza")
+    rubro_state_perfil_medico            = fields.Integer(compute="_compute_rubro_states", string="Estado Perfil Médico")
+    rubro_state_maquinaria_limpieza      = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Limpieza")
+    rubro_state_maquinaria_jardineria    = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Jardinería")
+    rubro_state_fertilizantes_tierra_lama= fields.Integer(compute="_compute_rubro_states", string="Estado Fertilizantes y Tierra Lama")
+    rubro_state_consumibles_jardineria   = fields.Integer(compute="_compute_rubro_states", string="Estado Consumibles Jardinería")
+    rubro_state_capacitacion             = fields.Integer(compute="_compute_rubro_states", string="Estado Capacitación")
+
+    # --- Conteos de ejemplo (opcionales, para depuración) ---
     mano_obra_count = fields.Integer(compute='_compute_rubro_counts')
     uniforme_count  = fields.Integer(compute='_compute_rubro_counts')
 
-    @api.depends('line_ids', 'line_ids.rubro_id')
+    @api.depends(
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
+        'ack_mano_obra_empty', 'ack_uniforme_empty', 'ack_epp_empty', 'ack_epp_alturas_empty',
+        'ack_equipo_especial_limpieza_empty', 'ack_comunicacion_computo_empty',
+        'ack_herramienta_menor_jardineria_empty', 'ack_material_limpieza_empty',
+        'ack_perfil_medico_empty', 'ack_maquinaria_limpieza_empty', 'ack_maquinaria_jardineria_empty',
+        'ack_fertilizantes_tierra_lama_empty', 'ack_consumibles_jardineria_empty', 'ack_capacitacion_empty',
+    )
+    def _compute_rubro_states(self):
+        """0 = rojo (no hay líneas y sin ACK)
+           1 = verde (hay líneas)
+           2 = ámbar (no hay líneas pero ACK marcado)"""
+        def _state(cnt, ack):
+            return 1 if cnt > 0 else (2 if ack else 0)
+
+        for rec in self:
+            lines = rec.line_ids
+
+            def count(code):
+                # Contamos por rubro_code (related) si existe; si no, por rubro_id.code
+                return len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code))
+
+            rec.rubro_state_mano_obra                 = _state(count('mano_obra'),                rec.ack_mano_obra_empty)
+            rec.rubro_state_uniforme                  = _state(count('uniforme'),                 rec.ack_uniforme_empty)
+            rec.rubro_state_epp                       = _state(count('epp'),                      rec.ack_epp_empty)
+            rec.rubro_state_epp_alturas               = _state(count('epp_alturas'),              rec.ack_epp_alturas_empty)
+            rec.rubro_state_equipo_especial_limpieza  = _state(count('equipo_especial_limpieza'), rec.ack_equipo_especial_limpieza_empty)
+            rec.rubro_state_comunicacion_computo      = _state(count('comunicacion_computo'),     rec.ack_comunicacion_computo_empty)
+            rec.rubro_state_herramienta_menor_jardineria = _state(count('herramienta_menor_jardineria'), rec.ack_herramienta_menor_jardineria_empty)
+            rec.rubro_state_material_limpieza         = _state(count('material_limpieza'),        rec.ack_material_limpieza_empty)
+            rec.rubro_state_perfil_medico             = _state(count('perfil_medico'),            rec.ack_perfil_medico_empty)
+            rec.rubro_state_maquinaria_limpieza       = _state(count('maquinaria_limpieza'),      rec.ack_maquinaria_limpieza_empty)
+            rec.rubro_state_maquinaria_jardineria     = _state(count('maquinaria_jardineria'),    rec.ack_maquinaria_jardineria_empty)
+            rec.rubro_state_fertilizantes_tierra_lama = _state(count('fertilizantes_tierra_lama'),rec.ack_fertilizantes_tierra_lama_empty)
+            rec.rubro_state_consumibles_jardineria    = _state(count('consumibles_jardineria'),   rec.ack_consumibles_jardineria_empty)
+            rec.rubro_state_capacitacion              = _state(count('capacitacion'),             rec.ack_capacitacion_empty)
+
+    @api.depends('line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code')
     def _compute_rubro_counts(self):
         for rec in self:
             lines = rec.line_ids
-            rec.mano_obra_count = len(lines.filtered(lambda l: getattr(l.rubro_id, 'code', False) == 'mano_obra'))
-            rec.uniforme_count  = len(lines.filtered(lambda l: getattr(l.rubro_id, 'code', False) == 'uniforme'))
+            rec.mano_obra_count = len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == 'mano_obra'))
+            rec.uniforme_count  = len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == 'uniforme'))
 
     @api.model_create_multi
     def create(self, vals_list):
-        """Asegura que cada cotización tenga al menos un sitio y lo establezca como actual."""
         for vals in vals_list:
             if not vals.get('site_ids'):
                 vals['site_ids'] = [(0, 0, {'name': _('Sitio Default')})]
@@ -180,12 +177,8 @@ class ServiceQuote(models.Model):
 
     @api.onchange('current_service_type')
     def _onchange_current_service_type(self):
-        """Ajusta automáticamente el tipo servicio/material según el tipo de servicio o vista."""
         for quote in self:
-            if quote.current_service_type == 'materiales':
-                quote.current_type = 'material'
-            else:
-                quote.current_type = 'servicio'
+            quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
 
 # ---------------------------------------------------------------------------
@@ -198,8 +191,6 @@ class ServiceQuoteSite(models.Model):
     name = fields.Char(string='Nombre del sitio', required=True)
     quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade')
     category_id = fields.Many2one('product.category', string='Categoría')
-
-    # Líneas de este sitio (útil para depuraciones y vistas por sitio)
     line_ids = fields.One2many('ccn.service.quote.line', 'site_id', string='Líneas del sitio')
 
 
@@ -213,6 +204,7 @@ class ServiceQuoteLine(models.Model):
     # Enlaces
     quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade')
     site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null')
+
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -222,6 +214,7 @@ class ServiceQuoteLine(models.Model):
         ('almacenaje', 'Almacenaje'),
         ('fletes', 'Fletes'),
     ], string='Tipo de Servicio/Vista')
+
     type = fields.Selection([
         ('servicio', 'Servicio'),
         ('material', 'Material'),
@@ -229,6 +222,7 @@ class ServiceQuoteLine(models.Model):
 
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro')
+    rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
     # Producto / Servicio
     product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True)
@@ -236,31 +230,20 @@ class ServiceQuoteLine(models.Model):
     # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
 
-    # Moneda: ligada a la de la cotización
-    currency_id = fields.Many2one('res.currency', string='Moneda',
-                                  related='quote_id.currency_id', store=True, readonly=True)
+    # Moneda
+    currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)
 
-    # Tabulador (0, 3, 5, 10%)
+    # Tabulador
     tabulator_percent = fields.Selection([
-        ('0', '0%'),
-        ('3', '3%'),
-        ('5', '5%'),
-        ('10', '10%'),
+        ('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%'),
     ], string='Tabulador', default='0', required=True)
 
-    # Precio base (no related para evitar inconsistencias entre versiones)
+    # Precios / impuestos / totales
     product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=False)
+    price_unit_final   = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
+    taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
+    total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
-    # Precio unitario final
-    price_unit_final = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
-
-    # Impuestos (texto)
-    taxes_display = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
-
-    # Subtotal
-    total_price = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
-
-    # -------------------- Computes --------------------
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
@@ -298,7 +281,6 @@ class ServiceQuoteLine(models.Model):
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
 
-    # -------------------- Defaults vía contexto --------------------
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
