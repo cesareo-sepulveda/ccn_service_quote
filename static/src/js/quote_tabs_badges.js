@@ -1,11 +1,9 @@
 /** @odoo-module **/
 
 import { registry } from "@web/core/registry";
-import { rpc } from "@web/core/network/rpc";
 
-/* ========= Config ========= */
+/* ================= Config ================= */
 
-/** code ↔ one2many (según tu service_quote.py) */
 const O2M_BY_CODE = {
   mano_obra: "line_mano_obra_ids",
   uniforme: "line_uniforme_ids",
@@ -23,27 +21,25 @@ const O2M_BY_CODE = {
   capacitacion: "line_capacitacion_ids",
 };
 
-/** ACK por code (sólo estos 2 en tu modelo) */
 const ACK_BY_CODE = {
   mano_obra: "ack_mano_obra_empty",
   uniforme: "ack_uniforme_empty",
 };
 
-/** Alias de código en tabs */
 const CODE_ALIAS = { herr_menor_jardineria: "herramienta_menor_jardineria" };
 const toCode = (c) => CODE_ALIAS[c] || c;
 
 const clsFor = (st) =>
   st === "ok" ? "ccn-status-filled" : st === "yellow" ? "ccn-status-ack" : "ccn-status-empty";
 
-/* ========= Utilidades DOM ========= */
+/* ================= Utilidades DOM ================= */
 
 function tabCode(a) {
   const nameAttr = a.getAttribute("name") || a.dataset.name || "";
   let m = nameAttr.match(/^page_(.+)$/);
   if (m) return m[1];
-  const target = (a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/, "");
-  m = target.match(/^page_(.+)$/);
+  const t = (a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/, "");
+  m = t.match(/^page_(.+)$/);
   return m ? m[1] : null;
 }
 
@@ -77,18 +73,16 @@ function getResId() {
   return m ? parseInt(m[1], 10) : null;
 }
 
-/* ========= Lectura de contenido (repintado por cambios) ========= */
+/* ================= Lógica por contenido (repintado cuando cambie) ================= */
 
 function countRowsInPane(pane, o2mName) {
   if (!pane || !o2mName) return 0;
   const box = pane.querySelector(`[name="${o2mName}"], [data-name="${o2mName}"]`);
   if (!box) return 0;
 
-  // Lista embebida
   const tbody = box.querySelector(".o_list_view tbody");
   if (tbody) return tbody.querySelectorAll("tr.o_data_row, tr[data-id]").length;
 
-  // Kanban (fallback)
   const kan = box.querySelector(".o_kanban_view");
   if (kan) return kan.querySelectorAll(".o_kanban_record, .oe_kanban_card").length;
 
@@ -108,193 +102,197 @@ function readAckFromDom(fieldName) {
   return s === "1" || s === "true" || s === "yes" || s === "sí" || s === "si";
 }
 
-/** Regla de estado por contenido: filas>0 → ok; filas=0 & ACK → yellow; si no → red */
 function computeStateFor(link, code) {
-  const pane = paneFor(link);
-  const o2m = O2M_BY_CODE[code];
-  const rows = countRowsInPane(pane, o2m);
-  if (rows > 0) return "ok";
-  const ackField = ACK_BY_CODE[code];
-  if (ackField && readAckFromDom(ackField)) return "yellow";
-  return "red";
+  try {
+    const pane = paneFor(link);
+    const o2m = O2M_BY_CODE[code];
+    const rows = countRowsInPane(pane, o2m);
+    if (rows > 0) return "ok";
+    const ackField = ACK_BY_CODE[code];
+    if (ackField && readAckFromDom(ackField)) return "yellow";
+    return "red";
+  } catch {
+    return "red";
+  }
 }
 
-/* ========= Pintado inicial (RPC) ========= */
-/* Una sola vez: lee ACKs y hace search_count por rubro en servidor.
-   Así colorea todos los tabs desde el inicio, aunque los panes aún no estén montados. */
+/* ================= Pintado inicial (con fallback) ================= */
 
 async function fetchInitialMap(resId) {
-  // 1) ACKs
-  let ack = { ack_mano_obra_empty: false, ack_uniforme_empty: false };
+  // Intento con RPC; si falla, devolvemos null para usar el fallback por contenido
   try {
-    const r = await rpc("/web/dataset/call_kw/ccn.service.quote/read", {
-      model: "ccn.service.quote",
-      method: "read",
-      args: [[resId], ["ack_mano_obra_empty", "ack_uniforme_empty"]],
-      kwargs: {},
-    });
-    const rec = Array.isArray(r) ? r[0] : null;
-    if (rec) {
-      ack.ack_mano_obra_empty = !!rec.ack_mano_obra_empty;
-      ack.ack_uniforme_empty = !!rec.ack_uniforme_empty;
-    }
-  } catch {
-    // seguimos sin ACKs
-  }
-
-  // 2) search_count por rubro
-  const codes = Object.keys(O2M_BY_CODE);
-  const counts = await Promise.all(
-    codes.map((code) =>
-      rpc("/web/dataset/call_kw/ccn.service.quote.line/search_count", {
-        model: "ccn.service.quote.line",
-        method: "search_count",
-        args: [[["quote_id", "=", resId], ["rubro_id.code", "=", code]]],
+    const { rpc } = await import("@web/core/network/rpc");
+    // 1) ACKs
+    let ack = { ack_mano_obra_empty: false, ack_uniforme_empty: false };
+    try {
+      const r = await rpc("/web/dataset/call_kw/ccn.service.quote/read", {
+        model: "ccn.service.quote",
+        method: "read",
+        args: [[resId], ["ack_mano_obra_empty", "ack_uniforme_empty"]],
         kwargs: {},
-      }).catch(() => 0)
-    )
-  );
+      });
+      const rec = Array.isArray(r) ? r[0] : null;
+      if (rec) {
+        ack.ack_mano_obra_empty = !!rec.ack_mano_obra_empty;
+        ack.ack_uniforme_empty = !!rec.ack_uniforme_empty;
+      }
+    } catch { /* seguimos sin ACKs */ }
 
-  // 3) Construir mapa
-  const map = {};
-  codes.forEach((code, i) => {
-    const n = counts[i] || 0;
-    if (n > 0) map[code] = "ok";
-    else if (code === "mano_obra" && ack.ack_mano_obra_empty) map[code] = "yellow";
-    else if (code === "uniforme" && ack.ack_uniforme_empty) map[code] = "yellow";
-    else map[code] = "red";
-  });
-  return map;
+    // 2) search_count por rubro
+    const codes = Object.keys(O2M_BY_CODE);
+    const counts = await Promise.all(
+      codes.map((code) =>
+        rpc("/web/dataset/call_kw/ccn.service.quote.line/search_count", {
+          model: "ccn.service.quote.line",
+          method: "search_count",
+          args: [[["quote_id", "=", resId], ["rubro_id.code", "=", code]]],
+          kwargs: {},
+        }).catch(() => 0)
+      )
+    );
+
+    const map = {};
+    codes.forEach((code, i) => {
+      const n = counts[i] || 0;
+      if (n > 0) map[code] = "ok";
+      else if (code === "mano_obra" && ack.ack_mano_obra_empty) map[code] = "yellow";
+      else if (code === "uniforme" && ack.ack_uniforme_empty) map[code] = "yellow";
+      else map[code] = "red";
+    });
+    return map;
+  } catch {
+    return null; // si no hay rpc o falla el import
+  }
 }
 
-/* ========= Servicio (Odoo 18) ========= */
+/* ================= Servicio ================= */
 
 const service = {
-  name: "ccn_quote_tabs_service",
+  name: "ccn_quote_tabs_service_v3",  // nombre nuevo para evitar colisiones
   async start() {
-    // Espera a que exista el notebook para no romper UI
-    const waitNotebook = () =>
-      new Promise((resolve) => {
-        const nb = document.querySelector(".o_form_view .o_notebook");
-        if (nb) return resolve(nb);
-        const mo = new MutationObserver(() => {
-          const n = document.querySelector(".o_form_view .o_notebook");
-          if (n) {
-            mo.disconnect();
-            resolve(n);
-          }
+    try {
+      // Espera a que exista el notebook
+      const waitNotebook = () =>
+        new Promise((resolve) => {
+          const nb = document.querySelector(".o_form_view .o_notebook");
+          if (nb) return resolve(nb);
+          const mo = new MutationObserver(() => {
+            const n = document.querySelector(".o_form_view .o_notebook");
+            if (n) {
+              mo.disconnect();
+              resolve(n);
+            }
+          });
+          mo.observe(document.body, { childList: true, subtree: true });
         });
-        mo.observe(document.body, { childList: true, subtree: true });
-      });
 
-    const notebook = await waitNotebook();
-    const links = [...notebook.querySelectorAll(".nav-tabs .nav-link")];
-    if (!links.length) return;
+      const notebook = await waitNotebook();
+      const links = [...notebook.querySelectorAll(".nav-tabs .nav-link")];
+      if (!links.length) return;
 
-    // Indexar tabs por code
-    const byCode = {};
-    for (const a of links) {
-      const raw = tabCode(a);
-      if (!raw) continue;
-      byCode[toCode(raw)] = a;
-    }
-
-    // ===== Pintado inicial (servidor) =====
-    const resId = getResId();
-    if (resId) {
-      try {
-        const initialMap = await fetchInitialMap(resId);
-        for (const [code, a] of Object.entries(byCode)) {
-          clearTab(a);
-          applyTabState(a, initialMap[code] || "red");
-        }
-      } catch {
-        // si falla, seguimos con el repintado por contenido
+      // Indexar tabs por code
+      const byCode = {};
+      for (const a of links) {
+        const raw = tabCode(a);
+        if (!raw) continue;
+        byCode[toCode(raw)] = a;
       }
-    }
 
-    // ===== Repintar SÓLO cuando cambie el contenido o ACK =====
-    const dirty = new Set();
-    let scheduled = false;
-    const scheduleRepaint = () => {
-      if (scheduled) return;
-      scheduled = true;
-      setTimeout(() => {
-        scheduled = false;
-        for (const code of dirty) {
-          const a = byCode[code];
-          if (!a) continue;
-          const st = computeStateFor(a, code);
-          clearTab(a);
-          applyTabState(a, st);
-        }
-        dirty.clear();
-      }, 60);
-    };
+      // ===== Pintado inicial =====
+      const resId = getResId();
+      let initialMap = null;
+      if (resId) {
+        initialMap = await fetchInitialMap(resId); // puede ser null si falla RPC
+      }
+      for (const [code, a] of Object.entries(byCode)) {
+        clearTab(a);
+        const st = (initialMap && initialMap[code]) || computeStateFor(a, code);
+        applyTabState(a, st);
+      }
 
-    const codeFromPane = (pane) => {
-      if (!pane?.id) return null;
-      const m = pane.id.match(/^page_(.+)$/);
-      return m ? toCode(m[1]) : null;
-    };
+      // ===== Repintar SÓLO ante cambios de contenido / ACK =====
+      const dirty = new Set();
+      let scheduled = false;
+      const scheduleRepaint = () => {
+        if (scheduled) return;
+        scheduled = true;
+        setTimeout(() => {
+          scheduled = false;
+          for (const code of dirty) {
+            const a = byCode[code];
+            if (!a) continue;
+            const st = computeStateFor(a, code);
+            clearTab(a);
+            applyTabState(a, st);
+          }
+          dirty.clear();
+        }, 60);
+      };
 
-    // Observa el contenido de tabs (altas/bajas, remontajes de panes, etc.)
-    const tabContent = notebook.querySelector(".tab-content") || notebook;
-    const mo = new MutationObserver((mutations) => {
-      for (const mut of mutations) {
-        const targetPane = mut.target?.closest?.(".tab-pane");
-        if (targetPane) {
-          const code = codeFromPane(targetPane);
-          if (code && byCode[code]) dirty.add(code);
-        }
-        for (const n of mut.addedNodes) {
-          if (!(n instanceof Element)) continue;
-          if (n.classList.contains("tab-pane")) {
-            const code = codeFromPane(n);
+      const codeFromPane = (pane) => {
+        if (!pane?.id) return null;
+        const m = pane.id.match(/^page_(.+)$/);
+        return m ? toCode(m[1]) : null;
+        };
+
+      const tabContent = notebook.querySelector(".tab-content") || notebook;
+      const mo = new MutationObserver((mutations) => {
+        for (const mut of mutations) {
+          const targetPane = mut.target?.closest?.(".tab-pane");
+          if (targetPane) {
+            const code = codeFromPane(targetPane);
             if (code && byCode[code]) dirty.add(code);
-          } else {
-            const pane = n.closest?.(".tab-pane");
-            if (pane) {
-              const code = codeFromPane(pane);
+          }
+          for (const n of mut.addedNodes) {
+            if (!(n instanceof Element)) continue;
+            if (n.classList.contains("tab-pane")) {
+              const code = codeFromPane(n);
               if (code && byCode[code]) dirty.add(code);
+            } else {
+              const pane = n.closest?.(".tab-pane");
+              if (pane) {
+                const code = codeFromPane(pane);
+                if (code && byCode[code]) dirty.add(code);
+              }
             }
           }
         }
-      }
-      if (dirty.size) scheduleRepaint();
-    });
-    mo.observe(tabContent, { childList: true, subtree: true });
+        if (dirty.size) scheduleRepaint();
+      });
+      mo.observe(tabContent, { childList: true, subtree: true });
 
-    // Cambios de ACK → recalcular SOLO el tab correspondiente
-    document.body.addEventListener("change", (ev) => {
-      const nm = ev.target?.getAttribute?.("name");
-      if (!nm) return;
-      for (const [code, field] of Object.entries(ACK_BY_CODE)) {
-        if (nm === field && byCode[code]) {
-          dirty.add(code);
-          scheduleRepaint();
+      document.body.addEventListener("change", (ev) => {
+        const nm = ev.target?.getAttribute?.("name");
+        if (!nm) return;
+        for (const [code, field] of Object.entries(ACK_BY_CODE)) {
+          if (nm === field && byCode[code]) {
+            dirty.add(code);
+            scheduleRepaint();
+          }
         }
-      }
-    });
+      });
 
-    // (Opcional) Depuración manual
-    window.__ccnTabsLive = {
-      repaint(code) {
-        if (code && byCode[code]) {
-          const a = byCode[code];
-          const st = computeStateFor(a, code);
-          clearTab(a);
-          applyTabState(a, st);
-          return;
-        }
-        for (const [c, a] of Object.entries(byCode)) {
-          const st = computeStateFor(a, c);
-          clearTab(a);
-          applyTabState(a, st);
-        }
-      },
-    };
+      // Depuración opcional
+      window.__ccnTabsLive = {
+        repaint(code) {
+          if (code && byCode[code]) {
+            const a = byCode[code];
+            const st = computeStateFor(a, code);
+            clearTab(a);
+            applyTabState(a, st);
+            return;
+          }
+          for (const [c, a] of Object.entries(byCode)) {
+            const st = computeStateFor(a, c);
+            clearTab(a);
+            applyTabState(a, st);
+          }
+        },
+      };
+    } catch {
+      // silencio: nunca rompemos el cliente
+    }
   },
 };
 
-registry.category("services").add("ccn_quote_tabs_service", service);
+registry.category("services").add("ccn_quote_tabs_service_v3", service);
