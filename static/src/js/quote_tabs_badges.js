@@ -1,13 +1,13 @@
-/** CCN Quote Tabs Badges — Safe build (no imports), Odoo 18 CE
- *  - Pintado inicial: RPC con fetch (ACK + search_count por rubro). Si falla, fallback DOM.
- *  - Repintado sólo cuando cambie el CONTENIDO (altas/bajas) o los ACK.
- *  - No repinta al cambiar de pestaña.
+/** CCN Quote Tabs Badges — Odoo 18 CE (JSON-RPC correcto, sin imports)
+ *  - Pintado inicial: read_group (conteos por rubro) + ACK (read) via JSON-RPC.
+ *  - Repintado sólo ante cambios de contenido (altas/bajas) o cambios de ACK.
+ *  - NO repinta al cambiar de pestaña.
  */
 
 (function () {
   "use strict";
 
-  // ---------- Config ----------
+  /* ========= Config ========= */
   var O2M_BY_CODE = {
     mano_obra: "line_mano_obra_ids",
     uniforme: "line_uniforme_ids",
@@ -30,7 +30,7 @@
   function toCode(c) { return CODE_ALIAS[c] || c; }
   function clsFor(st) { return st === "ok" ? "ccn-status-filled" : st === "yellow" ? "ccn-status-ack" : "ccn-status-empty"; }
 
-  // ---------- Utilidades DOM ----------
+  /* ========= Utilidades DOM ========= */
   function tabCode(a) {
     if (!a) return null;
     var nameAttr = a.getAttribute("name") || (a.dataset ? a.dataset.name : "") || "";
@@ -48,7 +48,7 @@
   function clearTab(link) {
     if (!link) return;
     var li = link.closest ? link.closest("li") : null;
-    var rm = ["ccn-status-filled", "ccn-status-ack", "ccn-status-empty"];
+    var rm = ["ccn-status-filled","ccn-status-ack","ccn-status-empty"];
     link.classList.remove.apply(link.classList, rm);
     if (li) li.classList.remove.apply(li.classList, rm);
   }
@@ -59,7 +59,6 @@
     link.classList.add(cls);
     if (li) li.classList.add(cls);
   }
-
   function getResId() {
     var el = document.querySelector('.o_form_view[data-res-model="ccn.service.quote"][data-res-id]');
     if (el) {
@@ -71,7 +70,28 @@
     return m ? parseInt(m[1], 10) : null;
   }
 
-  // ---------- Conteo por contenido (para repintar en cambios) ----------
+  /* ========= JSON-RPC helper (formato correcto) ========= */
+  function callKw(model, method, args, kwargs) {
+    var payload = {
+      jsonrpc: "2.0",
+      method: "call",
+      params: { model: model, method: method, args: args || [], kwargs: kwargs || {} },
+      id: Date.now()
+    };
+    return fetch("/web/dataset/call_kw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify(payload),
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (j && j.error) throw j.error;
+        return j ? j.result : null;
+      });
+  }
+
+  /* ========= Conteo por contenido (para repintados) ========= */
   function countRowsInPane(pane, o2mName) {
     if (!pane || !o2mName) return 0;
     var box = pane.querySelector('[name="'+o2mName+'"], [data-name="'+o2mName+'"]');
@@ -104,51 +124,83 @@
     } catch (e) { return "red"; }
   }
 
-  // ---------- RPC con fetch (sin imports) ----------
-  function callKw(model, method, args, kwargs) {
-    return fetch("/web/dataset/call_kw", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ model: model, method: method, args: args || [], kwargs: kwargs || {} }),
-      credentials: "same-origin",
-    }).then(function (r) { return r.json(); })
-      .then(function (j) { return j && (j.result !== undefined ? j.result : j); });
-  }
-
+  /* ========= Pintado inicial (read_group + read ACK) ========= */
   function fetchInitialMap(resId) {
-    return new Promise(function (resolve) {
-      if (!resId) return resolve(null);
-      // 1) ACKs
-      callKw("ccn.service.quote", "read", [[resId], ["ack_mano_obra_empty","ack_uniforme_empty"]], {})
-        .then(function (r) {
-          var rec = Array.isArray(r) ? r[0] : null;
-          var ack = {
-            ack_mano_obra_empty: !!(rec && rec.ack_mano_obra_empty),
-            ack_uniforme_empty: !!(rec && rec.ack_uniforme_empty),
-          };
-          var codes = Object.keys(O2M_BY_CODE);
-          var map = {};
-          // 2) search_count por cada rubro (en serie para máxima compatibilidad)
-          (function next(i){
-            if (i >= codes.length) {
-              // Ajustar amarillo por ACK si no hay líneas
-              if (map.mano_obra === "red" && ack.ack_mano_obra_empty) map.mano_obra = "yellow";
-              if (map.uniforme === "red" && ack.ack_uniforme_empty) map.uniforme = "yellow";
-              return resolve(map);
-            }
-            var code = codes[i];
-            callKw("ccn.service.quote.line", "search_count", [[["quote_id","=",resId], ["rubro_id.code","=",code]]], {})
-              .then(function (n) { map[code] = (n && n > 0) ? "ok" : "red"; next(i+1); })
-              .catch(function ()    { map[code] = "red"; next(i+1); });
-          })(0);
-        })
-        .catch(function () {
-          resolve(null); // si read falla, caemos a fallback DOM
+    if (!resId) return Promise.resolve(null);
+
+    // 1) Leer ACKs (mano_obra / uniforme)
+    return callKw("ccn.service.quote", "read", [[resId], ["ack_mano_obra_empty", "ack_uniforme_empty"]], {})
+      .then(function (r) {
+        var rec = Array.isArray(r) ? r[0] : null;
+        var ack = {
+          ack_mano_obra_empty: !!(rec && rec.ack_mano_obra_empty),
+          ack_uniforme_empty: !!(rec && rec.ack_uniforme_empty),
+        };
+
+        // 2) read_group por rubro_id (un solo llamado)
+        return callKw(
+          "ccn.service.quote.line",
+          "read_group",
+          [[["quote_id", "=", resId]], ["id:count"], ["rubro_id"]],
+          { lazy: false }
+        ).then(function (groups) {
+          groups = Array.isArray(groups) ? groups : [];
+          var rubroIdToCount = {};
+          var rubroIds = [];
+
+          groups.forEach(function (g) {
+            var rid = (g.rubro_id && g.rubro_id[0]) || null;
+            if (!rid) return;
+            var cnt = g.id_count != null ? g.id_count : (g.__count || 0);
+            rubroIdToCount[rid] = (rubroIdToCount[rid] || 0) + (cnt || 0);
+            rubroIds.push(rid);
+          });
+
+          rubroIds = Array.from(new Set(rubroIds));
+          if (!rubroIds.length) {
+            // Sin líneas en ningún rubro → devolver mapa sólo con ACKs
+            var mapEmpty = {};
+            Object.keys(O2M_BY_CODE).forEach(function (code) {
+              if (code === "mano_obra" && ack.ack_mano_obra_empty) mapEmpty[code] = "yellow";
+              else if (code === "uniforme" && ack.ack_uniforme_empty) mapEmpty[code] = "yellow";
+              else mapEmpty[code] = "red";
+            });
+            return mapEmpty;
+          }
+
+          // 3) Mapear id de rubro → code
+          return callKw("ccn.service.rubro", "read", [rubroIds, ["code"]], {}).then(function (rubros) {
+            var idToCode = {};
+            (rubros || []).forEach(function (rb) { idToCode[rb.id] = rb.code; });
+
+            var countsByCode = {};
+            Object.keys(rubroIdToCount).forEach(function (ridStr) {
+              var rid = parseInt(ridStr, 10);
+              var code = idToCode[rid];
+              if (!code) return;
+              countsByCode[code] = (countsByCode[code] || 0) + (rubroIdToCount[rid] || 0);
+            });
+
+            // 4) Armar mapa final para TODOS los códigos que usas en tabs
+            var map = {};
+            Object.keys(O2M_BY_CODE).forEach(function (code) {
+              var n = countsByCode[code] || countsByCode[(CODE_ALIAS[code] || "")] || 0;
+              if (n > 0) map[code] = "ok";
+              else if (code === "mano_obra" && ack.ack_mano_obra_empty) map[code] = "yellow";
+              else if (code === "uniforme" && ack.ack_uniforme_empty) map[code] = "yellow";
+              else map[code] = "red";
+            });
+            return map;
+          });
         });
-    });
+      })
+      .catch(function () {
+        // Si algo falla: volverá null y usaremos el fallback DOM
+        return null;
+      });
   }
 
-  // ---------- Arranque seguro ----------
+  /* ========= Arranque ========= */
   function waitNotebook(cb) {
     var nb = document.querySelector(".o_form_view .o_notebook");
     if (nb) return cb(nb);
@@ -173,7 +225,7 @@
           byCode[toCode(raw)] = a;
         });
 
-        // Pintado inicial (RPC → fallback DOM)
+        // === Pintado INICIAL ===
         var resId = getResId();
         fetchInitialMap(resId).then(function (initialMap) {
           try {
@@ -186,7 +238,7 @@
           } catch (e) {}
         });
 
-        // Repintar SOLO en cambios de contenido/ACK
+        // === Repintar sólo ante cambios de contenido/ACK ===
         var dirty = {};
         var scheduled = false;
         function scheduleRepaint() {
@@ -276,7 +328,7 @@
             } catch (e) {}
           }
         };
-      } catch (e) { /* nunca rompemos el cliente */ }
+      } catch (e) { /* nunca romper el cliente */ }
     });
   } catch (e) { /* silencioso */ }
 })();
