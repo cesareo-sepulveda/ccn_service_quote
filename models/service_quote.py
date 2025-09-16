@@ -260,18 +260,25 @@ class ServiceQuoteLine(models.Model):
         ('material', 'Material'),
     ], string='Tipo', default='servicio', required=True)
 
+    # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro')
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
+    # Producto / Servicio
     product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True)
+
+    # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
 
+    # Moneda
     currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)
 
+    # Tabulador
     tabulator_percent = fields.Selection([
         ('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%'),
     ], string='Tabulador', default='0', required=True)
 
+    # Precios / impuestos / totales
     product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=False)
     price_unit_final   = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
@@ -320,7 +327,7 @@ class ServiceQuoteLine(models.Model):
         ctx = self.env.context or {}
         if 'default_quote_id' in ctx and 'quote_id' in self._fields:
             res.setdefault('quote_id', ctx.get('default_quote_id'))
-        if 'default_site_id' in ctx and 'site_id' in self._fields':
+        if 'default_site_id' in ctx and 'site_id' in self._fields:
             res.setdefault('site_id', ctx.get('default_site_id'))
         if 'default_type' in ctx and 'type' in self._fields:
             res.setdefault('type', ctx.get('default_type'))
