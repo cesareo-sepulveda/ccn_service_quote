@@ -85,38 +85,38 @@ class ServiceQuote(models.Model):
     line_capacitacion_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación', domain=[('rubro_code', '=', 'capacitacion')])
 
     # --- ACK "No aplica" para TODOS los rubros ---
-    ack_mano_obra_empty                = fields.Boolean(string="No aplica Mano de Obra")
-    ack_uniforme_empty                 = fields.Boolean(string="No aplica Uniforme")
-    ack_epp_empty                      = fields.Boolean(string="No aplica EPP")
-    ack_epp_alturas_empty              = fields.Boolean(string="No aplica EPP Alturas")
-    ack_equipo_especial_limpieza_empty = fields.Boolean(string="No aplica Equipo Especial Limpieza")
-    ack_comunicacion_computo_empty     = fields.Boolean(string="No aplica Comunicación y Cómputo")
+    ack_mano_obra_empty                 = fields.Boolean(string="No aplica Mano de Obra")
+    ack_uniforme_empty                  = fields.Boolean(string="No aplica Uniforme")
+    ack_epp_empty                       = fields.Boolean(string="No aplica EPP")
+    ack_epp_alturas_empty               = fields.Boolean(string="No aplica EPP Alturas")
+    ack_equipo_especial_limpieza_empty  = fields.Boolean(string="No aplica Equipo Especial Limpieza")
+    ack_comunicacion_computo_empty      = fields.Boolean(string="No aplica Comunicación y Cómputo")
     ack_herramienta_menor_jardineria_empty = fields.Boolean(string="No aplica Herr. Menor Jardinería")
-    ack_material_limpieza_empty        = fields.Boolean(string="No aplica Material de Limpieza")
-    ack_perfil_medico_empty            = fields.Boolean(string="No aplica Perfil Médico")
-    ack_maquinaria_limpieza_empty      = fields.Boolean(string="No aplica Maquinaria de Limpieza")
-    ack_maquinaria_jardineria_empty    = fields.Boolean(string="No aplica Maquinaria de Jardinería")
-    ack_fertilizantes_tierra_lama_empty= fields.Boolean(string="No aplica Fertilizantes y Tierra Lama")
-    ack_consumibles_jardineria_empty   = fields.Boolean(string="No aplica Consumibles de Jardinería")
-    ack_capacitacion_empty             = fields.Boolean(string="No aplica Capacitación")
+    ack_material_limpieza_empty         = fields.Boolean(string="No aplica Material de Limpieza")
+    ack_perfil_medico_empty             = fields.Boolean(string="No aplica Perfil Médico")
+    ack_maquinaria_limpieza_empty       = fields.Boolean(string="No aplica Maquinaria de Limpieza")
+    ack_maquinaria_jardineria_empty     = fields.Boolean(string="No aplica Maquinaria de Jardinería")
+    ack_fertilizantes_tierra_lama_empty = fields.Boolean(string="No aplica Fertilizantes y Tierra Lama")
+    ack_consumibles_jardineria_empty    = fields.Boolean(string="No aplica Consumibles de Jardinería")
+    ack_capacitacion_empty              = fields.Boolean(string="No aplica Capacitación")
 
     # --- ESTADOS por rubro (0=rojo, 1=verde, 2=ámbar) ---
-    rubro_state_mano_obra                = fields.Integer(compute="_compute_rubro_states", string="Estado Mano de Obra")
-    rubro_state_uniforme                 = fields.Integer(compute="_compute_rubro_states", string="Estado Uniforme")
-    rubro_state_epp                      = fields.Integer(compute="_compute_rubro_states", string="Estado EPP")
-    rubro_state_epp_alturas              = fields.Integer(compute="_compute_rubro_states", string="Estado EPP Alturas")
-    rubro_state_equipo_especial_limpieza = fields.Integer(compute="_compute_rubro_states", string="Estado Equipo Especial Limpieza")
-    rubro_state_comunicacion_computo     = fields.Integer(compute="_compute_rubro_states", string="Estado Comunicación y Cómputo")
+    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states", string="Estado Mano de Obra")
+    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states", string="Estado Uniforme")
+    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states", string="Estado EPP")
+    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states", string="Estado EPP Alturas")
+    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states", string="Estado Equipo Especial Limpieza")
+    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states", string="Estado Comunicación y Cómputo")
     rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states", string="Estado Herr. Menor Jardinería")
-    rubro_state_material_limpieza        = fields.Integer(compute="_compute_rubro_states", string="Estado Material de Limpieza")
-    rubro_state_perfil_medico            = fields.Integer(compute="_compute_rubro_states", string="Estado Perfil Médico")
-    rubro_state_maquinaria_limpieza      = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Limpieza")
-    rubro_state_maquinaria_jardineria    = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Jardinería")
-    rubro_state_fertilizantes_tierra_lama= fields.Integer(compute="_compute_rubro_states", string="Estado Fertilizantes y Tierra Lama")
-    rubro_state_consumibles_jardineria   = fields.Integer(compute="_compute_rubro_states", string="Estado Consumibles Jardinería")
-    rubro_state_capacitacion             = fields.Integer(compute="_compute_rubro_states", string="Estado Capacitación")
+    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states", string="Estado Material de Limpieza")
+    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states", string="Estado Perfil Médico")
+    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Limpieza")
+    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Jardinería")
+    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states", string="Estado Fertilizantes y Tierra Lama")
+    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states", string="Estado Consumibles Jardinería")
+    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states", string="Estado Capacitación")
 
-    # --- Conteos de ejemplo (opcionales, para depuración) ---
+    # --- Conteos de ejemplo (opcionales)
     mano_obra_count = fields.Integer(compute='_compute_rubro_counts')
     uniforme_count  = fields.Integer(compute='_compute_rubro_counts')
 
@@ -139,7 +139,6 @@ class ServiceQuote(models.Model):
             lines = rec.line_ids
 
             def count(code):
-                # Contamos por rubro_code (related) si existe; si no, por rubro_id.code
                 return len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code))
 
             rec.rubro_state_mano_obra                 = _state(count('mano_obra'),                rec.ack_mano_obra_empty)
@@ -163,6 +162,48 @@ class ServiceQuote(models.Model):
             lines = rec.line_ids
             rec.mano_obra_count = len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == 'mano_obra'))
             rec.uniforme_count  = len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == 'uniforme'))
+
+    # === Botones (para vista): marcan / desmarcan ACK del rubro indicado en contexto ===
+
+    def _ack_field_for_code(self, code):
+        mapping = {
+            'mano_obra': 'ack_mano_obra_empty',
+            'uniforme': 'ack_uniforme_empty',
+            'epp': 'ack_epp_empty',
+            'epp_alturas': 'ack_epp_alturas_empty',
+            'equipo_especial_limpieza': 'ack_equipo_especial_limpieza_empty',
+            'comunicacion_computo': 'ack_comunicacion_computo_empty',
+            'herramienta_menor_jardineria': 'ack_herramienta_menor_jardineria_empty',
+            'material_limpieza': 'ack_material_limpieza_empty',
+            'perfil_medico': 'ack_perfil_medico_empty',
+            'maquinaria_limpieza': 'ack_maquinaria_limpieza_empty',
+            'maquinaria_jardineria': 'ack_maquinaria_jardineria_empty',
+            'fertilizantes_tierra_lama': 'ack_fertilizantes_tierra_lama_empty',
+            'consumibles_jardineria': 'ack_consumibles_jardineria_empty',
+            'capacitacion': 'ack_capacitacion_empty',
+        }
+        return mapping.get(code)
+
+    def _set_ack(self, code, value):
+        field_name = self._ack_field_for_code(code)
+        if not field_name:
+            return
+        for rec in self:
+            rec[field_name] = bool(value)
+
+    def action_mark_rubro_empty(self):
+        """Botón type='object' con context={'rubro_code': '...'}: marca ACK y recalcula estados."""
+        code = (self.env.context or {}).get('rubro_code')
+        if code:
+            self._set_ack(code, True)
+        return True
+
+    def action_unmark_rubro_empty(self):
+        """Botón type='object' con context={'rubro_code': '...'}: desmarca ACK y recalcula estados."""
+        code = (self.env.context or {}).get('rubro_code')
+        if code:
+            self._set_ack(code, False)
+        return True
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -201,7 +242,6 @@ class ServiceQuoteLine(models.Model):
     _name = 'ccn.service.quote.line'
     _description = 'CCN Service Quote Line'
 
-    # Enlaces
     quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade')
     site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null')
 
@@ -220,25 +260,18 @@ class ServiceQuoteLine(models.Model):
         ('material', 'Material'),
     ], string='Tipo', default='servicio', required=True)
 
-    # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro')
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
-    # Producto / Servicio
     product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True)
-
-    # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
 
-    # Moneda
     currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)
 
-    # Tabulador
     tabulator_percent = fields.Selection([
         ('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%'),
     ], string='Tabulador', default='0', required=True)
 
-    # Precios / impuestos / totales
     product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=False)
     price_unit_final   = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
@@ -287,7 +320,7 @@ class ServiceQuoteLine(models.Model):
         ctx = self.env.context or {}
         if 'default_quote_id' in ctx and 'quote_id' in self._fields:
             res.setdefault('quote_id', ctx.get('default_quote_id'))
-        if 'default_site_id' in ctx and 'site_id' in self._fields:
+        if 'default_site_id' in ctx and 'site_id' in self._fields':
             res.setdefault('site_id', ctx.get('default_site_id'))
         if 'default_type' in ctx and 'type' in self._fields:
             res.setdefault('type', ctx.get('default_type'))
