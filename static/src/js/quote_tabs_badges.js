@@ -1,14 +1,13 @@
-/** CCN Quote Tabs — DOM-only, sin RPC ni res_id
- *  Reglas:
- *    filas > 0  -> ccn-status-filled (verde)
- *    filas = 0 y ACK marcado -> ccn-status-ack (ámbar)
- *    filas = 0 y sin ACK     -> ccn-status-empty (rojo)
- *  Odoo 18 CE, sin imports. No toca tu SCSS/chevrons.
+/** CCN Quote Tabs — pinta leyendo rubro_state_* desde el DOM (sin RPC/URL/res_id)
+ *  - No hace clics ni “barridos”.
+ *  - Pinta al inicio y re-pinta solo cuando cambian los campos rubro_state_*.
+ *  - Estados: 1 => verde (ccn-status-filled), 2 => ámbar (ccn-status-ack), 0/otros => rojo (ccn-status-empty).
+ *  - Odoo 18 CE, sin imports. Respeta tu geometría/chevrons; solo añade clases.
  */
 (function () {
   "use strict";
 
-  // === Tus 11 pestañas exactas (mapeo por etiqueta visible) ===
+  // === Etiquetas EXACTAS (11) que nos pasaste → code de rubro ===
   function norm(s){
     return String(s||"").trim().toLowerCase()
       .normalize("NFD").replace(/\p{Diacritic}/gu,"")
@@ -28,240 +27,157 @@
     "capacitacion": "capacitacion",
   };
 
-  // Si usas checks "No aplica" en el form, márcalos aquí (si no existen, se ignoran)
-  const ACK_BY_CODE = {
-    mano_obra: "ack_mano_obra_empty",
-    uniforme: "ack_uniforme_empty",
-    epp: "ack_epp_empty",
-    epp_alturas: "ack_epp_alturas_empty",
-    comunicacion_computo: "ack_comunicacion_computo_empty",
-    herramienta_menor_jardineria: "ack_herramienta_menor_jardineria_empty",
-    perfil_medico: "ack_perfil_medico_empty",
-    maquinaria_jardineria: "ack_maquinaria_jardineria_empty",
-    fertilizantes_tierra_lama: "ack_fertilizantes_tierra_lama_empty",
-    consumibles_jardineria: "ack_consumibles_jardineria_empty",
-    capacitacion: "ack_capacitacion_empty",
-  };
+  const CODES = Object.values(LABEL_TOCODE_SAFE());
+  function LABEL_TOCODE_SAFE(){
+    // helper to keep Object.values stable even if someone edits LABEL_TO_CODE
+    return LABEL_TO_CODE;
+  }
 
-  // === Helpers de estilo ===
-  function clsFor(state){ return state==="ok"?"ccn-status-filled":state==="yellow"?"ccn-status-ack":"ccn-status-empty"; }
+  // === Nombre del campo de estado por rubro ===
+  const STATE_FIELD = (code) => `rubro_state_${code}`;
+
+  // === Clases de color (tu SCSS ya las estiliza) ===
+  function clsFor(st){
+    return st === 1 ? "ccn-status-filled"
+         : st === 2 ? "ccn-status-ack"
+         : "ccn-status-empty";
+  }
   function clearTab(link){
     if(!link) return;
     const li = link.closest ? link.closest("li") : null;
     const rm = ["ccn-status-filled","ccn-status-ack","ccn-status-empty"];
     link.classList.remove(...rm);
-    if (li) li.classList.remove(...rm);
+    li && li.classList.remove(...rm);
   }
-  function applyTabState(link, state){
+  function applyTab(link, st){
     if(!link) return;
     const li = link.closest ? link.closest("li") : null;
-    const c = clsFor(state);
+    const c = clsFor(st);
+    // Evita trabajo si ya está aplicada
+    if (link.classList.contains(c) || (li && li.classList.contains(c))) return;
+    clearTab(link);
     link.classList.add(c);
-    if (li) li.classList.add(c);
+    li && li.classList.add(c);
   }
 
-  // === DOM utils ===
-  function paneFor(link){
-    if(!link) return null;
-    const id=(link.getAttribute("aria-controls")||link.getAttribute("data-bs-target")||link.getAttribute("href")||"").replace(/^#/,"");
-    return id ? document.getElementById(id) : null;
-  }
-  function getActiveLink(nav){ return nav.querySelector(".nav-link.active") || null; }
-
-  // === Conteo genérico de filas (list/kanban) ===
-  function countRowsGeneric(pane){
-    if(!pane) return 0;
-    let total = 0;
-    // List
-    pane.querySelectorAll(".o_list_renderer tbody, .o_list_view tbody").forEach(tb=>{
-      total += tb.querySelectorAll("tr.o_data_row, tr[data-id], tr[role='row'][data-id], tr[aria-rowindex]").length;
-    });
-    // Kanban
-    pane.querySelectorAll(".o_kanban_renderer, .o_kanban_view").forEach(k=>{
-      total += k.querySelectorAll(".o_kanban_record, .oe_kanban_card, [data-id].o_kanban_record").length;
-    });
-    return total;
+  // === Lee el valor del campo de estado desde el DOM (invisible/visible) ===
+  function readIntField(root, fieldName){
+    // Probar selectores comunes de form OWL:
+    const el = root.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
+    if(!el) return null;
+    const raw = el.getAttribute("data-value") ?? el.getAttribute("value") ?? el.textContent;
+    if(raw == null) return null;
+    const v = parseInt(String(raw).trim(), 10);
+    return Number.isNaN(v) ? null : v;
   }
 
-  // === Lectura de ACK desde DOM (si no están en la vista, devuelve false) ===
-  function readAckFromDom(fieldName){
-    const cb = document.querySelector(`input[name="${fieldName}"]`) ||
-               document.querySelector(`[name="${fieldName}"] .o_checkbox input`);
-    if (cb && "checked" in cb) return !!cb.checked;
-    const el = document.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
-    if (!el) return false;
-    const raw = el.getAttribute("data-value") || el.getAttribute("value") || el.textContent || "";
-    const s = String(raw).trim().toLowerCase();
-    return (s==="1"||s==="true"||s==="yes"||s==="sí"||s==="si");
+  // === Encuentra notebook y tabs ===
+  function getNotebook(){
+    return document.querySelector(".o_form_view .o_notebook");
+  }
+  function getLinks(nb){
+    return nb ? [...nb.querySelectorAll(".nav-tabs .nav-link")] : [];
   }
 
-  function stateFromPaneAndAck(pane, code){
-    const rows = countRowsGeneric(pane);
-    if (rows > 0) return "ok";
-    const ackField = ACK_BY_CODE[code];
-    if (ackField && readAckFromDom(ackField)) return "yellow";
-    return "red";
+  // === Construye índice tab→code y code→link por etiqueta visible ===
+  function indexByCode(nb){
+    const byCode = {};
+    if(!nb) return byCode;
+    for(const a of getLinks(nb)){
+      const code = LABEL_TO_CODE[norm(a.textContent)];
+      if(code) byCode[code] = a;
+    }
+    return byCode;
   }
 
-  // === Montaje silencioso por tab: activa, espera contenido, mide, regresa ===
-  function showTabAndWait(link, timeoutMs=700){
-    return new Promise((resolve)=>{
-      if(!link) return resolve();
-      const pane = paneFor(link);
-      // Si ya hay contenido, basta con activar y resolver
-      if (pane && (pane.querySelector(".o_list_renderer, .o_list_view, .o_kanban_renderer, .o_kanban_view"))) {
-        link.click?.(); return setTimeout(resolve, 0);
-      }
-      link.click?.();
-      const t0 = Date.now(); let done = false;
-      const finish = ()=>{ if(done) return; done=true; resolve(); };
-      const obs = pane ? new MutationObserver(()=>{
-        if (pane.querySelector(".o_list_renderer, .o_list_view, .o_kanban_renderer, .o_kanban_view")) {
-          try{ obs.disconnect(); }catch{}
-          finish();
-        } else if (Date.now() - t0 > timeoutMs) {
-          try{ obs.disconnect(); }catch{}
-          finish();
-        }
-      }) : null;
-      if (obs && pane) obs.observe(pane, {childList:true, subtree:true});
-      setTimeout(()=>{ try{obs && obs.disconnect();}catch{} finish(); }, timeoutMs + 100);
-    });
-  }
-
-  async function initialSweep(notebook, byCode, paneByCode){
-    const nav = notebook.querySelector(".nav-tabs");
-    if(!nav) return;
-
-    const activeBefore = getActiveLink(nav);
-
-    for (const code of Object.keys(byCode)) {
-      const link = byCode[code];
-      try {
-        await showTabAndWait(link);
-        const pane = paneByCode[code] || paneFor(link);
-        paneByCode[code] = pane;
-        const st = stateFromPaneAndAck(pane, code);
-        clearTab(link); applyTabState(link, st);
-      } catch {
-        clearTab(link); applyTabState(link, "red");
+  // === Pintado (usa únicamente rubro_state_* del DOM) ===
+  function paintFromStates(formRoot, nb, byCode, last){
+    let changed = false;
+    for(const [code, link] of Object.entries(byCode)){
+      const st = readIntField(formRoot, STATE_FIELD(code));
+      const sNorm = (st === 1 || st === 2) ? st : 0; // 0/otros → rojo
+      if (last[code] !== sNorm){
+        applyTab(link, sNorm);
+        last[code] = sNorm;
+        changed = true;
       }
     }
-
-    // Volver a la tab original (sin repintar por cambio de pestaña)
-    if (activeBefore && activeBefore !== getActiveLink(nav)) {
-      try { activeBefore.click?.(); } catch {}
-    }
+    return changed;
   }
 
-  function setupObservers(notebook, byCode, paneByCode){
-    const tabContent = notebook.querySelector(".tab-content") || notebook;
-
-    const paneIdToCode = {};
-    for (const [code, link] of Object.entries(byCode)) {
-      const p = paneByCode[code] || paneFor(link);
-      if (p && p.id) paneIdToCode[p.id] = code;
-    }
-
-    let dirty = {};
+  // === Observa cambios en el form para re-pintar cuando cambien rubro_state_* ===
+  function watchStates(formRoot, nb, byCode, last){
     let scheduled = false;
-
-    function schedule(){
-      if(scheduled) return;
+    const schedule = () => {
+      if (scheduled) return;
       scheduled = true;
-      setTimeout(()=>{
+      // throttle
+      requestAnimationFrame(() => {
         scheduled = false;
-        try{
-          Object.keys(dirty).forEach(code=>{
-            const link = byCode[code];
-            const pane = paneByCode[code] || paneFor(link);
-            const st = stateFromPaneAndAck(pane, code);
-            clearTab(link); applyTabState(link, st);
-          });
-        }catch{}
-        dirty = {};
-      }, 60);
-    }
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      });
+    };
 
-    const mo = new MutationObserver(muts=>{
+    const mo = new MutationObserver((muts) => {
       try{
-        for (const mut of muts) {
-          const pane = mut.target?.closest?.(".tab-pane");
-          if (pane && pane.id && paneIdToCode[pane.id]) {
-            dirty[paneIdToCode[pane.id]] = true;
+        for(const mut of muts){
+          // Si cambió algo en un nodo que alberga un campo rubro_state_*, repinta
+          const t = mut.target;
+          if (!(t instanceof Element)) continue;
+          const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
+          if (name.startsWith("rubro_state_")){
+            schedule(); return;
           }
-          for (const n of mut.addedNodes || []) {
-            if (!(n instanceof Element)) continue;
-            const p2 = n.classList?.contains("tab-pane") ? n : n.closest?.(".tab-pane");
-            if (p2 && p2.id && paneIdToCode[p2.id]) {
-              dirty[paneIdToCode[p2.id]] = true;
-            }
+          // También, si se alteró texto dentro de esos campos
+          if (name){
+            // noop — ya cubierto
+          } else {
+            // Busca ancestro con name=data-name de interés
+            const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"]');
+            if (holder){ schedule(); return; }
           }
         }
-      }catch{}
-      if (Object.keys(dirty).length) schedule();
+      }catch(_e){}
     });
-    mo.observe(tabContent, {childList:true, subtree:true});
 
-    // Cambios de ACK -> repinta solo ese rubro (si los campos están visibles)
-    document.addEventListener("change", ev=>{
-      try{
-        const nm = ev.target?.getAttribute?.("name");
-        if (!nm) return;
-        for (const [code, field] of Object.entries(ACK_BY_CODE)) {
-          if (nm === field && byCode[code]) dirty[code] = true;
-        }
-      }catch{}
-      if (Object.keys(dirty).length) schedule();
+    mo.observe(formRoot, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["data-value", "value", "class"],
     });
+
+    // Exponer para debug opcional
+    window.__ccnTabsWatch = {
+      dump(){ console.log(JSON.parse(JSON.stringify(last))); },
+      repaint(){ paintFromStates(formRoot, nb, byCode, last); }
+    };
   }
 
-  function waitNotebook(cb){
-    const nb = document.querySelector(".o_form_view .o_notebook");
-    if (nb) return cb(nb);
-    const mo = new MutationObserver(()=>{
-      const n=document.querySelector(".o_form_view .o_notebook");
-      if(n){ mo.disconnect(); cb(n); }
+  // === Boot ===
+  function waitFormAndNotebook(cb){
+    const tryStart = () =>{
+      const formRoot = document.querySelector('.o_form_view');
+      const nb = getNotebook();
+      if(formRoot && nb) return cb(formRoot, nb);
+    };
+    if (tryStart()) return;
+    const obs = new MutationObserver(()=>{
+      if (tryStart()){ obs.disconnect(); }
     });
-    mo.observe(document.documentElement, {childList:true, subtree:true});
+    obs.observe(document.documentElement, {childList:true,subtree:true});
   }
 
   try{
-    waitNotebook(async function(notebook){
-      const links = [...notebook.querySelectorAll(".nav-tabs .nav-link")];
-      if (!links.length) return;
-
-      // Indexar por etiqueta visible (tus 11 tabs)
-      const byCode = {};
-      for (const a of links) {
-        const code = LABEL_TO_CODE[norm(a.textContent)];
-        if (code) byCode[code] = a;
-      }
-
-      const paneByCode = {};
-      await initialSweep(notebook, byCode, paneByCode);
-      setupObservers(notebook, byCode, paneByCode);
-
-      // Depuración opcional
-      window.__ccnTabsLiveDOM = {
-        repaint(code){
-          try{
-            if(code && byCode[code]){
-              const a=byCode[code];
-              const p=paneByCode[code]||paneFor(a);
-              const st=stateFromPaneAndAck(p, code);
-              clearTab(a); applyTabState(a, st);
-              return;
-            }
-            Object.keys(byCode).forEach(c=>{
-              const a=byCode[c];
-              const p=paneByCode[c]||paneFor(a);
-              const st=stateFromPaneAndAck(p, c);
-              clearTab(a); applyTabState(a, st);
-            });
-          }catch{}
-        }
-      };
+    waitFormAndNotebook((formRoot, nb)=>{
+      const byCode = indexByCode(nb);
+      if (!Object.keys(byCode).length) return; // no tabs mapeadas; salir limpio
+      const last = {};
+      // Pintado inicial (sin clics, inmediato)
+      try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      // Observa cambios de los campos de estado
+      watchStates(formRoot, nb, byCode, last);
     });
-  }catch{}
+  }catch(_e){}
 })();
