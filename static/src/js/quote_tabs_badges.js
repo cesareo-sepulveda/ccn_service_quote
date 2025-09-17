@@ -1,202 +1,265 @@
-/** CCN Quote Tabs — pinta por rubro_state_* (RPC) y ajusta ante cambios no guardados.
- * Odoo 18 CE, sin imports. No toca tu SCSS/chevrons.
- * Reglas:
- *   state 1 => ccn-status-filled (verde)
- *   state 2 => ccn-status-ack   (ámbar)
- *   state 0 => ccn-status-empty (rojo)
+/** CCN Quote Tabs — DOM-only, sin RPC ni res_id
+ *  Reglas:
+ *    filas > 0  -> ccn-status-filled (verde)
+ *    filas = 0 y ACK marcado -> ccn-status-ack (ámbar)
+ *    filas = 0 y sin ACK     -> ccn-status-empty (rojo)
+ *  Odoo 18 CE, sin imports. No toca tu SCSS/chevrons.
  */
-
 (function () {
   "use strict";
 
-  // ---- Códigos de rubro (usa exactamente los del modelo) ----
-  const CODES = [
-    "mano_obra","uniforme","epp","epp_alturas","equipo_especial_limpieza",
-    "comunicacion_computo","herramienta_menor_jardineria","material_limpieza",
-    "perfil_medico","maquinaria_limpieza","maquinaria_jardineria",
-    "fertilizantes_tierra_lama","consumibles_jardineria","capacitacion",
-  ];
-
-  // label visible → code (por si necesitamos fallback por texto)
-  function norm(s){return String(s||"").trim().toLowerCase().normalize("NFD").replace(/\p{Diacritic}/gu,"").replace(/\s+/g," ");}
+  // === Tus 11 pestañas exactas (mapeo por etiqueta visible) ===
+  function norm(s){
+    return String(s||"").trim().toLowerCase()
+      .normalize("NFD").replace(/\p{Diacritic}/gu,"")
+      .replace(/\s+/g," ");
+  }
   const LABEL_TO_CODE = {
-    "mano de obra":"mano_obra","uniforme":"uniforme","epp":"epp","epp alturas":"epp_alturas",
-    "equipo especial de limpieza":"equipo_especial_limpieza","comunicacion y computo":"comunicacion_computo",
-    "herr. menor jardineria":"herramienta_menor_jardineria","herramienta menor jardineria":"herramienta_menor_jardineria",
-    "material de limpieza":"material_limpieza","perfil medico":"perfil_medico","maquinaria limpieza":"maquinaria_limpieza",
-    "maquinaria de jardineria":"maquinaria_jardineria","maquinaria jardineria":"maquinaria_jardineria",
-    "fertilizantes y tierra lama":"fertilizantes_tierra_lama","consumibles de jardineria":"consumibles_jardineria",
-    "consumibles jardineria":"consumibles_jardineria","capacitacion":"capacitacion",
+    "mano de obra": "mano_obra",
+    "uniforme": "uniforme",
+    "epp": "epp",
+    "epp alturas": "epp_alturas",
+    "comunicacion y computo": "comunicacion_computo",
+    "herr. menor jardineria": "herramienta_menor_jardineria",
+    "perfil medico": "perfil_medico",
+    "maquinaria de jardineria": "maquinaria_jardineria",
+    "fertilizantes y tierra lama": "fertilizantes_tierra_lama",
+    "consumibles de jardineria": "consumibles_jardineria",
+    "capacitacion": "capacitacion",
   };
 
-  // rubro_state_* y ack_* names
-  const STATE_FIELD = (code) => `rubro_state_${code}`;
-  const ACK_FIELD = (code) => ({
-    mano_obra:"ack_mano_obra_empty", uniforme:"ack_uniforme_empty", epp:"ack_epp_empty",
-    epp_alturas:"ack_epp_alturas_empty", equipo_especial_limpieza:"ack_equipo_especial_limpieza_empty",
-    comunicacion_computo:"ack_comunicacion_computo_empty", herramienta_menor_jardineria:"ack_herramienta_menor_jardineria_empty",
-    material_limpieza:"ack_material_limpieza_empty", perfil_medico:"ack_perfil_medico_empty",
-    maquinaria_limpieza:"ack_maquinaria_limpieza_empty", maquinaria_jardineria:"ack_maquinaria_jardineria_empty",
-    fertilizantes_tierra_lama:"ack_fertilizantes_tierra_lama_empty", consumibles_jardineria:"ack_consumibles_jardineria_empty",
-    capacitacion:"ack_capacitacion_empty",
-  }[code]);
+  // Si usas checks "No aplica" en el form, márcalos aquí (si no existen, se ignoran)
+  const ACK_BY_CODE = {
+    mano_obra: "ack_mano_obra_empty",
+    uniforme: "ack_uniforme_empty",
+    epp: "ack_epp_empty",
+    epp_alturas: "ack_epp_alturas_empty",
+    comunicacion_computo: "ack_comunicacion_computo_empty",
+    herramienta_menor_jardineria: "ack_herramienta_menor_jardineria_empty",
+    perfil_medico: "ack_perfil_medico_empty",
+    maquinaria_jardineria: "ack_maquinaria_jardineria_empty",
+    fertilizantes_tierra_lama: "ack_fertilizantes_tierra_lama_empty",
+    consumibles_jardineria: "ack_consumibles_jardineria_empty",
+    capacitacion: "ack_capacitacion_empty",
+  };
 
-  // ===== Estilo =====
-  function clsFor(s){return s===1?"ccn-status-filled":s===2?"ccn-status-ack":"ccn-status-empty";}
-  function clearTab(a){ if(!a) return; const li=a.closest?.("li"); const rm=["ccn-status-filled","ccn-status-ack","ccn-status-empty"]; a.classList.remove(...rm); li&&li.classList.remove(...rm); }
-  function applyTab(a, st){ if(!a) return; const li=a.closest?.("li"); const c=clsFor(st); a.classList.add(c); li&&li.classList.add(c); }
-
-  // ===== DOM helpers =====
-  function paneFor(a){
-    if(!a) return null;
-    const id=(a.getAttribute("aria-controls")||a.getAttribute("data-bs-target")||a.getAttribute("href")||"").replace(/^#/,"");
-    return id?document.getElementById(id):null;
+  // === Helpers de estilo ===
+  function clsFor(state){ return state==="ok"?"ccn-status-filled":state==="yellow"?"ccn-status-ack":"ccn-status-empty"; }
+  function clearTab(link){
+    if(!link) return;
+    const li = link.closest ? link.closest("li") : null;
+    const rm = ["ccn-status-filled","ccn-status-ack","ccn-status-empty"];
+    link.classList.remove(...rm);
+    if (li) li.classList.remove(...rm);
   }
-  function linksInNotebook(nb){ return [...nb.querySelectorAll(".nav-tabs .nav-link")]; }
+  function applyTabState(link, state){
+    if(!link) return;
+    const li = link.closest ? link.closest("li") : null;
+    const c = clsFor(state);
+    link.classList.add(c);
+    if (li) li.classList.add(c);
+  }
 
-  // ===== Conteo DOM (cambios no guardados) =====
-  function countRows(pane){
+  // === DOM utils ===
+  function paneFor(link){
+    if(!link) return null;
+    const id=(link.getAttribute("aria-controls")||link.getAttribute("data-bs-target")||link.getAttribute("href")||"").replace(/^#/,"");
+    return id ? document.getElementById(id) : null;
+  }
+  function getActiveLink(nav){ return nav.querySelector(".nav-link.active") || null; }
+
+  // === Conteo genérico de filas (list/kanban) ===
+  function countRowsGeneric(pane){
     if(!pane) return 0;
-    let t=0;
+    let total = 0;
     // List
     pane.querySelectorAll(".o_list_renderer tbody, .o_list_view tbody").forEach(tb=>{
-      t += tb.querySelectorAll("tr.o_data_row, tr[data-id], tr[role='row'][data-id], tr[aria-rowindex]").length;
+      total += tb.querySelectorAll("tr.o_data_row, tr[data-id], tr[role='row'][data-id], tr[aria-rowindex]").length;
     });
     // Kanban
     pane.querySelectorAll(".o_kanban_renderer, .o_kanban_view").forEach(k=>{
-      t += k.querySelectorAll(".o_kanban_record, .oe_kanban_card, [data-id].o_kanban_record").length;
+      total += k.querySelectorAll(".o_kanban_record, .oe_kanban_card, [data-id].o_kanban_record").length;
     });
-    return t;
-  }
-  function readAckDOM(field){
-    const cb=document.querySelector(`input[name="${field}"]`)||document.querySelector(`[name="${field}"] .o_checkbox input`);
-    if(cb && "checked" in cb) return !!cb.checked;
-    const el=document.querySelector(`[name="${field}"], [data-name="${field}"]`);
-    const raw=el?.getAttribute("data-value")||el?.getAttribute("value")||el?.textContent||"";
-    const s=String(raw).trim().toLowerCase(); return s==="1"||s==="true"||s==="yes"||s==="sí"||s==="si";
+    return total;
   }
 
-  // ===== RPC =====
-  function callKw(model, method, args, kwargs){
-    const payload={jsonrpc:"2.0",method:"call",params:{model,method,args:args||[],kwargs:kwargs||{}},id:Date.now()};
-    return fetch("/web/dataset/call_kw",{method:"POST",headers:{"Content-Type":"application/json"},credentials:"same-origin",body:JSON.stringify(payload)})
-      .then(r=>r.json()).then(j=>{ if(j.error) throw j.error; return j.result; });
-  }
-  function getResId(){
-    const el=document.querySelector('.o_form_view[data-res-model="ccn.service.quote"][data-res-id]');
-    if(el){const id=parseInt(el.getAttribute("data-res-id"),10); if(!isNaN(id)) return id;}
-    const m=(location.hash||"").match(/[?&#](?:id|res_id|active_id)=([0-9]+)/);
-    return m?parseInt(m[1],10):null;
+  // === Lectura de ACK desde DOM (si no están en la vista, devuelve false) ===
+  function readAckFromDom(fieldName){
+    const cb = document.querySelector(`input[name="${fieldName}"]`) ||
+               document.querySelector(`[name="${fieldName}"] .o_checkbox input`);
+    if (cb && "checked" in cb) return !!cb.checked;
+    const el = document.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
+    if (!el) return false;
+    const raw = el.getAttribute("data-value") || el.getAttribute("value") || el.textContent || "";
+    const s = String(raw).trim().toLowerCase();
+    return (s==="1"||s==="true"||s==="yes"||s==="sí"||s==="si");
   }
 
-  // ===== Pintado inicial por rubro_state_* =====
-  function initialPaint(nb, byCode){
-    const id=getResId(); if(!id) return Promise.resolve();
-    const fields = CODES.map(STATE_FIELD).concat(CODES.map(ACK_FIELD));
-    return callKw("ccn.service.quote","read",[[id],fields],{}).then(res=>{
-      const rec = Array.isArray(res)?res[0]:null; if(!rec) return;
-      for(const code of Object.keys(byCode)){
-        const a = byCode[code];
-        const st = rec[STATE_FIELD(code)];
-        clearTab(a); applyTab(a, (st===0||st===1||st===2)?st:0);
+  function stateFromPaneAndAck(pane, code){
+    const rows = countRowsGeneric(pane);
+    if (rows > 0) return "ok";
+    const ackField = ACK_BY_CODE[code];
+    if (ackField && readAckFromDom(ackField)) return "yellow";
+    return "red";
+  }
+
+  // === Montaje silencioso por tab: activa, espera contenido, mide, regresa ===
+  function showTabAndWait(link, timeoutMs=700){
+    return new Promise((resolve)=>{
+      if(!link) return resolve();
+      const pane = paneFor(link);
+      // Si ya hay contenido, basta con activar y resolver
+      if (pane && (pane.querySelector(".o_list_renderer, .o_list_view, .o_kanban_renderer, .o_kanban_view"))) {
+        link.click?.(); return setTimeout(resolve, 0);
       }
-    }).catch(()=>{ /* si falla RPC, no pintamos aquí */});
+      link.click?.();
+      const t0 = Date.now(); let done = false;
+      const finish = ()=>{ if(done) return; done=true; resolve(); };
+      const obs = pane ? new MutationObserver(()=>{
+        if (pane.querySelector(".o_list_renderer, .o_list_view, .o_kanban_renderer, .o_kanban_view")) {
+          try{ obs.disconnect(); }catch{}
+          finish();
+        } else if (Date.now() - t0 > timeoutMs) {
+          try{ obs.disconnect(); }catch{}
+          finish();
+        }
+      }) : null;
+      if (obs && pane) obs.observe(pane, {childList:true, subtree:true});
+      setTimeout(()=>{ try{obs && obs.disconnect();}catch{} finish(); }, timeoutMs + 100);
+    });
   }
 
-  // ===== Observadores (sólo cuando cambia contenido/ACK) =====
-  function setupObservers(nb, byCode){
-    const tabContent = nb.querySelector(".tab-content")||nb;
-    let dirty={}; let scheduled=false;
-    function schedule(){
-      if(scheduled) return; scheduled=true;
-      setTimeout(()=>{ scheduled=false;
-        try{
-          Object.keys(dirty).forEach(code=>{
-            const a=byCode[code]; if(!a) return;
-            const pane=paneFor(a);
-            const rows=countRows(pane);
-            const ack=readAckDOM(ACK_FIELD(code));
-            const st = rows>0 ? 1 : (ack?2:0);
-            clearTab(a); applyTab(a, st);
-          });
-        }catch{}
-        dirty={};
-      },60);
+  async function initialSweep(notebook, byCode, paneByCode){
+    const nav = notebook.querySelector(".nav-tabs");
+    if(!nav) return;
+
+    const activeBefore = getActiveLink(nav);
+
+    for (const code of Object.keys(byCode)) {
+      const link = byCode[code];
+      try {
+        await showTabAndWait(link);
+        const pane = paneByCode[code] || paneFor(link);
+        paneByCode[code] = pane;
+        const st = stateFromPaneAndAck(pane, code);
+        clearTab(link); applyTabState(link, st);
+      } catch {
+        clearTab(link); applyTabState(link, "red");
+      }
     }
 
-    const mo=new MutationObserver(muts=>{
+    // Volver a la tab original (sin repintar por cambio de pestaña)
+    if (activeBefore && activeBefore !== getActiveLink(nav)) {
+      try { activeBefore.click?.(); } catch {}
+    }
+  }
+
+  function setupObservers(notebook, byCode, paneByCode){
+    const tabContent = notebook.querySelector(".tab-content") || notebook;
+
+    const paneIdToCode = {};
+    for (const [code, link] of Object.entries(byCode)) {
+      const p = paneByCode[code] || paneFor(link);
+      if (p && p.id) paneIdToCode[p.id] = code;
+    }
+
+    let dirty = {};
+    let scheduled = false;
+
+    function schedule(){
+      if(scheduled) return;
+      scheduled = true;
+      setTimeout(()=>{
+        scheduled = false;
+        try{
+          Object.keys(dirty).forEach(code=>{
+            const link = byCode[code];
+            const pane = paneByCode[code] || paneFor(link);
+            const st = stateFromPaneAndAck(pane, code);
+            clearTab(link); applyTabState(link, st);
+          });
+        }catch{}
+        dirty = {};
+      }, 60);
+    }
+
+    const mo = new MutationObserver(muts=>{
       try{
-        for(const mut of muts){
+        for (const mut of muts) {
           const pane = mut.target?.closest?.(".tab-pane");
-          const proc = (p)=>{ if(!p) return;
-            for(const [code,a] of Object.entries(byCode)){
-              const pp=paneFor(a); if(pp && pp===p){ dirty[code]=true; break; }
+          if (pane && pane.id && paneIdToCode[pane.id]) {
+            dirty[paneIdToCode[pane.id]] = true;
+          }
+          for (const n of mut.addedNodes || []) {
+            if (!(n instanceof Element)) continue;
+            const p2 = n.classList?.contains("tab-pane") ? n : n.closest?.(".tab-pane");
+            if (p2 && p2.id && paneIdToCode[p2.id]) {
+              dirty[paneIdToCode[p2.id]] = true;
             }
-          };
-          if(pane) proc(pane);
-          for(const n of mut.addedNodes||[]){
-            if(!(n instanceof Element)) continue;
-            const p2 = n.classList?.contains("tab-pane")?n:n.closest?.(".tab-pane");
-            if(p2) proc(p2);
           }
         }
       }catch{}
-      if(Object.keys(dirty).length) schedule();
+      if (Object.keys(dirty).length) schedule();
     });
-    mo.observe(tabContent,{childList:true,subtree:true});
+    mo.observe(tabContent, {childList:true, subtree:true});
 
-    document.addEventListener("change",ev=>{
+    // Cambios de ACK -> repinta solo ese rubro (si los campos están visibles)
+    document.addEventListener("change", ev=>{
       try{
-        const nm=ev.target?.getAttribute?.("name");
-        if(!nm) return;
-        for(const code of CODES){ if(nm===ACK_FIELD(code) && byCode[code]) dirty[code]=true; }
-        if(Object.keys(dirty).length) schedule();
+        const nm = ev.target?.getAttribute?.("name");
+        if (!nm) return;
+        for (const [code, field] of Object.entries(ACK_BY_CODE)) {
+          if (nm === field && byCode[code]) dirty[code] = true;
+        }
       }catch{}
+      if (Object.keys(dirty).length) schedule();
     });
   }
 
-  // ===== Arranque =====
   function waitNotebook(cb){
-    const nb=document.querySelector(".o_form_view .o_notebook");
-    if(nb) return cb(nb);
-    const mo=new MutationObserver(()=>{ const n=document.querySelector(".o_form_view .o_notebook"); if(n){mo.disconnect(); cb(n);} });
-    mo.observe(document.documentElement,{childList:true,subtree:true});
+    const nb = document.querySelector(".o_form_view .o_notebook");
+    if (nb) return cb(nb);
+    const mo = new MutationObserver(()=>{
+      const n=document.querySelector(".o_form_view .o_notebook");
+      if(n){ mo.disconnect(); cb(n); }
+    });
+    mo.observe(document.documentElement, {childList:true, subtree:true});
   }
 
   try{
-    waitNotebook(function(nb){
-      const links = linksInNotebook(nb);
-      if(!links.length) return;
+    waitNotebook(async function(notebook){
+      const links = [...notebook.querySelectorAll(".nav-tabs .nav-link")];
+      if (!links.length) return;
 
-      // Construir índice: por etiqueta visible y por fallback de orden
+      // Indexar por etiqueta visible (tus 11 tabs)
       const byCode = {};
-      // 1) por etiqueta
-      for(const a of links){
+      for (const a of links) {
         const code = LABEL_TO_CODE[norm(a.textContent)];
-        if(code) byCode[code]=a;
-      }
-      // 2) si algún code faltó, asigna por posición (asumiendo orden de tabs = orden de CODES)
-      if(Object.keys(byCode).length<links.length){
-        const unused = new Set(CODES.filter(c=>!byCode[c]));
-        for(const a of links){
-          const already = Object.values(byCode).includes(a); if(already) continue;
-          const code = unused.values().next().value; if(!code) break;
-          byCode[code]=a; unused.delete(code);
-        }
+        if (code) byCode[code] = a;
       }
 
-      // Pintado inicial por rubro_state_*
-      initialPaint(nb, byCode).finally(()=>{
-        // Ajustes sólo cuando realmente cambie algo en el contenido
-        setupObservers(nb, byCode);
-      });
+      const paneByCode = {};
+      await initialSweep(notebook, byCode, paneByCode);
+      setupObservers(notebook, byCode, paneByCode);
 
-      // Depuración
-      window.__ccnTabsState = {
-        dump(){
-          const out = {}; for(const [c,a] of Object.entries(byCode)){ const li=a.closest("li");
-            out[c]={tab:a.textContent.trim(), classes:[...new Set([...[...a.classList], ...(li?[...li.classList]:[])])].filter(k=>/^ccn-status-/.test(k))};
-          } console.table(out);
+      // Depuración opcional
+      window.__ccnTabsLiveDOM = {
+        repaint(code){
+          try{
+            if(code && byCode[code]){
+              const a=byCode[code];
+              const p=paneByCode[code]||paneFor(a);
+              const st=stateFromPaneAndAck(p, code);
+              clearTab(a); applyTabState(a, st);
+              return;
+            }
+            Object.keys(byCode).forEach(c=>{
+              const a=byCode[c];
+              const p=paneByCode[c]||paneFor(a);
+              const st=stateFromPaneAndAck(p, c);
+              clearTab(a); applyTabState(a, st);
+            });
+          }catch{}
         }
       };
     });
