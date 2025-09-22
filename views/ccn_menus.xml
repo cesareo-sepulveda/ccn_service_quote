@@ -1,13 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <!-- Menú raíz CCN -->
-  <menuitem id="menu_ccn_root" name="CCN" parent="sale.sale_menu_root" sequence="90"/>
+  <menuitem
+    id="menu_ccn_root"
+    name="CCN"
+    sequence="90"
+    action="ccn_service_quote.ccn_action_quotes"
+    app="True"/>
 
-  <!-- Submenú Cotizaciones que llama la acción anterior -->
+  <!-- Submenú Cotizaciones -->
   <menuitem
     id="menu_ccn_quotes"
     name="Cotizaciones"
     parent="menu_ccn_root"
-    action="ccn_service_quote.action_ccn_service_quote"
+    action="ccn_service_quote.ccn_action_quotes"
     sequence="10"/>
 </odoo>
