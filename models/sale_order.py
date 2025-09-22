@@ -54,6 +54,10 @@ class SaleOrder(models.Model):
 
         return action
 
+    def action_open_pick_quote_wizard(self):
+        """Alias legacy para compatibilidad con vistas anteriores."""
+        return self.action_ccn_add_service_quote()
+
     # ----------------- Helpers de producto "contenedor" -----------------
 
     def _ccn_get_category_product(self, category):
