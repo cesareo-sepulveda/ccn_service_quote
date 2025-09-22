@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data>
-        <!-- Menú raíz SIN acción -->
-        <menuitem id="ccn_root_menu"
-                  name="Cotizador Especial CCN"
-                  sequence="20"
-                  app="True"/>
+    <!-- Menú raíz SIN acción -->
+    <menuitem id="ccn_root_menu"
+              name="Cotizador Especial CCN"
+              sequence="20"
+              app="True"/>
 
-        <menuitem id="ccn_menu_quotes"
-                  name="Cotizaciones de Servicio"
-                  parent="ccn_root_menu"
-                  action="ccn_service_quote.ccn_action_quotes"
-                  sequence="10"/>
-    </data>
+    <menuitem id="ccn_menu_quotes"
+              name="Cotizaciones de Servicio"
+              parent="ccn_root_menu"
+              action="ccn_service_quote.ccn_action_quotes"
+              sequence="10"/>
 </odoo>
