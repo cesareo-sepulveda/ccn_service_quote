@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
   <!-- Menú raíz CCN -->
-  <menuitem id="menu_ccn_root" name="CCN" sequence="90"/>
+  <menuitem id="menu_ccn_root" name="CCN" parent="sale.menu_sale_root" sequence="90"/>
 
   <!-- Submenú Cotizaciones que llama la acción anterior -->
   <menuitem
