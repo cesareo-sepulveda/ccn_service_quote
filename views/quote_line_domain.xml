@@ -23,9 +23,9 @@
 
               <field name="quantity"/>
               <field name="tabulator_percent"/>
-              <field name="base_price_unit"/>
-              <field name="price_unit_final"/>
-              <field name="total_price"/>
+              <field name="product_base_price" readonly="1"/>
+              <field name="price_unit_final" readonly="1"/>
+              <field name="total_price" readonly="1"/>
               <field name="currency_id" invisible="1"/>
             </list>
 
@@ -38,7 +38,7 @@
                                 ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"/>
                 <field name="quantity"/>
                 <field name="tabulator_percent"/>
-                <field name="base_price_unit"/>
+                <field name="product_base_price" readonly="1"/>
                 <field name="price_unit_final" readonly="1"/>
                 <field name="total_price" readonly="1"/>
               </group>
