@@ -1,23 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <data>
-        <!-- Menú raíz SIN acción -->
-        <menuitem id="ccn_root_menu"
-                  name="Cotizador Especial CCN"
-                  sequence="20"
-                  app="True"/>
+    <!-- Menú raíz SIN acción -->
+    <menuitem id="ccn_root_menu"
+              name="Cotizador Especial CCN"
+              sequence="20"
+              app="True"/>
 
-        <!-- Acción válida (la que corresponde a 478 si la tienes creada desde XML) -->
-        <record id="ccn_action_quotes" model="ir.actions.act_window">
-            <field name="name">Cotizaciones de Servicio</field>
-            <field name="res_model">ccn.service.quote</field>
-            <field name="view_mode">list,form</field>
-        </record>
-
-        <menuitem id="ccn_menu_quotes"
-                  name="Cotizaciones de Servicio"
-                  parent="ccn_root_menu"
-                  action="ccn_service_quote.ccn_action_quotes"
-                  sequence="10"/>
-    </data>
+    <menuitem id="ccn_menu_quotes"
+              name="Cotizaciones de Servicio"
+              parent="ccn_root_menu"
+              action="ccn_service_quote.ccn_action_quotes"
+              sequence="10"/>
 </odoo>
