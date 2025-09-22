@@ -1,25 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-  <data noupdate="0">
+  <!-- Menú raíz CCN -->
+  <menuitem id="menu_ccn_root" name="CCN" sequence="90"/>
 
-    <!-- Acción mínima para abrir ccn.service.quote -->
-    <record id="action_ccn_service_quote" model="ir.actions.act_window">
-      <field name="name">Cotizaciones</field>
-      <field name="res_model">ccn.service.quote</field>
-      <field name="view_mode">form</field>
-      <field name="context">{}</field>
-    </record>
-
-    <!-- Menú raíz CCN -->
-    <menuitem id="menu_ccn_root" name="CCN" sequence="90"/>
-
-    <!-- Submenú Cotizaciones que llama la acción anterior -->
-    <menuitem
-      id="menu_ccn_quotes"
-      name="Cotizaciones"
-      parent="menu_ccn_root"
-      action="action_ccn_service_quote"
-      sequence="10"/>
-
-  </data>
+  <!-- Submenú Cotizaciones que llama la acción anterior -->
+  <menuitem
+    id="menu_ccn_quotes"
+    name="Cotizaciones"
+    parent="menu_ccn_root"
+    action="ccn_service_quote.action_ccn_service_quote"
+    sequence="10"/>
 </odoo>
