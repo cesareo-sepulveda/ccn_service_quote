@@ -92,8 +92,8 @@
         </xpath>
 
         <!-- 2) Sustituye el antiguo bloque de líneas por el notebook completo -->
-        <xpath expr="//form//field[@name='line_ids']" position="replace">
-          <notebook>
+        <xpath expr="//form/notebook[@invisible='not current_service_type']" position="replace">
+          <notebook invisible="not current_service_type">
 
             <!-- A) Sitio actual (indicadores ARRIBA y líneas ABAJO, embebiendo el form del sitio) -->
             <page string="Sitio actual">
