@@ -2,26 +2,19 @@
 from odoo import api, fields, models
 
 class CCNServiceQuoteSite(models.Model):
-    _name = "ccn.service.quote.site"
+    """Extiende la definición base del sitio de cotización."""
+
+    _inherit = "ccn.service.quote.site"
     _description = "Sitio de la Cotización CCN"
     _order = "sequence, id"
 
-    # Básicos
-    name = fields.Char(required=True)
+    # Básicos adicionales
     sequence = fields.Integer(default=10)
-    quote_id = fields.Many2one('ccn.service.quote', string='Cotización',
-        required=True, index=True, ondelete='cascade')
-
-    # Líneas del sitio
-    line_ids = fields.One2many(
-        "ccn.service.quote.line",
-        "site_id",
-        string="Líneas",
-    )
 
     # Moneda (heredada de la quote)
     currency_id = fields.Many2one(
-        "res.currency", string='Moneda',
+        "res.currency",
+        string='Moneda',
         related="quote_id.currency_id",
         store=True,
         readonly=True,
