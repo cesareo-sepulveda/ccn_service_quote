@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <data>
     <record id="view_ccn_service_quote_form_scope" model="ir.ui.view">
       <field name="name">ccn.service.quote.form.scope</field>
       <field name="model">ccn.service.quote</field>
@@ -11,5 +10,4 @@
         </xpath>
       </field>
     </record>
-  </data>
-</odoo>
+  </odoo>

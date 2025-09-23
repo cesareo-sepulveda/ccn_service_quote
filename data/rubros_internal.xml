@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
-  <data noupdate="1">
+<odoo noupdate="1">
     <record id="rubro_admin" model="ccn.service.rubro">
       <field name="name">Administración (%)</field>
       <field name="sequence">990</field>
@@ -19,5 +18,4 @@
       <field name="internal_only">1</field>
       <field name="active">1</field>
     </record>
-  </data>
 </odoo>

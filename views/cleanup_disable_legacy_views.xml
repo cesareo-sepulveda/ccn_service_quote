@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
-  <data noupdate="0">
+<odoo noupdate="0">
 
     <!-- Desactiva la vista heredada que metía los tabs de Sitio -->
     <record id="ccn_view_quote_form_tabs" model="ir.ui.view">
@@ -16,5 +15,4 @@
       </field>
     </record>
 
-  </data>
 </odoo>

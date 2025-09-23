@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <data>
     <record id="ccn_product_template_form_inherit_rubros" model="ir.ui.view">
       <field name="name">product.template.form.ccn.rubros</field>
       <field name="model">product.template</field>
@@ -18,5 +17,4 @@
         </xpath>
       </field>
     </record>
-  </data>
-</odoo>
+  </odoo>

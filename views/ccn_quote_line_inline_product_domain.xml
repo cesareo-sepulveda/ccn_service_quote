@@ -1,5 +1,4 @@
 <odoo>
-  <data>
     <!-- Para líneas que usan product.product -->
     <record id="view_ccn_quote_line_inline_product_domain" model="ir.ui.view">
       <field name="name">ccn.service.quote.line.inline.product.domain</field>
@@ -27,5 +26,4 @@
       </field>
     </record>
     -->
-  </data>
-</odoo>
+  </odoo>

@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <data>
     <record id="view_pick_quote_wizard" model="ir.ui.view">
       <field name="name">ccn.pick.quote.wizard</field>
       <field name="model">ccn.service.quote.pick.wizard</field>
@@ -29,5 +28,4 @@
       <field name="view_mode">form</field>
       <field name="target">new</field>
     </record>
-  </data>
-</odoo>
+  </odoo>
