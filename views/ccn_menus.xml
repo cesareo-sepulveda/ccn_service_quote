@@ -1,18 +1,19 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <odoo>
-  <!-- Menú raíz CCN -->
-  <menuitem
-    id="menu_ccn_root"
-    name="CCN"
-    sequence="90"
-    action="ccn_service_quote.ccn_action_quotes"
-    app="True"/>
+  <data>
+    <!-- Menú raíz CCN -->
+    <menuitem
+      id="menu_ccn_root"
+      name="CCN"
+      sequence="90"
+      app="True"/>
 
-  <!-- Submenú Cotizaciones -->
-  <menuitem
-    id="menu_ccn_quotes"
-    name="Cotizaciones"
-    parent="menu_ccn_root"
-    action="ccn_service_quote.ccn_action_quotes"
-    sequence="10"/>
+    <!-- Submenú Cotizaciones -->
+    <menuitem
+      id="menu_ccn_quotes"
+      name="Cotizaciones"
+      parent="menu_ccn_root"
+      action="ccn_service_quote.ccn_action_quotes"
+      sequence="10"/>
+  </data>
 </odoo>
