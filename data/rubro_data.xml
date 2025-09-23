@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
+<odoo noupdate="1">
   <!-- No reescribas registros en upgrades -->
-  <data noupdate="1">
     <record id="rubro_mano_obra" model="ccn.service.rubro" forcecreate="0">
       <field name="code">mano_obra</field>
       <field name="name">Mano de Obra</field>
@@ -141,5 +140,4 @@
       <field name="internal_only">False</field>
       <field name="active">True</field>
     </record>
-  </data>
 </odoo>

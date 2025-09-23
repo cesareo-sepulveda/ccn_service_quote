@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <data>
     <record id="ccn_view_quote_line_tree_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.tree.inline</field>
       <field name="model">ccn.service.quote.line</field>
@@ -39,5 +38,4 @@
         </list>
       </field>
     </record>
-  </data>
-</odoo>
+  </odoo>

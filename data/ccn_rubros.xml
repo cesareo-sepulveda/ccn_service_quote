@@ -1,6 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo>
-  <data noupdate="1">
+<odoo noupdate="1">
 
     <!-- 1 -->
     <record id="ccn_rubro_mano_obra" model="ccn.service.rubro">
@@ -128,5 +127,4 @@
       <field name="apply_clean">1</field>
     </record>
 
-  </data>
 </odoo>
