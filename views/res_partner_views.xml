@@ -1,0 +1,25 @@
+<odoo>
+  <data>
+    <record id="view_partner_form_ccn_service_quote" model="ir.ui.view">
+      <field name="name">res.partner.form.ccn.service.quote</field>
+      <field name="model">res.partner</field>
+      <field name="inherit_id" ref="base.view_partner_form"/>
+      <field name="arch" type="xml">
+        <xpath expr="//div[@name='button_box']" position="inside">
+          <button name="action_view_service_quotes"
+                  type="object"
+                  class="oe_stat_button"
+                  icon="fa-file-text-o"
+                  attrs="{'invisible': [('service_quote_count', '=', 0)]}">
+            <div class="o_stat_info">
+              <span class="o_stat_value">
+                <field name="service_quote_count" widget="statinfo"/>
+              </span>
+              <span class="o_stat_text">Cotizaciones CCN</span>
+            </div>
+          </button>
+        </xpath>
+      </field>
+    </record>
+  </data>
+</odoo>
