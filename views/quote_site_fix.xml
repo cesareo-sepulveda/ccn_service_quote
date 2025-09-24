@@ -8,7 +8,7 @@
       <field name="arch" type="xml">
         <xpath expr="//field[@name='current_site_id']" position="replace">
           <field name="current_site_id"
-                 domain="[('id', 'in', site_ids.ids if site_ids else [])]"
+                 domain="[('quote_id', 'in', [False, id])]"
                  context="{'default_quote_id': id}"/>
         </xpath>
       </field>
