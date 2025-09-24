@@ -1,33 +1,51 @@
 # -*- coding: utf-8 -*-
 from odoo import api, fields, models
+from odoo.exceptions import ValidationError
+
 
 class CCNServiceQuoteSite(models.Model):
     _name = "ccn.service.quote.site"
     _description = "Sitio de la Cotización CCN"
     _order = "sequence, id"
 
+    # -------------------------
     # Básicos
-    name = fields.Char(required=True)
+    # -------------------------
+    name = fields.Char(required=True, index=True)
     sequence = fields.Integer(default=10)
-    quote_id = fields.Many2one('ccn.service.quote', string='Cotización',
-        required=True, index=True, ondelete='cascade')
+    active = fields.Boolean(default=True)
 
+    quote_id = fields.Many2one(
+        'ccn.service.quote',
+        string='Cotización',
+        required=True,
+        index=True,
+        ondelete='cascade'
+    )
+
+    # -------------------------
     # Líneas del sitio
+    # -------------------------
     line_ids = fields.One2many(
         "ccn.service.quote.line",
         "site_id",
         string="Líneas",
     )
 
+    # -------------------------
     # Moneda (heredada de la quote)
+    # -------------------------
     currency_id = fields.Many2one(
-        "res.currency", string='Moneda',
+        "res.currency",
+        string='Moneda',
         related="quote_id.currency_id",
         store=True,
         readonly=True,
     )
 
+    # -------------------------
     # Indicadores calculados del sitio
+    # -------------------------
     headcount = fields.Float(
         compute="_compute_indicators", store=True, readonly=True
     )
@@ -56,6 +74,18 @@ class CCNServiceQuoteSite(models.Model):
         compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
     )
 
+    # -------------------------
+    # Flags y utilidades
+    # -------------------------
+    is_general = fields.Boolean(
+        string="Es General",
+        compute="_compute_is_general",
+        store=True
+    )
+
+    # -------------------------
+    # Cálculos
+    # -------------------------
     @api.depends(
         "line_ids.quantity",
         "line_ids.price_unit_final",
@@ -78,7 +108,7 @@ class CCNServiceQuoteSite(models.Model):
             lines = site.line_ids
 
             # Headcount: utiliza el código fijo del rubro
-            headcount = sum(l.quantity for l in lines if l.rubro_code == "mano_obra")
+            site.headcount = sum(l.quantity for l in lines if l.rubro_code == "mano_obra")
 
             # Base del sitio: usamos el subtotal de cada línea
             base = sum(l.total_price or 0.0 for l in lines)
@@ -99,7 +129,6 @@ class CCNServiceQuoteSite(models.Model):
 
             total = subtotal2 + transporte_amt + bienestar_amt + financial_amt
 
-            site.headcount = headcount
             site.subtotal1 = base
             site.admin_amt = admin_amt
             site.util_amt = util_amt
@@ -108,3 +137,123 @@ class CCNServiceQuoteSite(models.Model):
             site.bienestar_amt = bienestar_amt
             site.financial_amt = financial_amt
             site.total_monthly = total
+
+    # -------------------------
+    # Computados / Constraints
+    # -------------------------
+    @api.depends('name')
+    def _compute_is_general(self):
+        for rec in self:
+            rec.is_general = ((rec.name or '').strip().lower() == 'general')
+
+    @api.constrains('name', 'quote_id')
+    def _check_single_general_per_quote(self):
+        """
+        Evita duplicar 'General' por cotización (case-insensitive).
+        """
+        for rec in self:
+            if not rec.quote_id or not rec.name:
+                continue
+            if (rec.name or '').strip().lower() == 'general':
+                dup = self.search([
+                    ('id', '!=', rec.id),
+                    ('quote_id', '=', rec.quote_id.id),
+                    ('name', '=ilike', 'general'),
+                    ('active', 'in', [True, False]),
+                ], limit=1)
+                if dup:
+                    raise ValidationError("Solo puede existir un sitio llamado 'General' por cotización.")
+
+    # -------------------------
+    # Creación / Escritura: normaliza y prioriza 'General'
+    # -------------------------
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            nm = (vals.get('name') or '').strip()
+            if nm and nm.lower() == 'general':
+                # nombre normalizado
+                vals['name'] = 'General'
+                # asegúralo activo y al tope
+                vals.setdefault('active', True)
+                # si no se especifica sequence, ponlo muy al frente
+                if 'sequence' not in vals or vals.get('sequence') is None:
+                    vals['sequence'] = -999
+        records = super().create(vals_list)
+        return records
+
+    def write(self, vals):
+        # Si se renombra a General, normaliza y súbelo
+        if 'name' in vals and vals.get('name'):
+            nm = (vals.get('name') or '').strip()
+            if nm.lower() == 'general':
+                vals['name'] = 'General'
+                if 'sequence' not in vals:
+                    vals['sequence'] = -999
+                if 'active' not in vals:
+                    vals['active'] = True
+        return super().write(vals)
+
+    # -------------------------
+    # UX: 'General' siempre arriba en dropdowns (respetando dominios/reglas)
+    # -------------------------
+    def name_search(self, name='', args=None, operator='ilike', limit=80):
+        """
+        Reordena resultados para colocar 'General' (del mismo quote/domino)
+        al principio, sin violar dominios ni record rules.
+        """
+        args = args or []
+        res = super().name_search(name=name, args=args, operator=operator, limit=limit)
+
+        # Identifica si el dominio filtra por quote_id para posicionar el General correcto
+        quote_filter_ids = [val for (fld, op, val) in args if fld == 'quote_id' and op in ('=', 'in')]
+        general_ids = []
+        if quote_filter_ids:
+            # args suele venir con ('quote_id','=',<id>) en M2O de líneas -> sitio
+            domain = [('name', '=ilike', 'general')] + args
+            generals = self.with_context(active_test=False).search(domain)
+            general_ids = generals.ids
+        else:
+            # Sin filtro explícito, toma cualquier 'General' permitido por args
+            generals = self.with_context(active_test=False).search(args + [('name', '=ilike', 'general')])
+            general_ids = generals.ids
+
+        if general_ids:
+            # Mueve al frente los General presentes en res, manteniendo orden relativo
+            ids_in_res = [r[0] for r in res]
+            generals_in_res = [gid for gid in general_ids if gid in ids_in_res]
+            if generals_in_res:
+                id2label = dict(res)
+                front = [(gid, id2label[gid]) for gid in generals_in_res]
+                tail = [(i, id2label[i]) for i in ids_in_res if i not in generals_in_res]
+                res = front + tail
+
+        if limit:
+            res = res[:limit]
+        return res
+
+    # -------------------------
+    # Helper opcional para usar desde otros modelos:
+    # -------------------------
+    @api.model
+    def get_or_create_general(self, quote_id):
+        """
+        Devuelve el 'General' de una cotización; si no existe, lo crea.
+        Útil para llamarlo desde create() de ccn.service.quote o desde onchanges.
+        """
+        if not quote_id:
+            return False
+        rec = self.search([
+            ('quote_id', '=', quote_id),
+            ('name', '=ilike', 'general'),
+        ], limit=1)
+        if rec:
+            if not rec.active or rec.sequence > -999:
+                rec.write({'active': True, 'sequence': -999})
+            return rec.id
+        return self.create({
+            'quote_id': quote_id,
+            'name': 'General',
+            'active': True,
+            'sequence': -999,
+        }).id

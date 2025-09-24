@@ -1,0 +1,7 @@
+<odoo noupdate="1">
+  <record id="site_general" model="ccn.service.quote.site">
+    <field name="name">General</field>
+    <field name="active">True</field>
+    <field name="sequence">-999</field> <!-- lo empuja arriba -->
+  </record>
+</odoo>
