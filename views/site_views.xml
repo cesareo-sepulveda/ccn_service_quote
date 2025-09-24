@@ -2,9 +2,9 @@
 <odoo>
   <data>
 
-    <!-- ================================
-         FORM del modelo de Sitio (con indicadores ARRIBA)
-         ================================ -->
+    <!-- ============================================
+         FORM del modelo ccn.service.quote.site (Sitio)
+         ============================================ -->
     <record id="ccn_view_site_form" model="ir.ui.view">
       <field name="name">ccn.site.form</field>
       <field name="model">ccn.service.quote.site</field>
@@ -18,22 +18,35 @@
                 <field name="sequence"/>
               </group>
               <group string="Indicadores">
-                <field name="headcount"/>
+                <field name="headcount" readonly="1"/>
               </group>
             </group>
 
             <notebook>
               <page string="Líneas">
-                <field name="line_ids" mode="list" context="{'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline'}">
-                    <list editable="bottom" string="Líneas del sitio">
+                <field name="line_ids" mode="tree,form">
+                  <tree editable="bottom">
+                    <field name="rubro_id"/>
+                    <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+                    <field name="quantity"/>
+                    <field name="product_base_price" string="Precio base" readonly="1"/>
+                    <field name="tabulator_percent" string="Tabulador"/>
+                    <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+                    <field name="taxes_display" string="Impuestos" readonly="1"/>
+                    <field name="total_price" string="Subtotal" readonly="1"/>
+                  </tree>
+                  <form string="Línea de sitio">
+                    <group>
+                      <field name="rubro_id"/>
                       <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
                       <field name="quantity"/>
-                    <!-- Reemplaza base_price_unit por el campo real que sí tienes -->
-                    <field name="price_unit_final" string="Precio Unitario"/>
-                    <field name="tabulator_percent" string="Tabulador"/>
-                    <field name="amount_tax" string="IVA" readonly="1"/>
-                    <field name="total_price" string="Subtotal" readonly="1"/>
-                  </list>
+                      <field name="product_base_price" string="Precio base" readonly="1"/>
+                      <field name="tabulator_percent" string="Tabulador"/>
+                      <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+                      <field name="taxes_display" string="Impuestos" readonly="1"/>
+                      <field name="total_price" string="Subtotal" readonly="1"/>
+                    </group>
+                  </form>
                 </field>
               </page>
 
@@ -56,10 +69,10 @@
     </record>
 
     <!-- ==========================================================
-         Heredamos el FORM de la Service Quote para:
-         - Agregar selector "Sitio actual" arriba,
-         - Embedir el FORM del sitio seleccionado,
-         - Agregar pestañas Sitios y Resumen Global.
+         Herencia del FORM de la Service Quote:
+         - Reemplaza el selector original,
+         - Inserta selector + lista de sitios,
+         - Agrega notebook con pestaña "Sitio actual" (embebe el form del Sitio).
          ========================================================== -->
     <record id="ccn_view_quote_form_sites" model="ir.ui.view">
       <field name="name">ccn.quote.form.sites</field>
@@ -67,103 +80,108 @@
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
       <field name="arch" type="xml">
 
-        <!-- Elimina el selector original de sitio del encabezado -->
+        <!-- 1) Elimina el selector original de sitio del encabezado -->
         <xpath expr="//form/sheet/group/field[@name='current_site_id']" position="replace"/>
 
-        <!-- Inserta selector y lista de sitios directamente en la pantalla principal -->
+        <!-- 2) Inserta selector y lista de sitios debajo del primer group -->
         <xpath expr="//form/sheet/group" position="after">
           <group>
             <group string="Sitio en edición">
               <field name="current_site_id"
-                     domain="[('quote_id', 'in', [False, id])]"
-                     context="{'default_quote_id': id}"/>
+                     domain="['|', ('id','in', site_ids), ('quote_id','=', id)]"
+                     context="{'default_quote_id': id}"
+                     options="{'no_open': True, 'no_create_edit': True}"
+                     colspan="2"/>
             </group>
             <group string="Sitios">
-              <field name="site_ids" mode="list"
+              <field name="site_ids"
+                     mode="tree"
                      context="{'default_quote_id': id}"
                      options="{'no_open': True, 'no_create_edit': True}">
-                <list editable="bottom">
+                <tree editable="bottom">
                   <field name="sequence"/>
                   <field name="name"/>
-                </list>
+                </tree>
               </field>
             </group>
           </group>
         </xpath>
 
-        <!-- 2) Sustituye el antiguo bloque de líneas por el notebook completo -->
+        <!-- 3) Sustituye cualquier bloque antiguo de líneas por un notebook -->
         <xpath expr="//form//field[@name='line_ids']" position="replace">
           <notebook>
 
-            <!-- A) Sitio actual (indicadores ARRIBA y líneas ABAJO, embebiendo el form del sitio) -->
+            <!-- A) Sitio actual: embebemos el FORM del sitio filtrando el O2M a current_site_id -->
             <page string="Sitio actual">
-              <field name="current_site_id"
-                     domain="[('quote_id', 'in', [False, id])]"
+              <field name="site_ids"
+                     domain="[('id','=', current_site_id)]"
+                     mode="form"
                      context="{'default_quote_id': id}">
-                <!-- Reutilizamos el form del sitio -->
-                <form position="replace">
-                  <form string="Sitio">
-                    <sheet>
+                <!-- Reutilizamos el form del sitio (se muestra solo el seleccionado) -->
+                <form string="Sitio">
+                  <sheet>
+                    <group>
                       <group>
-                        <group>
-                          <field name="name"/>
-                          <field name="quote_id" options="{'no_open': True}"/>
-                          <field name="sequence"/>
-                        </group>
-                        <group string="Indicadores">
-                          <field name="headcount"/>
-                        </group>
+                        <field name="name"/>
+                        <field name="quote_id" options="{'no_open': True}"/>
+                        <field name="sequence"/>
                       </group>
+                      <group string="Indicadores">
+                        <field name="headcount" readonly="1"/>
+                      </group>
+                    </group>
 
-                      <notebook>
-                        <page string="Líneas">
-                          <field name="line_ids" mode="list,form">
-                            <list editable="bottom">
+                    <notebook>
+                      <page string="Líneas">
+                        <field name="line_ids" mode="tree,form">
+                          <tree editable="bottom">
+                            <field name="rubro_id"/>
+                            <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+                            <field name="quantity"/>
+                            <field name="product_base_price" string="Precio base" readonly="1"/>
+                            <field name="tabulator_percent" string="Tabulador"/>
+                            <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+                            <field name="taxes_display" string="Impuestos" readonly="1"/>
+                            <field name="total_price" string="Subtotal" readonly="1"/>
+                          </tree>
+                          <form string="Línea de sitio">
+                            <group>
                               <field name="rubro_id"/>
                               <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
                               <field name="quantity"/>
-                              <field name="base_price_unit"/>
-                              <field name="tabulator_percent"/>
-                              <field name="price_unit_final" readonly="1"/>
-                              <field name="total_price" readonly="1"/>
-                            </list>
-                            <form string="Línea de sitio">
-                              <group>
-                                <field name="rubro_id"/>
-                                <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-                                <field name="quantity"/>
-                                <field name="base_price_unit"/>
-                                <field name="tabulator_percent"/>
-                                <field name="price_unit_final" readonly="1"/>
-                                <field name="total_price" readonly="1"/>
-                              </group>
-                            </form>
-                          </field>
-                        </page>
+                              <field name="product_base_price" string="Precio base" readonly="1"/>
+                              <field name="tabulator_percent" string="Tabulador"/>
+                              <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+                              <field name="taxes_display" string="Impuestos" readonly="1"/>
+                              <field name="total_price" string="Subtotal" readonly="1"/>
+                            </group>
+                          </form>
+                        </field>
+                      </page>
 
-                        <page string="Resumen del sitio">
-                          <group>
-                            <field name="subtotal1" readonly="1"/>
-                            <field name="admin_amt" readonly="1"/>
-                            <field name="util_amt" readonly="1"/>
-                            <field name="subtotal2" readonly="1"/>
-                            <field name="transporte_amt" readonly="1"/>
-                            <field name="bienestar_amt" readonly="1"/>
-                            <field name="financial_amt" readonly="1"/>
-                            <field name="total_monthly" readonly="1"/>
-                          </group>
-                        </page>
-                      </notebook>
-                    </sheet>
-                  </form>
+                      <page string="Resumen del sitio">
+                        <group>
+                          <field name="subtotal1" readonly="1"/>
+                          <field name="admin_amt" readonly="1"/>
+                          <field name="util_amt" readonly="1"/>
+                          <field name="subtotal2" readonly="1"/>
+                          <field name="transporte_amt" readonly="1"/>
+                          <field name="bienestar_amt" readonly="1"/>
+                          <field name="financial_amt" readonly="1"/>
+                          <field name="total_monthly" readonly="1"/>
+                        </group>
+                      </page>
+                    </notebook>
+                  </sheet>
                 </form>
               </field>
             </page>
 
-            <!-- C) Resumen Global -->
+            <!-- B) Resumen Global -->
             <page string="Resumen Global">
               <div class="o_form_label">Tabla global pendiente (se llenará en el siguiente paso).</div>
             </page>
+
           </notebook>
         </xpath>
       </field>
