@@ -25,6 +25,7 @@
         "views/site_views.xml",
         "views/quote_tabs_status.xml",
         "views/cleanup_disable_legacy_views.xml",
+        "views/res_partner_views.xml",
     ],
     "assets": {
         "web.assets_backend": [
