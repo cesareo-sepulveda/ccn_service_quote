@@ -24,6 +24,32 @@ class ServiceQuote(models.Model):
     )
 
     # Sitios
+    @api.model
+    def default_get(self, fields_list):
+        """Ensure the default "General" site is immediately available.
+
+        The legacy UI relied on the virtual one2many record created by
+        :meth:`_default_site_ids`, but when the form view was refactored the
+        ``current_site_id`` selector started without a value until the record
+        was saved.  Running the onchange logic on a virtual ``new`` record lets
+        the in-memory defaults point ``current_site_id`` to the freshly created
+        "General" site so it is shown as soon as the form opens.
+        """
+
+        defaults = super().default_get(fields_list)
+
+        # Keep backward compatibility for calls that do not request ``site_ids``
+        # explicitly by ensuring the default virtual record is present.
+        defaults.setdefault("site_ids", self._default_site_ids())
+
+        # Simulate the record to reuse the onchange that synchronises the
+        # ``current_site_id`` pointer.
+        quote = self.new(defaults)
+        quote._onchange_site_ids_set_current()
+
+        defaults.update(quote._convert_to_write(quote._cache))
+        return defaults
+
     def _default_site_ids(self):
         """Provide a default "General" site when creating quotes."""
         return [Command.create({"name": self.env._("General")})]
