@@ -216,7 +216,7 @@ class ServiceQuote(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if not vals.get('site_ids'):
-                vals['site_ids'] = [(0, 0, {'name': _('Sitio Default')})]
+                vals['site_ids'] = [(0, 0, {'name': _('General')})]
         quotes = super().create(vals_list)
         for quote in quotes:
             if not quote.current_site_id and quote.site_ids:
