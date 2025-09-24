@@ -276,13 +276,6 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    @api.model
-    def default_get(self, fields_list):
-        defaults = super().default_get(fields_list)
-        if not defaults.get('site_ids'):
-            defaults['site_ids'] = self._default_site_ids()
-        return defaults
-
     @api.onchange('current_service_type')
     def _onchange_current_service_type(self):
         for quote in self:
