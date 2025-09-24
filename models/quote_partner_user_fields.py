@@ -18,6 +18,7 @@ class CCNServiceQuote(models.Model):
         index=True,
         help="Cliente dueño de la cotización.",
     )
+
     user_id = fields.Many2one("res.users", string="Responsable")
 
     @api.model_create_multi

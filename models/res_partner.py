@@ -5,6 +5,7 @@ from odoo import fields, models
 from odoo.tools import safe_eval
 
 
+
 class ResPartner(models.Model):
     """Relaciona a cada cliente con sus cotizaciones de servicio."""
 
@@ -15,6 +16,7 @@ class ResPartner(models.Model):
         "partner_id",
         string="Cotizaciones de servicio",
     )
+
     service_quote_count = fields.Integer(
         string="Número de cotizaciones de servicio",
         compute="_compute_service_quote_count",
@@ -52,3 +54,4 @@ class ResPartner(models.Model):
         action["context"] = context
         action["domain"] = [("partner_id", "=", self.id)]
         return action
+
