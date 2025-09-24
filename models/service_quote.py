@@ -24,7 +24,16 @@ class ServiceQuote(models.Model):
     )
 
     # Sitios
-    site_ids = fields.One2many('ccn.service.quote.site', 'quote_id', string='Sitios')
+    def _default_site_ids(self):
+        """Provide a default "General" site when creating quotes."""
+        return [(0, 0, {"name": self.env._("General")})]
+
+    site_ids = fields.One2many(
+        "ccn.service.quote.site",
+        "quote_id",
+        string="Sitios",
+        default=_default_site_ids,
+    )
 
     # Modo de presentación
     display_mode = fields.Selection(
