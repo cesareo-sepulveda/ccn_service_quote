@@ -75,7 +75,7 @@
           <group>
             <group string="Sitio en edición">
               <field name="current_site_id"
-                     domain="[('id', 'in', site_ids.ids)]"
+                     domain="[('id', 'in', site_ids.ids if site_ids else [])]"
                      context="{'default_quote_id': id}"/>
             </group>
             <group string="Sitios">
@@ -98,7 +98,7 @@
             <!-- A) Sitio actual (indicadores ARRIBA y líneas ABAJO, embebiendo el form del sitio) -->
             <page string="Sitio actual">
               <field name="current_site_id"
-                     domain="[('id', 'in', site_ids.ids)]"
+                     domain="[('id', 'in', site_ids.ids if site_ids else [])]"
                      context="{'default_quote_id': id}">
                 <!-- Reutilizamos el form del sitio -->
                 <form position="replace">
