@@ -10,7 +10,7 @@
                   type="object"
                   class="oe_stat_button"
                   icon="fa-file-text-o"
-                  modifiers="{'invisible': [['service_quote_count', '=', 0]]}">
+                  modifiers='{"invisible": [["service_quote_count", "=", 0]]}'>
             <div class="o_stat_info">
               <span class="o_stat_value">
                 <field name="service_quote_count" widget="statinfo"/>
