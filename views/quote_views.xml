@@ -15,8 +15,9 @@
               <field name="name" colspan="2"/>
               <!-- Limitar al conjunto del O2M para incluir el “General” virtual -->
               <field name="current_site_id"
-                     domain="[('id','in', site_ids)]"
-                     options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"
+                     domain="[('quote_id','=', id)]"
+                     context="{'default_quote_id': id}"
+                     options="{'no_open': True, 'no_create_edit': True}"
                      colspan="2"/>
               <field name="current_service_type" colspan="2"/>
               <field name="display_mode" colspan="2"/>
