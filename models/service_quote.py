@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models, _
+from odoo import Command, api, fields, models, _
 
 # ---------------------------------------------------------------------------
 # QUOTE (encabezado)
@@ -26,7 +26,7 @@ class ServiceQuote(models.Model):
     # Sitios
     def _default_site_ids(self):
         """Provide a default "General" site when creating quotes."""
-        return [(0, 0, {"name": self.env._("General")})]
+        return [Command.create({"name": self.env._("General")})]
 
     site_ids = fields.One2many(
         "ccn.service.quote.site",
@@ -34,6 +34,24 @@ class ServiceQuote(models.Model):
         string="Sitios",
         default=_default_site_ids,
     )
+
+    @api.onchange("site_ids")
+    def _onchange_site_ids_set_current(self):
+        """Keep ``current_site_id`` synchronized with the available sites.
+
+        When a new quote is opened the default "General" site is created as a
+        virtual one2many record. Without this onchange the ``current_site_id``
+        selector remains empty until the record is saved, which caused the
+        embedded site tab to appear blank. The logic also ensures that if the
+        current site disappears (e.g. removed from the list) the pointer is
+        cleared gracefully.
+        """
+        for quote in self:
+            if quote.site_ids:
+                if quote.current_site_id not in quote.site_ids:
+                    quote.current_site_id = quote.site_ids[0]
+            else:
+                quote.current_site_id = False
 
     # Modo de presentación
     display_mode = fields.Selection(
@@ -225,7 +243,7 @@ class ServiceQuote(models.Model):
     def create(self, vals_list):
         for vals in vals_list:
             if not vals.get('site_ids'):
-                vals['site_ids'] = [(0, 0, {'name': _('General')})]
+                vals['site_ids'] = self._default_site_ids()
         quotes = super().create(vals_list)
         for quote in quotes:
             if not quote.current_site_id and quote.site_ids:
@@ -236,7 +254,7 @@ class ServiceQuote(models.Model):
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
         if not defaults.get('site_ids'):
-            defaults['site_ids'] = [(0, 0, {'name': _('General')})]
+            defaults['site_ids'] = self._default_site_ids()
         return defaults
 
     @api.onchange('current_service_type')
