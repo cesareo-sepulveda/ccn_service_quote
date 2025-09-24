@@ -14,7 +14,7 @@
             <group>
               <field name="partner_id" required="1"/>
               <field name="name" colspan="2"/>
-              <field name="current_site_id" domain="[('quote_id','=', id)]" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}" colspan="2"/>
+              <field name="current_site_id" domain="[('id', 'in', site_ids.ids)]" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}" colspan="2"/>
               <field name="current_service_type" colspan="2"/>
               <field name="display_mode" colspan="2"/>
               <field name="admin_percent" colspan="2"/>
