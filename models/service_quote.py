@@ -42,12 +42,15 @@ class ServiceQuote(models.Model):
         # explicitly by ensuring the default virtual record is present.
         defaults.setdefault("site_ids", self._default_site_ids())
 
-        # Simulate the record to reuse the onchange that synchronises the
-        # ``current_site_id`` pointer.
-        quote = self.new(defaults)
-        quote._onchange_site_ids_set_current()
+        # ``Model.new`` invokes :meth:`default_get` internally, so calling it
+        # directly would recurse forever.  Guard the re-entrant call with a
+        # context flag so the inner invocation simply returns the base defaults
+        # instead of trying to simulate the record again.
+        if not self.env.context.get("_ccn_skip_default_site_onchange"):
+            quote = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
+            quote._onchange_site_ids_set_current()
+            defaults.update(quote._convert_to_write(quote._cache))
 
-        defaults.update(quote._convert_to_write(quote._cache))
         return defaults
 
     def _default_site_ids(self):
