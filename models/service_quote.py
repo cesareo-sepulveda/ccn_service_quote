@@ -7,6 +7,13 @@ from odoo import api, fields, models, _
 class ServiceQuote(models.Model):
     _name = 'ccn.service.quote'
     _description = 'CCN Service Quote'
+    _sql_constraints = [
+        (
+            'ccn_service_quote_partner_name_uniq',
+            'unique(partner_id, name)',
+            'El nombre de la cotización debe ser único por cliente.',
+        )
+    ]
 
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
     currency_id = fields.Many2one(
