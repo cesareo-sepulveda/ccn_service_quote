@@ -229,41 +229,13 @@ class CCNServiceQuoteSite(models.Model):
         if limit:
             res = res[:limit]
         return res
-
-    def name_search(self, name='', args=None, operator='ilike', limit=80):
-        """
-        Reordena resultados para colocar 'General' (del mismo quote/domino)
-        al principio, sin violar dominios ni record rules.
-        """
-        args = args or []
-        res = super().name_search(name=name, args=args, operator=operator, limit=limit)
-
-        # Identifica si el dominio filtra por quote_id para posicionar el General correcto
-        quote_filter_ids = [val for (fld, op, val) in args if fld == 'quote_id' and op in ('=', 'in')]
-        general_ids = []
-        if quote_filter_ids:
-            # args suele venir con ('quote_id','=',<id>) en M2O de líneas -> sitio
-            domain = [('name', '=ilike', 'general')] + args
-            generals = self.with_context(active_test=False).search(domain)
-            general_ids = generals.ids
-        else:
-            # Sin filtro explícito, toma cualquier 'General' permitido por args
-            generals = self.with_context(active_test=False).search(args + [('name', '=ilike', 'general')])
-            general_ids = generals.ids
-
-        if general_ids:
-            # Mueve al frente los General presentes en res, manteniendo orden relativo
-            ids_in_res = [r[0] for r in res]
-            generals_in_res = [gid for gid in general_ids if gid in ids_in_res]
-            if generals_in_res:
-                id2label = dict(res)
-                front = [(gid, id2label[gid]) for gid in generals_in_res]
-                tail = [(i, id2label[i]) for i in ids_in_res if i not in generals_in_res]
-                res = front + tail
-
-        if limit:
-            res = res[:limit]
-        return res
+    @api.model
+    def name_create(self, name):
+        vals = {'name': (name or '').strip() or 'General'}
+        if vals['name'].lower() == 'general':
+            vals.update({'name': 'General', 'active': True, 'sequence': -999})
+        rec = self.create(vals)
+        return rec.name_get()[0]
 
     # -------------------------
     # Helper opcional para usar desde otros modelos:
