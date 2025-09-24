@@ -13,7 +13,7 @@
             <group>
               <field name="partner_id" required="1"/>
               <field name="name" colspan="2"/>
-              <!-- IMPORTANT: limitar al conjunto de sitios del O2M (incluye 'General' virtual) -->
+              <!-- Limitar al conjunto del O2M para incluir el “General” virtual -->
               <field name="current_site_id"
                      domain="[('id','in', site_ids)]"
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"
@@ -28,17 +28,17 @@
             </group>
 
             <!-- Tabs por rubro (edición inline) -->
-            <notebook attrs="{'invisible': [('current_service_type', '=', False)]}">
+            <notebook invisible="not current_service_type">
 
               <page string="Mano de Obra" name="page_mano_obra"
-                    attrs="{'invisible': [('current_service_type','not in',['jardineria','limpieza'])]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"
-                        attrs="{'invisible': [('rubro_state_mano_obra','=',2)]}"/>
+                        invisible="rubro_state_mano_obra == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"
-                        attrs="{'invisible': [('rubro_state_mano_obra','!=',2)]}"/>
-                <field name="line_mano_obra_ids"
+                        invisible="rubro_state_mano_obra != 2"/>
+                <field name="line_mano_obra_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -56,14 +56,14 @@
               </page>
 
               <page string="Uniforme" name="page_uniforme"
-                    attrs="{'invisible': [('current_service_type','not in',['jardineria','limpieza'])]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}"
-                        attrs="{'invisible': [('rubro_state_uniforme','=',2)]}"/>
+                        invisible="rubro_state_uniforme == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}"
-                        attrs="{'invisible': [('rubro_state_uniforme','!=',2)]}"/>
-                <field name="line_uniforme_ids"
+                        invisible="rubro_state_uniforme != 2"/>
+                <field name="line_uniforme_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -81,14 +81,14 @@
               </page>
 
               <page string="EPP" name="page_epp"
-                    attrs="{'invisible': [('current_service_type','not in',['jardineria','limpieza'])]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}"
-                        attrs="{'invisible': [('rubro_state_epp','=',2)]}"/>
+                        invisible="rubro_state_epp == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}"
-                        attrs="{'invisible': [('rubro_state_epp','!=',2)]}"/>
-                <field name="line_epp_ids"
+                        invisible="rubro_state_epp != 2"/>
+                <field name="line_epp_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -106,14 +106,14 @@
               </page>
 
               <page string="EPP Alturas" name="page_epp_alturas"
-                    attrs="{'invisible': [('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp_alturas'}"
-                        attrs="{'invisible': [('rubro_state_epp_alturas','=',2)]}"/>
+                        invisible="rubro_state_epp_alturas == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp_alturas'}"
-                        attrs="{'invisible': [('rubro_state_epp_alturas','!=',2)]}"/>
-                <field name="line_epp_alturas_ids"
+                        invisible="rubro_state_epp_alturas != 2"/>
+                <field name="line_epp_alturas_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -131,14 +131,14 @@
               </page>
 
               <page string="Equipo Especial de Limpieza" name="page_equipo_especial_limpieza"
-                    attrs="{'invisible': [('current_service_type','!=','limpieza')]}">
+                    invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'equipo_especial_limpieza'}"
-                        attrs="{'invisible': [('rubro_state_equipo_especial_limpieza','=',2)]}"/>
+                        invisible="rubro_state_equipo_especial_limpieza == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'equipo_especial_limpieza'}"
-                        attrs="{'invisible': [('rubro_state_equipo_especial_limpieza','!=',2)]}"/>
-                <field name="line_equipo_especial_limpieza_ids"
+                        invisible="rubro_state_equipo_especial_limpieza != 2"/>
+                <field name="line_equipo_especial_limpieza_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -156,14 +156,14 @@
               </page>
 
               <page string="Comunicación y Cómputo" name="page_comunicacion_computo"
-                    attrs="{'invisible': [('current_service_type','not in',['jardineria','limpieza'])]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'comunicacion_computo'}"
-                        attrs="{'invisible': [('rubro_state_comunicacion_computo','=',2)]}"/>
+                        invisible="rubro_state_comunicacion_computo == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'comunicacion_computo'}"
-                        attrs="{'invisible': [('rubro_state_comunicacion_computo','!=',2)]}"/>
-                <field name="line_comunicacion_computo_ids"
+                        invisible="rubro_state_comunicacion_computo != 2"/>
+                <field name="line_comunicacion_computo_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -181,14 +181,14 @@
               </page>
 
               <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
-                    attrs="{'invisible': [('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'herramienta_menor_jardineria'}"
-                        attrs="{'invisible': [('rubro_state_herramienta_menor_jardineria','=',2)]}"/>
+                        invisible="rubro_state_herramienta_menor_jardineria == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'herramienta_menor_jardineria'}"
-                        attrs="{'invisible': [('rubro_state_herramienta_menor_jardineria','!=',2)]}"/>
-                <field name="line_herramienta_menor_jardineria_ids"
+                        invisible="rubro_state_herramienta_menor_jardineria != 2"/>
+                <field name="line_herramienta_menor_jardineria_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -206,14 +206,14 @@
               </page>
 
               <page string="Material de Limpieza" name="page_material_limpieza"
-                    attrs="{'invisible': [('current_service_type','!=','limpieza')]}">
+                    invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'material_limpieza'}"
-                        attrs="{'invisible': [('rubro_state_material_limpieza','=',2)]}"/>
+                        invisible="rubro_state_material_limpieza == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'material_limpieza'}"
-                        attrs="{'invisible': [('rubro_state_material_limpieza','!=',2)]}"/>
-                <field name="line_material_limpieza_ids"
+                        invisible="rubro_state_material_limpieza != 2"/>
+                <field name="line_material_limpieza_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -231,14 +231,14 @@
               </page>
 
               <page string="Perfil Médico" name="page_perfil_medico"
-                    attrs="{'invisible': [('current_service_type','not in',['jardineria','limpieza'])]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'perfil_medico'}"
-                        attrs="{'invisible': [('rubro_state_perfil_medico','=',2)]}"/>
+                        invisible="rubro_state_perfil_medico == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'perfil_medico'}"
-                        attrs="{'invisible': [('rubro_state_perfil_medico','!=',2)]}"/>
-                <field name="line_perfil_medico_ids"
+                        invisible="rubro_state_perfil_medico != 2"/>
+                <field name="line_perfil_medico_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -256,14 +256,14 @@
               </page>
 
               <page string="Maquinaria de Limpieza" name="page_maquinaria_limpieza"
-                    attrs="{'invisible': [('current_service_type','!=','limpieza')]}">
+                    invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_limpieza'}"
-                        attrs="{'invisible': [('rubro_state_maquinaria_limpieza','=',2)]}"/>
+                        invisible="rubro_state_maquinaria_limpieza == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_limpieza'}"
-                        attrs="{'invisible': [('rubro_state_maquinaria_limpieza','!=',2)]}"/>
-                <field name="line_maquinaria_limpieza_ids"
+                        invisible="rubro_state_maquinaria_limpieza != 2"/>
+                <field name="line_maquinaria_limpieza_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -281,14 +281,14 @@
               </page>
 
               <page string="Maquinaria de Jardinería" name="page_maquinaria_jardineria"
-                    attrs="{'invisible': [('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_jardineria'}"
-                        attrs="{'invisible': [('rubro_state_maquinaria_jardineria','=',2)]}"/>
+                        invisible="rubro_state_maquinaria_jardineria == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_jardineria'}"
-                        attrs="{'invisible': [('rubro_state_maquinaria_jardineria','!=',2)]}"/>
-                <field name="line_maquinaria_jardineria_ids"
+                        invisible="rubro_state_maquinaria_jardineria != 2"/>
+                <field name="line_maquinaria_jardineria_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -306,14 +306,14 @@
               </page>
 
               <page string="Fertilizantes y Tierra Lama" name="page_fertilizantes_tierra_lama"
-                    attrs="{'invisible': [('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'fertilizantes_tierra_lama'}"
-                        attrs="{'invisible': [('rubro_state_fertilizantes_tierra_lama','=',2)]}"/>
+                        invisible="rubro_state_fertilizantes_tierra_lama == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'fertilizantes_tierra_lama'}"
-                        attrs="{'invisible': [('rubro_state_fertilizantes_tierra_lama','!=',2)]}"/>
-                <field name="line_fertilizantes_tierra_lama_ids"
+                        invisible="rubro_state_fertilizantes_tierra_lama != 2"/>
+                <field name="line_fertilizantes_tierra_lama_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -331,14 +331,14 @@
               </page>
 
               <page string="Consumibles de Jardinería" name="page_consumibles_jardineria"
-                    attrs="{'invisible': [('current_service_type','!=','jardineria')]}">
+                    invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'consumibles_jardineria'}"
-                        attrs="{'invisible': [('rubro_state_consumibles_jardineria','=',2)]}"/>
+                        invisible="rubro_state_consumibles_jardineria == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'consumibles_jardineria'}"
-                        attrs="{'invisible': [('rubro_state_consumibles_jardineria','!=',2)]}"/>
-                <field name="line_consumibles_jardineria_ids"
+                        invisible="rubro_state_consumibles_jardineria != 2"/>
+                <field name="line_consumibles_jardineria_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -356,14 +356,14 @@
               </page>
 
               <page string="Capacitación" name="page_capacitacion"
-                    attrs="{'invisible': [('current_service_type','not in',['jardineria','limpieza'])]}">
+                    invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'capacitacion'}"
-                        attrs="{'invisible': [('rubro_state_capacitacion','=',2)]}"/>
+                        invisible="rubro_state_capacitacion == 2"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'capacitacion'}"
-                        attrs="{'invisible': [('rubro_state_capacitacion','!=',2)]}"/>
-                <field name="line_capacitacion_ids"
+                        invisible="rubro_state_capacitacion != 2"/>
+                <field name="line_capacitacion_ids" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
