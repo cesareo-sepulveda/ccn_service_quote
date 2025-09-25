@@ -19,7 +19,7 @@ class ServiceQuote(models.Model):
         default=lambda self: self.env.company.currency_id.id,
     )
 
-    # Sitios
+    # --- Sitios ---
     def _default_site_ids(self):
         """Provee un sitio 'General' virtual al crear."""
         return [Command.create({"name": self.env._("General")})]
@@ -31,25 +31,34 @@ class ServiceQuote(models.Model):
 
     @api.model
     def default_get(self, fields_list):
-        """Deja 'General' listo y seleccionado en current_site_id en el registro nuevo (virtual)."""
+        """Deja 'General' listo en site_ids; el compute de current_site_id lo toma solo."""
         defaults = super().default_get(fields_list)
         defaults.setdefault("site_ids", self._default_site_ids())
-
-        if not self.env.context.get("_ccn_skip_default_site_onchange"):
-            quote = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
-            quote._onchange_site_ids_set_current()
-            defaults.update(quote._convert_to_write(quote._cache))
         return defaults
 
-    @api.onchange("site_ids")
-    def _onchange_site_ids_set_current(self):
-        """Sincroniza current_site_id con los sitios disponibles (incluye virtuales)."""
+    # --- current_site_id: calculado para autoseleccionar el primer sitio (incluye virtuales) ---
+    current_site_id = fields.Many2one(
+        'ccn.service.quote.site',
+        string='Sitio actual',
+        compute="_compute_current_site_id",
+        inverse="_inverse_current_site_id",
+        store=True,  # se persiste para que recuerde tu última selección en registros guardados
+    )
+
+    @api.depends('site_ids')
+    def _compute_current_site_id(self):
+        """
+        Si no hay selección y existen sitios (aunque sean virtuales),
+        selecciona el primero (el 'General' creado por defecto).
+        No pisamos manualmente la selección si ya hay valor.
+        """
         for quote in self:
-            if quote.site_ids:
-                if quote.current_site_id not in quote.site_ids:
-                    quote.current_site_id = quote.site_ids[0]
-            else:
-                quote.current_site_id = False
+            if not quote.current_site_id and quote.site_ids:
+                quote.current_site_id = quote.site_ids[0]
+
+    def _inverse_current_site_id(self):
+        # Inversa vacía: permite escribir manualmente current_site_id y persistirlo.
+        return
 
     # Modo de presentación
     display_mode = fields.Selection(
@@ -69,11 +78,6 @@ class ServiceQuote(models.Model):
     bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
 
     # Filtros de edición
-    current_site_id = fields.Many2one(
-        'ccn.service.quote.site',
-        string='Sitio actual',
-        # IMPORTANTE: SIN dominio aquí. El dominio flexible vive en la VISTA.
-    )
     current_service_type = fields.Selection(
         [
             ('jardineria', 'Jardinería'),
@@ -228,6 +232,7 @@ class ServiceQuote(models.Model):
             if not vals.get('site_ids'):
                 vals['site_ids'] = self._default_site_ids()
         quotes = super().create(vals_list)
+        # Si por algún motivo current_site_id quedó vacío, selecciónalo post-create
         for quote in quotes:
             if not quote.current_site_id and quote.site_ids:
                 quote.current_site_id = quote.site_ids[0].id
@@ -238,7 +243,7 @@ class ServiceQuote(models.Model):
         for quote in self:
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
-        # ---- Runner para upgrade/migración (idempotente) ----
+    # ---- Runner para upgrade/migración (idempotente) ----
     @api.model
     def _fix_general_sites(self):
         Quote = self.sudo()
@@ -246,13 +251,11 @@ class ServiceQuote(models.Model):
         Line  = self.env['ccn.service.quote.line'].sudo()
 
         for q in Quote.search([]):
-            # Busca todos los "General" de la cotización (por si hubo duplicados)
             generals = Site.search([
                 ('quote_id', '=', q.id),
                 ('name', '=ilike', 'general'),
             ])
             if not generals:
-                # No existe: crea el canónico
                 canonical = Site.create({
                     'quote_id': q.id,
                     'name': 'General',
@@ -260,19 +263,15 @@ class ServiceQuote(models.Model):
                     'sequence': -999,
                 })
             else:
-                # Existe: escoge uno y desactiva/remezcla duplicados
                 canonical = generals.sorted(key=lambda s: ((s.sequence or 0), s.id))[0]
                 dups = generals - canonical
                 if dups:
                     Line.search([('site_id', 'in', dups.ids)]).write({'site_id': canonical.id})
                     dups.write({'active': False})
-
-            # Asegura visibilidad y orden
             canonical.write({'active': True, 'sequence': -999})
-
-            # Si la cotización no tiene current_site_id válido, apunta al canónico
             if not q.current_site_id or q.current_site_id not in q.site_ids:
                 q.current_site_id = canonical.id
+
 
 # ---------------------------------------------------------------------------
 # SITE (definido en models/site.py)
