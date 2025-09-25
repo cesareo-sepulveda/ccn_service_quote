@@ -69,14 +69,15 @@
               <label for="name" string="Nombre de la cotización"/>
               <field name="name"/>
 
-              <!-- Sitio + botón (en fila siguiente, botón bajo el campo) -->
+              <!-- Sitio + botón (botón bajo el campo en misma columna) -->
               <label for="current_site_id" string="Sitio"/>
               <field name="current_site_id"
                      domain="[('quote_id','in',[False, id])]"
                      context="{'default_quote_id': id}"
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
-              <label/>  <!-- celda vacía para alinear -->
+              <!-- Espaciador con estilo de etiqueta (no usar <label/> vacío en Odoo 18) -->
+              <div class="o_form_label"/>
               <button name="action_ensure_general"
                       type="object"
                       string="Sitio General"
@@ -86,7 +87,7 @@
               <label for="current_service_type" string="Tipo de servicio"/>
               <field name="current_service_type"/>
 
-              <!-- Parámetros (alineados en la misma columna izquierda) -->
+              <!-- Parámetros -->
               <label for="display_mode" string="Modo de presentación"/>
               <field name="display_mode"/>
 
