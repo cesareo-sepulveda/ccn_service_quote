@@ -108,22 +108,15 @@
                         context="{'rubro_code': 'mano_obra'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"/>
-                <field name="line_ids" mode="list"
-                       context="{
-                         'default_quote_id': id,
-                         'default_site_id': current_site_id,
-                         
-                         'default_service_type': current_service_type,
-                         'ctx_rubro_code': 'mano_obra',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[
-                         ('quote_id','=', id),
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','mano_obra'), ('rubro_id.code','=','mano_obra')
-                       ]"/>
+                <field name="line_ids_mano_obra" mode="list"
+                        context="{
+                          'default_quote_id': id,
+                          'default_site_id': current_site_id,
+                          'default_service_type': current_service_type,
+                          'ctx_rubro_code': 'mano_obra',
+                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
+                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                        }"/>
               </page>
 
               <!-- Uniforme -->
