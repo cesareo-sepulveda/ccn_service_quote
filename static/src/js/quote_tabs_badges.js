@@ -118,13 +118,13 @@
       });
       setTimeout(() => {
         try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-      }, 500);
-      setTimeout(() => {
-        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, 1000);
       setTimeout(() => {
         try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, 2000);
+      setTimeout(() => {
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      }, 3000);
     };
 
     const mo = new MutationObserver((muts) => {
@@ -134,7 +134,7 @@
           const t = mut.target;
           if (!(t instanceof Element)) continue;
           const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
-          if (name.startsWith("rubro_state_")){
+          if (name.startsWith("line_ids_") || name.startsWith("rubro_state_")){
             schedule(); return;
           }
           // También, si se alteró texto dentro de esos campos
@@ -142,7 +142,7 @@
             // noop — ya cubierto
           } else {
             // Busca ancestro con name=data-name de interés
-            const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"]');
+            const holder = t.closest?.('[name^="line_ids_"], [data-name^="line_ids_"], [name^="rubro_state_"], [data-name^="rubro_state_"]');
             if (holder){ schedule(); return; }
           }
         }
