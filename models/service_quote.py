@@ -4,6 +4,36 @@ from odoo.exceptions import ValidationError
 
 
 # ---------------------------------------------------------------------------
+# ACK por ámbito (site + service_type + rubro)
+# ---------------------------------------------------------------------------
+class ServiceQuoteAck(models.Model):
+    _name = 'ccn.service.quote.ack'
+    _description = 'ACK vacío por sitio / tipo de servicio / rubro'
+    _rec_name = 'rubro_code'
+
+    quote_id = fields.Many2one('ccn.service.quote', required=True, ondelete='cascade', index=True)
+    site_id = fields.Many2one('ccn.service.quote.site', required=True, ondelete='cascade', index=True)
+    service_type = fields.Selection([
+        ('jardineria', 'Jardinería'),
+        ('limpieza', 'Limpieza'),
+        ('mantenimiento', 'Mantenimiento'),
+        ('materiales', 'Materiales'),
+        ('servicios_especiales', 'Servicios Especiales'),
+        ('almacenaje', 'Almacenaje'),
+        ('fletes', 'Fletes'),
+    ], required=True, index=True)
+
+    rubro_code = fields.Char(required=True, index=True)  # p. ej. 'mano_obra', 'uniforme', etc.
+    is_empty = fields.Boolean(default=True)
+
+    _sql_constraints = [
+        ('uniq_ack_scope',
+         'unique(quote_id, site_id, service_type, rubro_code)',
+         'Ya existe un ACK para este sitio/tipo/rubro.'),
+    ]
+
+
+# ---------------------------------------------------------------------------
 # QUOTE (encabezado)
 # ---------------------------------------------------------------------------
 class ServiceQuote(models.Model):
@@ -21,7 +51,7 @@ class ServiceQuote(models.Model):
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
     partner_id = fields.Many2one('res.partner', string='Cliente', required=True, index=True)
 
-    # Moneda (necesaria para campos Monetary; no es obligatorio mostrarla en la vista)
+    # Moneda (necesaria para Monetary; no es obligatorio mostrarla en la vista)
     currency_id = fields.Many2one(
         'res.currency',
         string='Moneda',
@@ -59,7 +89,6 @@ class ServiceQuote(models.Model):
             quote = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
             quote._onchange_site_ids_set_current()
             defaults.update(quote._convert_to_write(quote._cache))
-
         return defaults
 
     @api.onchange("site_ids")
@@ -83,9 +112,8 @@ class ServiceQuote(models.Model):
     @api.model
     def _fix_general_sites(self):
         """
-        Llamado desde data/migrate_fix_general.xml:
-        - Garantiza que cada cotización tenga un sitio 'General' (activo y al frente).
-        - Maneja duplicados y fija current_site_id si falta.
+        Para data/migrate_fix_general.xml:
+        Garantiza que cada cotización tenga un sitio 'General' (activo y al frente).
         """
         Site = self.env['ccn.service.quote.site'].sudo()
         Quote = self.env['ccn.service.quote'].sudo()
@@ -159,7 +187,7 @@ class ServiceQuote(models.Model):
         string='Tipo de servicio',
     )
 
-    # Campo interno para separar Servicio/Material (puedes no mostrarlo en la vista)
+    # Campo interno (ocúltalo en la vista si no lo usas)
     current_type = fields.Selection(
         [
             ('servicio', 'Servicio'),
@@ -208,9 +236,8 @@ class ServiceQuote(models.Model):
     # -------------------------
     ack_ids = fields.One2many('ccn.service.quote.ack', 'quote_id', string='ACKs')
 
-    # Dominio base de líneas según el ámbito visible actual
+    # Dominio base para contar/estado en el ámbito visible
     def _scope_domain(self):
-        """Dominio de líneas restringido al contexto visible actual."""
         self.ensure_one()
         domain = [('quote_id', '=', self.id)]
         if self.current_site_id:
@@ -237,13 +264,16 @@ class ServiceQuote(models.Model):
     def _has_ack(self, code):
         return bool(self.env['ccn.service.quote.ack'].search_count(self._ack_domain_for_code(code)))
 
-    def _set_ack(self, code, value):
+    # === BOTONES llamados desde la vista (type="object") ===
+    def action_mark_rubro_empty(self):
+        """Marca ACK vacío para el rubro indicado en contexto."""
+        code = (self.env.context or {}).get('rubro_code')
+        if not code:
+            return True
         Ack = self.env['ccn.service.quote.ack']
         for rec in self:
             dom = rec._ack_domain_for_code(code)
-            if value:
-                if dom[0][0] == 'id' and dom[0][2] == 0:
-                    continue
+            if dom and not (dom[0][0] == 'id' and dom[0][2] == 0):
                 if not Ack.search(dom, limit=1):
                     Ack.create({
                         'quote_id': rec.id,
@@ -252,9 +282,20 @@ class ServiceQuote(models.Model):
                         'rubro_code': code,
                         'is_empty': True,
                     })
-            else:
-                acks = Ack.search(dom)
+        return True
+
+    def action_unmark_rubro_empty(self):
+        """Desmarca ACK vacío para el rubro indicado en contexto."""
+        code = (self.env.context or {}).get('rubro_code')
+        if not code:
+            return True
+        Ack = self.env['ccn.service.quote.ack']
+        for rec in self:
+            dom = rec._ack_domain_for_code(code)
+            acks = Ack.search(dom)
+            if acks:
                 acks.unlink()
+        return True
 
     # -------------------------
     # Estados / Conteos por rubro
@@ -366,12 +407,9 @@ class ServiceQuoteLine(models.Model):
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True)
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
-    # Producto / Servicio
-    # >>> Filtro duro desde el modelo: sólo productos del rubro
+    # Producto / Servicio (filtrado por rubro)
     product_id = fields.Many2one(
-        'product.product',
-        string='Producto/Servicio',
-        required=True,
+        'product.product', string='Producto/Servicio', required=True,
         domain="[('id','in', rubro_id.allowed_product_ids)]",
     )
 
@@ -392,36 +430,20 @@ class ServiceQuoteLine(models.Model):
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
     total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
-    # -------------------------
-    # Onchange: dominio dinámico de producto por rubro (refuerza la UI)
-    # -------------------------
+    # --- Onchange: restringe y limpia producto fuera de rubro
     @api.onchange('rubro_id')
     def _onchange_rubro_id_set_product_domain(self):
-        """
-        Limita la lista de productos al conjunto permitido por el rubro.
-        Si no hay rubro, no muestra ninguno (obliga a elegir rubro primero).
-        Además, si el producto actual no está permitido, se limpia.
-        """
         if not self.rubro_id:
-            domain = [('id', '=', 0)]
-            return {'domain': {'product_id': domain}, 'value': {'product_id': False}}
-
-        allowed_ids = self.rubro_id.allowed_product_ids.ids
-        domain = [('id', 'in', allowed_ids or [0])]
+            return {'domain': {'product_id': [('id', '=', 0)]}, 'value': {'product_id': False}}
+        allowed = self.rubro_id.allowed_product_ids.ids
         vals = {}
-        if self.product_id and self.product_id.id not in allowed_ids:
+        if self.product_id and self.product_id.id not in allowed:
             vals['product_id'] = False
-        return {'domain': {'product_id': domain}, 'value': vals}
+        return {'domain': {'product_id': [('id', 'in', allowed or [0])]}, 'value': vals}
 
-    # -------------------------
-    # Validaciones
-    # -------------------------
+    # --- Validación dura por ORM
     @api.constrains('product_id', 'rubro_id')
     def _check_product_allowed_in_rubro(self):
-        """
-        Asegura que el producto pertenezca al conjunto permitido del rubro.
-        Si el rubro no tiene productos configurados, no se permite seleccionar ninguno.
-        """
         for rec in self:
             if rec.rubro_id:
                 allowed = rec.rubro_id.allowed_product_ids
@@ -431,9 +453,7 @@ class ServiceQuoteLine(models.Model):
                         % (rec.product_id.display_name if rec.product_id else '-', rec.rubro_id.display_name)
                     )
 
-    # -------------------------
-    # Cómputos
-    # -------------------------
+    # --- Cómputos
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
@@ -471,31 +491,7 @@ class ServiceQuoteLine(models.Model):
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
 
-    # -------------------------
-    # Defaults por contexto
-    # -------------------------
-    @api.model
-    def default_get(self, fields_list):
-        res = super().default_get(fields_list)
-        ctx = self.env.context or {}
-        if 'default_quote_id' in ctx and 'quote_id' in self._fields:
-            res.setdefault('quote_id', ctx.get('default_quote_id'))
-        if 'default_site_id' in ctx and 'site_id' in self._fields:
-            res.setdefault('site_id', ctx.get('default_site_id'))
-        if 'default_type' in ctx and 'type' in self._fields:
-            res.setdefault('type', ctx.get('default_type'))
-        if 'default_service_type' in ctx and 'service_type' in self._fields:
-            res.setdefault('service_type', ctx.get('default_service_type'))
-        code = ctx.get('ctx_rubro_code')
-        if code and 'rubro_id' in self._fields and not res.get('rubro_id'):
-            rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
-            if rubro:
-                res['rubro_id'] = rubro.id
-        return res
-
-    # -------------------------
-    # Consistencia sitio ⇄ cotización
-    # -------------------------
+    # --- Consistencia sitio ⇄ cotización
     @api.constrains('site_id', 'quote_id')
     def _check_site_matches_quote(self):
         for rec in self:
