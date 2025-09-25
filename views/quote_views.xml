@@ -76,7 +76,7 @@
                      context="{'default_quote_id': id}"
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
-              <!-- Espaciador con estilo de etiqueta (no usar <label/> vacío en Odoo 18) -->
+              <!-- Espaciador con estilo de etiqueta (NO usar <label/> vacío en Odoo 18) -->
               <div class="o_form_label"/>
               <button name="action_ensure_general"
                       type="object"
