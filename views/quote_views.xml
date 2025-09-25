@@ -24,6 +24,7 @@
                 <!-- Sitio actual + botón inmediatamente debajo del nombre -->
                 <div class="o_row">
                   <field name="current_site_id"
+                         string="Sitio actual"
                          domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
                          context="{'default_quote_id': id}"
                          options="{'no_open': True, 'no_create_edit': True}"
@@ -31,11 +32,11 @@
                   <button name="action_ensure_general"
                           type="object"
                           class="btn-secondary"
-                          string="Asegurar ‘General’"/>
+                          string="Sitio General"/>
                 </div>
 
                 <!-- Parámetros alineados a la izquierda -->
-                <field name="current_service_type"/>
+                <field name="current_service_type" string="Tipo de servicio"/>
                 <field name="display_mode"/>
                 <field name="admin_percent"/>
                 <field name="utility_percent"/>
