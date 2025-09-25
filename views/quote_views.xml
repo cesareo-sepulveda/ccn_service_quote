@@ -13,17 +13,29 @@
           <sheet>
 
             <!-- =======================
-                 Cabecera: datos básicos
+                 Cabecera compacta (1 columna)
                  ======================= -->
-            <group string="Datos de la cotización">
+            <group>
               <group>
+                <!-- Cliente y Nombre -->
                 <field name="partner_id" required="1"/>
                 <field name="name" required="1"/>
-                <field name="currency_id"/>
-              </group>
-              <group string="Parámetros">
+
+                <!-- Sitio actual + botón inmediatamente debajo del nombre -->
+                <div class="o_row">
+                  <field name="current_site_id"
+                         domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
+                         context="{'default_quote_id': id}"
+                         options="{'no_open': True, 'no_create_edit': True}"
+                         class="o_me_2"/>
+                  <button name="action_ensure_general"
+                          type="object"
+                          class="btn-secondary"
+                          string="Asegurar ‘General’"/>
+                </div>
+
+                <!-- Parámetros alineados a la izquierda -->
                 <field name="current_service_type"/>
-                <field name="current_type"/>
                 <field name="display_mode"/>
                 <field name="admin_percent"/>
                 <field name="utility_percent"/>
@@ -31,31 +43,6 @@
                 <field name="transporte_rate"/>
                 <field name="bienestar_rate"/>
               </group>
-            </group>
-
-            <!-- =======================
-                 Sitios: selector + lista
-                 ======================= -->
-            <group string="Sitios">
-              <group>
-                <field name="current_site_id"
-                       domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
-                       context="{'default_quote_id': id}"
-                       options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-                <button name="action_ensure_general"
-                        type="object"
-                        class="btn-secondary"
-                        string="Asegurar ‘General’"/>
-              </group>
-
-              <field name="site_ids" mode="list"
-                     context="{'default_quote_id': id}"
-                     options="{'no_open': True, 'no_create_edit': True}">
-                <list editable="bottom" string="Sitios">
-                  <field name="sequence"/>
-                  <field name="name"/>
-                </list>
-              </field>
             </group>
 
             <!-- ======================================================
@@ -267,7 +254,7 @@
                 </field>
               </page>
 
-              <!-- Herramienta Menor Jardinería -->
+              <!-- Herr. Menor Jardinería -->
               <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -539,7 +526,7 @@
                 </field>
               </page>
 
-              <!-- Resumen Global (placeholder por ahora) -->
+              <!-- Resumen Global (placeholder) -->
               <page string="Resumen Global">
                 <div class="o_form_label">
                   Resumen global pendiente (se llenará posteriormente).
