@@ -29,7 +29,7 @@
           <!-- Tabulador -->
           <field name="tabulator_percent" string="Tabulador"/>
 
-          <!-- Impuestos (si no lo usas, puedes ocultar) -->
+          <!-- Impuestos (si no lo usas, puedes ocultarlo) -->
           <field name="taxes_display" string="Impuestos" readonly="1" invisible="1"/>
 
           <!-- Subtotal -->
@@ -44,7 +44,7 @@
       </field>
     </record>
 
-    <!-- (Opcional) Form inline para abrir una línea -->
+    <!-- Form inline por si abres una línea desde la lista -->
     <record id="ccn_view_quote_line_form_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.form.inline</field>
       <field name="model">ccn.service.quote.line</field>
