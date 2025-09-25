@@ -2,10 +2,8 @@
 from odoo import Command, api, fields, models, _
 from odoo.exceptions import ValidationError
 
-# Si tienes RUBRO_CODES en rubro.py, descomenta la siguiente línea y borra RUBRO_CODES aquí:
-# from .rubro import RUBRO_CODES
-
-# Mantengo RUBRO_CODES local para que este archivo sea autocontenido
+# Si ya defines estos códigos en rubro.py puedes importar desde ahí.
+# Los dejo aquí para que este archivo sea autocontenido.
 RUBRO_CODES = [
     ("mano_obra","Mano de Obra"),
     ("uniforme","Uniforme"),
@@ -84,6 +82,7 @@ class ServiceQuote(models.Model):
 
     # Sitios
     def _default_site_ids(self):
+        """Crea el sitio virtual 'General' al abrir el formulario."""
         return [Command.create({'name': self.env._('General')})]
 
     site_ids = fields.One2many(
@@ -113,7 +112,7 @@ class ServiceQuote(models.Model):
         string='Tipo de servicio',
     )
 
-    # Tipo interno (no mostrar en la vista, solo para filtrar líneas si lo usas)
+    # Tipo interno (no lo muestres en la vista)
     current_type = fields.Selection(
         [('servicio', 'Servicio'), ('material', 'Material')],
         string='Tipo actual',
@@ -239,14 +238,39 @@ class ServiceQuote(models.Model):
             self._ensure_ack(code, False)
         return True
 
+    # === Botón: asegurar/seleccionar el sitio 'General' ===
+    def action_ensure_general(self):
+        """
+        Asegura que exista el sitio 'General' para esta cotización,
+        lo activa, lo pone al frente (sequence=-999) y lo selecciona.
+        """
+        Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
+        for quote in self:
+            general = Site.search([
+                ('quote_id', '=', quote.id),
+                ('name', '=ilike', 'general'),
+            ], limit=1)
+            if general:
+                general.write({'active': True, 'sequence': -999})
+            else:
+                general = Site.create({
+                    'quote_id': quote.id,
+                    'name': 'General',
+                    'active': True,
+                    'sequence': -999,
+                })
+            quote.current_site_id = general.id
+        return True
+
     # === Defaults / Onchanges ===
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
+        # Crea el virtual 'General'
         defaults.setdefault("site_ids", self._default_site_ids())
+        # Simula onchange para fijar current_site_id al 'General' virtual
         if not self.env.context.get("_ccn_skip_default_site_onchange"):
             quote = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
-            # Simula onchange para fijar current_site_id al "General" virtual
             quote._onchange_site_ids_set_current()
             defaults.update(quote._convert_to_write(quote._cache))
         return defaults
@@ -275,122 +299,3 @@ class ServiceQuote(models.Model):
             if not quote.current_site_id and quote.site_ids:
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
-
-
-# ---------------------------------------------------------------------------
-# SITE (ligero; cálculos están en models/site.py)
-# ---------------------------------------------------------------------------
-class ServiceQuoteSite(models.Model):
-    _name = 'ccn.service.quote.site'
-    _description = 'CCN Service Quote Site'
-
-    name = fields.Char(string='Nombre del sitio', required=True)
-    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade')
-    category_id = fields.Many2one('product.category', string='Categoría')
-    line_ids = fields.One2many('ccn.service.quote.line', 'site_id', string='Líneas del sitio')
-
-
-# ---------------------------------------------------------------------------
-# LINE (detalle) – si ya lo tienes en otro archivo, puedes quitar esta clase aquí
-# ---------------------------------------------------------------------------
-class ServiceQuoteLine(models.Model):
-    _name = 'ccn.service.quote.line'
-    _description = 'CCN Service Quote Line'
-
-    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade', index=True)
-    site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null', index=True)
-
-    service_type = fields.Selection([
-        ('jardineria', 'Jardinería'),
-        ('limpieza', 'Limpieza'),
-        ('mantenimiento', 'Mantenimiento'),
-        ('materiales', 'Materiales'),
-        ('servicios_especiales', 'Servicios Especiales'),
-        ('almacenaje', 'Almacenaje'),
-        ('fletes', 'Fletes'),
-    ], string='Tipo de Servicio/Vista', index=True)
-
-    type = fields.Selection([
-        ('servicio', 'Servicio'),
-        ('material', 'Material'),
-    ], string='Tipo', default='servicio', required=True, index=True)
-
-    # Rubro
-    rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
-    rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True, index=True)
-
-    # Producto / Servicio
-    product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True, index=True)
-
-    # Cantidad
-    quantity = fields.Float(string='Cantidad', default=1.0)
-
-    # Moneda
-    currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)
-
-    # Tabulador
-    tabulator_percent = fields.Selection([
-        ('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%'),
-    ], string='Tabulador', default='0', required=True)
-
-    # Precios / impuestos / totales
-    product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=False)
-    price_unit_final   = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
-    taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
-    total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
-
-    @api.depends('product_id')
-    def _compute_product_base_price(self):
-        for line in self:
-            base = line.product_id.list_price if line.product_id else 0.0
-            if line.quote_id.currency_id:
-                base = line.quote_id.currency_id.round(base)
-            line.product_base_price = base
-
-    @api.depends('product_base_price', 'tabulator_percent')
-    def _compute_price_unit_final(self):
-        for line in self:
-            base = line.product_base_price or 0.0
-            tab = float(line.tabulator_percent or '0') / 100.0
-            val = base * (1.0 + tab)
-            if line.quote_id.currency_id:
-                val = line.quote_id.currency_id.round(val)
-            line.price_unit_final = val
-
-    @api.depends('product_id')
-    def _compute_taxes_display(self):
-        tax_model = self.env.get('account.tax')
-        for line in self:
-            txt = ''
-            taxes = getattr(line.product_id, 'taxes_id', False)
-            if tax_model and taxes:
-                txt = ', '.join(taxes.mapped('name'))
-            line.taxes_display = txt
-
-    @api.depends('quantity', 'price_unit_final')
-    def _compute_total_price(self):
-        for line in self:
-            qty = line.quantity or 0.0
-            val = (line.price_unit_final or 0.0) * qty
-            if line.quote_id.currency_id:
-                val = line.quote_id.currency_id.round(val)
-            line.total_price = val
-
-    @api.model
-    def default_get(self, fields_list):
-        res = super().default_get(fields_list)
-        ctx = self.env.context or {}
-        if 'default_quote_id' in ctx and 'quote_id' in self._fields:
-            res.setdefault('quote_id', ctx.get('default_quote_id'))
-        if 'default_site_id' in ctx and 'site_id' in self._fields:
-            res.setdefault('site_id', ctx.get('default_site_id'))
-        if 'default_type' in ctx and 'type' in self._fields:
-            res.setdefault('type', ctx.get('default_type'))
-        if 'default_service_type' in ctx and 'service_type' in self._fields:
-            res.setdefault('service_type', ctx.get('default_service_type'))
-        code = ctx.get('ctx_rubro_code')
-        if code and 'rubro_id' in self._fields and not res.get('rubro_id'):
-            rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
-            if rubro:
-                res['rubro_id'] = rubro.id
-        return res
