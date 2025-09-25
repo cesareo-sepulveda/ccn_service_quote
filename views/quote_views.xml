@@ -99,7 +99,7 @@
             </group>
 
             <!-- Campos de estado invisibles para el JS de coloreado -->
-            <group invisible="1">
+            <group style="display:none;">
               <field name="rubro_state_mano_obra"/>
               <field name="rubro_state_uniforme"/>
               <field name="rubro_state_epp"/>
