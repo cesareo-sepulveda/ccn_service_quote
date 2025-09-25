@@ -62,49 +62,39 @@
             <group col="2">
 
               <!-- Cliente -->
-              <label for="partner_id" string="Cliente"/>
-              <field name="partner_id" required="1"/>
-
-              <!-- Nombre de la cotización -->
-              <label for="name" string="Nombre de la cotización"/>
-              <field name="name"/>
-
-              <!-- Sitio + botón (botón bajo el campo en misma columna) -->
-              <label for="current_site_id" string="Sitio"/>
-              <field name="current_site_id"
-                     domain="[('quote_id','in',[False, id])]"
-                     context="{'default_quote_id': id}"
-                     options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-
-              <!-- Espaciador con estilo de etiqueta (NO usar <label/> vacío en Odoo 18) -->
-              <div class="o_form_label"/>
-              <button name="action_ensure_general"
-                      type="object"
-                      string="Sitio General"
-                      class="btn btn-secondary"/>
-
-              <!-- Tipo de servicio -->
-              <label for="current_service_type" string="Tipo de servicio"/>
-              <field name="current_service_type"/>
-
-              <!-- Parámetros -->
-              <label for="display_mode" string="Modo de presentación"/>
-              <field name="display_mode"/>
-
-              <label for="admin_percent" string="Administración (%)"/>
-              <field name="admin_percent"/>
-
-              <label for="utility_percent" string="Utilidad (%)"/>
-              <field name="utility_percent"/>
-
-              <label for="financial_percent" string="Costo Financiero (%)"/>
-              <field name="financial_percent"/>
-
-              <label for="transporte_rate" string="Tarifa Transporte P/P"/>
-              <field name="transporte_rate"/>
-
-              <label for="bienestar_rate" string="Tarifa Bienestar P/P"/>
-              <field name="bienestar_rate"/>
+                <field name="partner_id" required="1" string="Cliente"/>
+ 
+                <!-- Nombre de la cotización -->
+                <field name="name" string="Nombre de la cotización"/>
+ 
+                <!-- Sitio + botón (botón bajo el campo en misma columna) -->
+                <field name="current_site_id" string="Sitio"
+                       domain="[('quote_id','in',[False, id])]"
+                       context="{'default_quote_id': id}"
+                       options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+ 
+                <!-- Espaciador con estilo de etiqueta (NO usar <label/> vacío en Odoo 18) -->
+                <div class="o_form_label"/>
+                <button name="action_ensure_general"
+                        type="object"
+                        string="Sitio General"
+                        class="btn btn-secondary"/>
+ 
+                <!-- Tipo de servicio -->
+                <field name="current_service_type" string="Tipo de servicio"/>
+ 
+                <!-- Parámetros -->
+                <field name="display_mode" string="Modo de presentación"/>
+ 
+                <field name="admin_percent" string="Administración (%)"/>
+ 
+                <field name="utility_percent" string="Utilidad (%)"/>
+ 
+                <field name="financial_percent" string="Costo Financiero (%)"/>
+ 
+                <field name="transporte_rate" string="Tarifa Transporte P/P"/>
+ 
+                <field name="bienestar_rate" string="Tarifa Bienestar P/P"/>
 
             </group>
 
