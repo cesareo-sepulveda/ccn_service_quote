@@ -96,13 +96,16 @@
     for(const [code, link] of Object.entries(byCode)){
       // Buscar el tree en la tab
       const li = link.closest('li');
-      const pane = li ? document.querySelector(`#${li.getAttribute('aria-controls')}`) : null;
+      const target = li ? li.getAttribute('aria-controls') || li.querySelector('a')?.getAttribute('data-bs-target') || li.querySelector('a')?.getAttribute('href') : null;
+      const paneId = target ? target.replace('#', '') : null;
+      const pane = paneId ? document.getElementById(paneId) : null;
       const tree = pane ? pane.querySelector('.o_list_view') : null;
       const rows = tree ? tree.querySelectorAll('.o_data_row') : [];
       const hasRows = rows.length > 0;
 
       // Buscar el botón "Quitar No Aplica"
-      const unmarkButton = pane ? pane.querySelector('button:contains("Quitar No Aplica")') : null;
+      const buttons = pane ? pane.querySelectorAll('button') : [];
+      const unmarkButton = [...buttons].find(btn => btn.textContent.includes('Quitar No Aplica'));
       const isAck = unmarkButton && unmarkButton.offsetParent !== null; // visible
 
       let st = 0;
@@ -132,13 +135,13 @@
       }, 0);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 30);
+      }, 500);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 120);
+      }, 1000);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 360);
+      }, 2000);
     };
 
     const mo = new MutationObserver((muts) => {
