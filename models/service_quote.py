@@ -430,6 +430,31 @@ class ServiceQuoteLine(models.Model):
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
     total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
+    # --- DEFAULTS: fijar rubro desde ctx_rubro_code (pestaña activa) ---
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        ctx = self.env.context or {}
+
+        # Defaults que suelen venir del contexto al crear líneas inline
+        if 'default_quote_id' in ctx and 'quote_id' in self._fields:
+            res.setdefault('quote_id', ctx.get('default_quote_id'))
+        if 'default_site_id' in ctx and 'site_id' in self._fields:
+            res.setdefault('site_id', ctx.get('default_site_id'))
+        if 'default_type' in ctx and 'type' in self._fields:
+            res.setdefault('type', ctx.get('default_type'))
+        if 'default_service_type' in ctx and 'service_type' in self._fields:
+            res.setdefault('service_type', ctx.get('default_service_type'))
+
+        # Fijar el rubro desde la pestaña activa (ctx_rubro_code)
+        code = ctx.get('ctx_rubro_code')
+        if code and 'rubro_id' in self._fields and not res.get('rubro_id'):
+            rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
+            if rubro:
+                res['rubro_id'] = rubro.id
+
+        return res
+
     # --- Onchange: dominio seguro basado en TEMPLATE ---
     @api.onchange('rubro_id')
     def _onchange_rubro_id_set_product_domain(self):

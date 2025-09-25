@@ -2,17 +2,17 @@
 <odoo>
   <data>
 
-    <!-- Lista inline para ccn.service.quote.line -->
+    <!-- Lista inline para ccn.service.quote.line (RUBRO OCULTO) -->
     <record id="ccn_view_quote_line_list_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.list.inline</field>
       <field name="model">ccn.service.quote.line</field>
       <field name="arch" type="xml">
         <list editable="bottom" string="Líneas del rubro">
-          <!-- Rubro primero (obligatorio) -->
-          <field name="rubro_id" required="1"/>
+          <!-- Rubro oculto (se fija por pestaña vía ctx_rubro_code) -->
+          <field name="rubro_id" required="1" invisible="1" column_invisible="1"/>
           <field name="rubro_code" invisible="1" column_invisible="1"/>
 
-          <!-- Producto/Servicio: dominio seguro por TEMPLATE del producto -->
+          <!-- Producto/Servicio: dominio por TEMPLATE y rubro -->
           <field name="product_id" required="1"
                  domain="[
                    ('product_tmpl_id.ccn_exclude_from_quote','=',False),
@@ -29,7 +29,7 @@
           <!-- Tabulador -->
           <field name="tabulator_percent" string="Tabulador"/>
 
-          <!-- Impuestos (si no lo usas, puedes ocultarlo) -->
+          <!-- Impuestos (opcional oculto) -->
           <field name="taxes_display" string="Impuestos" readonly="1" invisible="1"/>
 
           <!-- Subtotal -->
@@ -44,14 +44,14 @@
       </field>
     </record>
 
-    <!-- Form inline por si abres una línea desde la lista -->
+    <!-- Form inline (también con rubro oculto) -->
     <record id="ccn_view_quote_line_form_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.form.inline</field>
       <field name="model">ccn.service.quote.line</field>
       <field name="arch" type="xml">
         <form string="Línea del rubro">
           <group>
-            <field name="rubro_id" required="1"/>
+            <field name="rubro_id" required="1" invisible="1"/>
             <field name="product_id" required="1"
                    domain="[
                      ('product_tmpl_id.ccn_exclude_from_quote','=',False),
