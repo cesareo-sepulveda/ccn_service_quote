@@ -238,6 +238,41 @@ class ServiceQuote(models.Model):
         for quote in self:
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
+        # ---- Runner para upgrade/migración (idempotente) ----
+    @api.model
+    def _fix_general_sites(self):
+        Quote = self.sudo()
+        Site  = self.env['ccn.service.quote.site'].sudo()
+        Line  = self.env['ccn.service.quote.line'].sudo()
+
+        for q in Quote.search([]):
+            # Busca todos los "General" de la cotización (por si hubo duplicados)
+            generals = Site.search([
+                ('quote_id', '=', q.id),
+                ('name', '=ilike', 'general'),
+            ])
+            if not generals:
+                # No existe: crea el canónico
+                canonical = Site.create({
+                    'quote_id': q.id,
+                    'name': 'General',
+                    'active': True,
+                    'sequence': -999,
+                })
+            else:
+                # Existe: escoge uno y desactiva/remezcla duplicados
+                canonical = generals.sorted(key=lambda s: ((s.sequence or 0), s.id))[0]
+                dups = generals - canonical
+                if dups:
+                    Line.search([('site_id', 'in', dups.ids)]).write({'site_id': canonical.id})
+                    dups.write({'active': False})
+
+            # Asegura visibilidad y orden
+            canonical.write({'active': True, 'sequence': -999})
+
+            # Si la cotización no tiene current_site_id válido, apunta al canónico
+            if not q.current_site_id or q.current_site_id not in q.site_ids:
+                q.current_site_id = canonical.id
 
 # ---------------------------------------------------------------------------
 # SITE (definido en models/site.py)
