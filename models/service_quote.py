@@ -118,6 +118,7 @@ class ServiceQuote(models.Model):
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
         'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
+        'line_ids_mano_obra',
         'current_site_id', 'current_service_type', 'current_type'
     )
     def _compute_rubro_states(self):
