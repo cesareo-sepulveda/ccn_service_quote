@@ -47,7 +47,7 @@ class ServiceQuoteAck(models.Model):
         index=True,
     )
     rubro_code = fields.Selection(RUBRO_CODES, required=True, index=True)
-    ack = fields.Boolean(default=True)
+    is_ack = fields.Boolean(default=True)
 
     _sql_constraints = [
         ("uniq_ack_scope", "unique(quote_id, site_id, service_type, rubro_code)",
@@ -164,7 +164,7 @@ class ServiceQuote(models.Model):
                 ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
                 ('service_type', '=', rec.current_service_type or False),
                 ('rubro_code', '=', code),
-                ('ack', '=', True),
+                ('is_ack', '=', True),
             ]) > 0
             return 1 if cnt > 0 else (2 if ack else 0)
 
@@ -196,14 +196,14 @@ class ServiceQuote(models.Model):
                 ('rubro_code', '=', rubro_code),
             ], limit=1)
             if ack:
-                ack.write({'ack': bool(value)})
+                ack.write({'is_ack': bool(value)})
             else:
                 self.env['ccn.service.quote.ack'].create({
                     'quote_id': rec.id,
                     'site_id': rec.current_site_id.id,
                     'service_type': rec.current_service_type,
                     'rubro_code': rubro_code,
-                    'ack': True,
+                    'is_ack': True,
                 })
 
     def action_mark_rubro_empty(self):
@@ -344,7 +344,7 @@ class CCNServiceQuoteLine(models.Model):
     rubro_code = fields.Char(
         string='Código de Rubro',
         compute='_compute_rubro_code',
-        store=True,
+        store=False,
         readonly=True,
         index=True,
     )
@@ -385,12 +385,12 @@ class CCNServiceQuoteLine(models.Model):
     product_base_price = fields.Monetary(
         string='Precio base',
         compute='_compute_product_base_price',
-        store=False,
+        store=True,
     )
     price_unit_final = fields.Monetary(
         string='Precio Unitario',
         compute='_compute_price_unit_final',
-        store=False,
+        store=True,
     )
     taxes_display = fields.Char(
         string='Detalle de impuestos',

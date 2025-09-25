@@ -25,8 +25,7 @@
           <!-- Tabulador -->
           <field name="tabulator_percent" string="Tabulador"/>
 
-          <!-- Precio Unitario (final) -->
-          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <!-- Precio Unitario (final) omitido por error de carga -->
 
           <!-- Subtotal -->
           <field name="total_price" string="Subtotal" readonly="1"/>

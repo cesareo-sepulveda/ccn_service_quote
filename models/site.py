@@ -75,8 +75,7 @@ class CCNServiceQuoteSite(models.Model):
     # Cálculos de indicadores
     @api.depends(
         "line_ids.quantity",
-        "line_ids.price_unit_final",
-        "line_ids.total_price",
+        "line_ids.product_id",
         "line_ids.rubro_code",
         "quote_id.admin_percent",
         "quote_id.utility_percent",
@@ -87,8 +86,14 @@ class CCNServiceQuoteSite(models.Model):
     def _compute_indicators(self):
         for site in self:
             lines = site.line_ids
-            site.headcount = sum(l.quantity for l in lines if l.rubro_code == "mano_obra")
-            base = sum(l.total_price or 0.0 for l in lines)
+            site.headcount = sum(l.quantity for l in lines if getattr(l, 'rubro_code', False) == "mano_obra")
+            base = 0.0
+            for l in lines:
+                qty = l.quantity or 0.0
+                prod_price = l.product_id.list_price if l.product_id else 0.0
+                tab = float(getattr(l, 'tabulator_percent', '0') or '0') / 100.0
+                pu = prod_price * (1.0 + tab)
+                base += qty * pu
 
             admin_p = site.quote_id.admin_percent or 0.0
             util_p = site.quote_id.utility_percent or 0.0

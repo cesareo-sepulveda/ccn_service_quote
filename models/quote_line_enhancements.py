@@ -28,11 +28,12 @@ class CCNServiceQuoteLine(models.Model):
         store=False,
     )
 
-    @api.depends("quantity", "price_unit_final", "tax_ids")
     def _compute_display_amounts(self):
         for line in self:
             qty = line.quantity or 0.0
-            pu = line.price_unit_final or 0.0
+            base = line.product_id.list_price if line.product_id else 0.0
+            tab = float(getattr(line, 'tabulator_percent', '0') or '0') / 100.0
+            pu = base * (1.0 + tab)
             subtotal = qty * pu
             percent = 0.0
             for tax in line.tax_ids:
