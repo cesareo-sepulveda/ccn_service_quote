@@ -112,7 +112,6 @@ class ServiceQuote(models.Model):
     @api.model
     def _fix_general_sites(self):
         """
-        Para data/migrate_fix_general.xml:
         Garantiza que cada cotización tenga un sitio 'General' (activo y al frente).
         """
         Site = self.env['ccn.service.quote.site'].sudo()
@@ -407,10 +406,11 @@ class ServiceQuoteLine(models.Model):
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True)
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
-    # Producto / Servicio (filtrado por rubro)
+    # Producto / Servicio (SIN domain en el modelo; lo pone el onchange)
     product_id = fields.Many2one(
-        'product.product', string='Producto/Servicio', required=True,
-        domain="[('id','in', rubro_id.allowed_product_ids)]",
+        'product.product',
+        string='Producto/Servicio',
+        required=True,
     )
 
     # Cantidad
@@ -433,6 +433,10 @@ class ServiceQuoteLine(models.Model):
     # --- Onchange: restringe y limpia producto fuera de rubro
     @api.onchange('rubro_id')
     def _onchange_rubro_id_set_product_domain(self):
+        """
+        Si no hay rubro => dominio 'id = 0' (no muestra nada) y limpia product_id.
+        Si hay rubro => limita a allowed_product_ids y limpia si no pertenece.
+        """
         if not self.rubro_id:
             return {'domain': {'product_id': [('id', '=', 0)]}, 'value': {'product_id': False}}
         allowed = self.rubro_id.allowed_product_ids.ids
