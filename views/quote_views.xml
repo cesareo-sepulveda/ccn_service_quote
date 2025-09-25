@@ -537,6 +537,23 @@
         </form>
       </field>
     </record>
+  <!-- Lista principal: muestra el Cliente -->
+    <record id="ccn_view_quote_list" model="ir.ui.view">
+      <field name="name">ccn.quote.list</field>
+      <field name="model">ccn.service.quote</field>
+      <!-- Prioridad baja = más preferida; asegura que esta lista sea la que se use -->
+      <field name="priority" eval="1"/>
+      <field name="arch" type="xml">
+        <list string="Cotizaciones CCN">
+          <field name="partner_id" string="Cliente"/>
+          <field name="name" string="Nombre"/>
+          <!-- Columnas opcionales que puedes dejar visibles/ocultables -->
+          <field name="current_service_type" optional="show"/>
+          <field name="display_mode" optional="hide"/>
+          <field name="current_site_id" string="Sitio" optional="show"/>
+        </list>
+      </field>
+    </record>
 
   </data>
 </odoo>
