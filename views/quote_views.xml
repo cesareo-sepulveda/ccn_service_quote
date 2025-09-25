@@ -9,22 +9,23 @@
         <form string="Cotizador Especial CCN">
           <sheet>
 
-            <!-- ===== Cabecera con etiquetas a la izquierda (2 columnas: etiqueta / campo) ===== -->
+            <!-- ===== Cabecera con etiquetas a la izquierda (2 columnas) ===== -->
             <group>
               <group col="2">
 
                 <!-- Cliente -->
                 <label for="partner_id" string="Cliente"/>
-                <field name="partner_id" required="1" options="{'no_create_edit': True}"/>
+                <field name="partner_id" required="1" nolabel="1" options="{'no_create_edit': True}"/>
 
                 <!-- Nombre de la cotización -->
                 <label for="name" string="Nombre"/>
-                <field name="name" required="1"/>
+                <field name="name" required="1" nolabel="1"/>
 
-                <!-- Sitio: etiqueta a la izquierda; campo + botón en la celda derecha -->
+                <!-- Sitio + botón en la misma fila -->
                 <label for="current_site_id" string="Sitio"/>
-                <div>
+                <div class="o_row">
                   <field name="current_site_id"
+                         nolabel="1"
                          domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
                          context="{'default_quote_id': id}"
                          options="{'no_open': True, 'no_create_edit': True}"
@@ -37,35 +38,34 @@
 
                 <!-- Tipo de servicio -->
                 <label for="current_service_type" string="Tipo de servicio"/>
-                <field name="current_service_type"/>
+                <field name="current_service_type" nolabel="1"/>
 
                 <!-- Modo de presentación -->
                 <label for="display_mode" string="Modo de presentación"/>
-                <field name="display_mode"/>
+                <field name="display_mode" nolabel="1"/>
 
-                <!-- Parámetros (alineados a la izquierda con su etiqueta) -->
+                <!-- Parámetros -->
                 <label for="admin_percent" string="Administración (%)"/>
-                <field name="admin_percent"/>
+                <field name="admin_percent" nolabel="1"/>
 
                 <label for="utility_percent" string="Utilidad (%)"/>
-                <field name="utility_percent"/>
+                <field name="utility_percent" nolabel="1"/>
 
                 <label for="financial_percent" string="Costo Financiero (%)"/>
-                <field name="financial_percent"/>
+                <field name="financial_percent" nolabel="1"/>
 
                 <label for="transporte_rate" string="Tarifa Transporte P/P"/>
-                <field name="transporte_rate"/>
+                <field name="transporte_rate" nolabel="1"/>
 
                 <label for="bienestar_rate" string="Tarifa Bienestar P/P"/>
-                <field name="bienestar_rate"/>
+                <field name="bienestar_rate" nolabel="1"/>
 
               </group>
             </group>
 
-            <!-- =================== Tabs por rubro (edición inline con <list>) =================== -->
+            <!-- ===== Tabs por rubro (edición inline con list) ===== -->
             <notebook>
 
-              <!-- Mano de Obra -->
               <page string="Mano de Obra" name="page_mano_obra"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -99,7 +99,6 @@
                 </field>
               </page>
 
-              <!-- Uniforme -->
               <page string="Uniforme" name="page_uniforme"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -133,7 +132,6 @@
                 </field>
               </page>
 
-              <!-- EPP -->
               <page string="EPP" name="page_epp"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -167,7 +165,6 @@
                 </field>
               </page>
 
-              <!-- EPP Alturas -->
               <page string="EPP Alturas" name="page_epp_alturas"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -201,7 +198,6 @@
                 </field>
               </page>
 
-              <!-- Equipo Especial de Limpieza -->
               <page string="Equipo Especial de Limpieza" name="page_equipo_especial_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -235,7 +231,6 @@
                 </field>
               </page>
 
-              <!-- Comunicación y Cómputo -->
               <page string="Comunicación y Cómputo" name="page_comunicacion_computo"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -269,7 +264,6 @@
                 </field>
               </page>
 
-              <!-- Herr. Menor Jardinería -->
               <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -303,7 +297,6 @@
                 </field>
               </page>
 
-              <!-- Material de Limpieza -->
               <page string="Material de Limpieza" name="page_material_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -337,7 +330,6 @@
                 </field>
               </page>
 
-              <!-- Perfil Médico -->
               <page string="Perfil Médico" name="page_perfil_medico"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -371,7 +363,6 @@
                 </field>
               </page>
 
-              <!-- Maquinaria de Limpieza -->
               <page string="Maquinaria de Limpieza" name="page_maquinaria_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -405,7 +396,6 @@
                 </field>
               </page>
 
-              <!-- Maquinaria de Jardinería -->
               <page string="Maquinaria de Jardinería" name="page_maquinaria_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -439,7 +429,6 @@
                 </field>
               </page>
 
-              <!-- Fertilizantes y Tierra Lama -->
               <page string="Fertilizantes y Tierra Lama" name="page_fertilizantes_tierra_lama"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -473,7 +462,6 @@
                 </field>
               </page>
 
-              <!-- Consumibles de Jardinería -->
               <page string="Consumibles de Jardinería" name="page_consumibles_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -507,7 +495,6 @@
                 </field>
               </page>
 
-              <!-- Capacitación -->
               <page string="Capacitación" name="page_capacitacion"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -541,11 +528,8 @@
                 </field>
               </page>
 
-              <!-- Resumen Global (placeholder) -->
               <page string="Resumen Global">
-                <div class="o_form_label">
-                  Resumen global pendiente (se llenará posteriormente).
-                </div>
+                <div class="o_form_label">Resumen global pendiente (se llenará posteriormente).</div>
               </page>
 
             </notebook>
