@@ -80,6 +80,58 @@ class ServiceQuote(models.Model):
             quote.current_site_id = gen_id
         return True
 
+    @api.model
+    def _fix_general_sites(self):
+        """
+        Llamado desde data/migrate_fix_general.xml:
+        - Garantiza que cada cotización tenga un sitio 'General' (activo y al frente).
+        - Si hay duplicados 'General' en una misma cotización, mantiene el primero,
+          lo activa y posiciona, y archiva duplicados vacíos.
+        - Asegura current_site_id si falta.
+        """
+        Site = self.env['ccn.service.quote.site'].sudo()
+        Quote = self.env['ccn.service.quote'].sudo()
+
+        for q in Quote.search([]):
+            # Buscar todos los 'General' (incluyendo archivados) de esta quote
+            generals = Site.with_context(active_test=False).search([
+                ('quote_id', '=', q.id),
+                ('name', '=ilike', 'general'),
+            ], order='id')
+
+            if generals:
+                keep = generals[0]
+                # Asegurar que esté activo y al tope
+                vals = {}
+                if not keep.active:
+                    vals['active'] = True
+                if keep.sequence is None or keep.sequence > -999:
+                    vals['sequence'] = -999
+                if vals:
+                    keep.write(vals)
+
+                # Archivar duplicados vacíos
+                dups = generals - keep
+                empty_dups = dups.filtered(lambda s: not s.line_ids)
+                if empty_dups:
+                    empty_dups.write({'active': False})
+
+                # Fijar current_site_id si falta
+                if not q.current_site_id:
+                    q.current_site_id = keep.id
+            else:
+                # Crear 'General' si no existe
+                new_general = Site.create({
+                    'quote_id': q.id,
+                    'name': 'General',
+                    'active': True,
+                    'sequence': -999,
+                })
+                if not q.current_site_id:
+                    q.current_site_id = new_general.id
+
+        return True
+
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
