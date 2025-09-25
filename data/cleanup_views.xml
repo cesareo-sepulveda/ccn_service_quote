@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="1">
+    <!-- Desactiva vistas heredadas antiguas (si existen) para evitar duplicados -->
+    <function model="ccn.service.quote" name="_deactivate_old_quote_views"/>
+    <!-- Repara/normaliza "General" en cotizaciones existentes -->
+    <function model="ccn.service.quote" name="_fix_general_sites"/>
+  </data>
+</odoo>
