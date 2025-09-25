@@ -169,7 +169,7 @@
       }catch(_e){}
     });
 
-    mo.observe(formRoot, {
+    mo.observe(nb, {
       childList: true,
       subtree: true,
       characterData: true,
