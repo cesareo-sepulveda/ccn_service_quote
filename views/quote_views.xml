@@ -2,9 +2,6 @@
 <odoo>
   <data>
 
-    <!-- =======================================================
-         FORM principal de CCN Service Quote (único, sin herencias)
-         ======================================================= -->
     <record id="ccn_view_quote_form" model="ir.ui.view">
       <field name="name">ccn.quote.form</field>
       <field name="model">ccn.service.quote</field>
@@ -12,45 +9,60 @@
         <form string="Cotizador Especial CCN">
           <sheet>
 
-            <!-- =======================
-                 Cabecera (una columna)
-                 ======================= -->
+            <!-- ===== Cabecera con etiquetas a la izquierda (2 columnas: etiqueta / campo) ===== -->
             <group>
-              <group>
-                <!-- Cliente y Nombre -->
-                <field name="partner_id" required="1"/>
+              <group col="2">
+
+                <!-- Cliente -->
+                <label for="partner_id" string="Cliente"/>
+                <field name="partner_id" required="1" options="{'no_create_edit': True}"/>
+
+                <!-- Nombre de la cotización -->
+                <label for="name" string="Nombre"/>
                 <field name="name" required="1"/>
 
-                <!-- Sitio con etiqueta a la izquierda + botón "Sitio General" -->
-                <group col="2" class="o_mb_0">
-                  <label for="current_site_id" string="Sitio"/>
-                  <div class="o_row">
-                    <field name="current_site_id"
-                           domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
-                           context="{'default_quote_id': id}"
-                           options="{'no_open': True, 'no_create_edit': True}"
-                           class="o_me_2"/>
-                    <button name="action_ensure_general"
-                            type="object"
-                            class="btn-secondary"
-                            string="Sitio General"/>
-                  </div>
-                </group>
+                <!-- Sitio: etiqueta a la izquierda; campo + botón en la celda derecha -->
+                <label for="current_site_id" string="Sitio"/>
+                <div>
+                  <field name="current_site_id"
+                         domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
+                         context="{'default_quote_id': id}"
+                         options="{'no_open': True, 'no_create_edit': True}"
+                         class="o_me_2"/>
+                  <button name="action_ensure_general"
+                          type="object"
+                          class="btn-secondary"
+                          string="Sitio General"/>
+                </div>
 
-                <!-- Parámetros alineados a la izquierda -->
-                <field name="current_service_type" string="Tipo de servicio"/>
+                <!-- Tipo de servicio -->
+                <label for="current_service_type" string="Tipo de servicio"/>
+                <field name="current_service_type"/>
+
+                <!-- Modo de presentación -->
+                <label for="display_mode" string="Modo de presentación"/>
                 <field name="display_mode"/>
+
+                <!-- Parámetros (alineados a la izquierda con su etiqueta) -->
+                <label for="admin_percent" string="Administración (%)"/>
                 <field name="admin_percent"/>
+
+                <label for="utility_percent" string="Utilidad (%)"/>
                 <field name="utility_percent"/>
+
+                <label for="financial_percent" string="Costo Financiero (%)"/>
                 <field name="financial_percent"/>
+
+                <label for="transporte_rate" string="Tarifa Transporte P/P"/>
                 <field name="transporte_rate"/>
+
+                <label for="bienestar_rate" string="Tarifa Bienestar P/P"/>
                 <field name="bienestar_rate"/>
+
               </group>
             </group>
 
-            <!-- ======================================================
-                 Tabs por rubro (edición inline con list, Odoo 18)
-                 ====================================================== -->
+            <!-- =================== Tabs por rubro (edición inline con <list>) =================== -->
             <notebook>
 
               <!-- Mano de Obra -->
