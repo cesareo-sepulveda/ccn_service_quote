@@ -159,7 +159,7 @@ class ServiceQuote(models.Model):
         string='Tipo de servicio',
     )
 
-    # Campo interno para separar Servicio/Material (no mostrar en la vista si no lo necesitas)
+    # Campo interno para separar Servicio/Material (puedes no mostrarlo en la vista)
     current_type = fields.Selection(
         [
             ('servicio', 'Servicio'),
@@ -225,7 +225,6 @@ class ServiceQuote(models.Model):
     def _ack_domain_for_code(self, code):
         self.ensure_one()
         if not (self.current_site_id and self.current_service_type and code):
-            # Sin ámbito completo no hay ACK aplicable
             return [('id', '=', 0)]
         return [
             ('quote_id', '=', self.id),
@@ -256,19 +255,6 @@ class ServiceQuote(models.Model):
             else:
                 acks = Ack.search(dom)
                 acks.unlink()
-
-    # Botones desde la vista con context={'rubro_code': '...'}
-    def action_mark_rubro_empty(self):
-        code = (self.env.context or {}).get('rubro_code')
-        if code:
-            self._set_ack(code, True)
-        return True
-
-    def action_unmark_rubro_empty(self):
-        code = (self.env.context or {}).get('rubro_code')
-        if code:
-            self._set_ack(code, False)
-        return True
 
     # -------------------------
     # Estados / Conteos por rubro
@@ -380,8 +366,14 @@ class ServiceQuoteLine(models.Model):
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True)
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
-    # Producto / Servicio (filtrado por rubro via onchange)
-    product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True)
+    # Producto / Servicio
+    # >>> Filtro duro desde el modelo: sólo productos del rubro
+    product_id = fields.Many2one(
+        'product.product',
+        string='Producto/Servicio',
+        required=True,
+        domain="[('id','in', rubro_id.allowed_product_ids)]",
+    )
 
     # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
@@ -401,7 +393,7 @@ class ServiceQuoteLine(models.Model):
     total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
     # -------------------------
-    # Onchange: dominio dinámico de producto por rubro
+    # Onchange: dominio dinámico de producto por rubro (refuerza la UI)
     # -------------------------
     @api.onchange('rubro_id')
     def _onchange_rubro_id_set_product_domain(self):

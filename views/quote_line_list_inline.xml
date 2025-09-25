@@ -4,16 +4,16 @@
     <record id="ccn_view_quote_line_list_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.list.inline</field>
       <field name="model">ccn.service.quote.line</field>
-      <field name="type">list</field>
       <field name="arch" type="xml">
         <list editable="bottom" string="Líneas del rubro">
+          <!-- El rubro viene por contexto (ctx_rubro_code) y/o está en la línea -->
           <field name="rubro_id" invisible="1" column_invisible="1"/>
           <field name="rubro_code" invisible="1" column_invisible="1"/>
 
-          <!-- Producto/Servicio del rubro (filtro por rubro del template) -->
+          <!-- Producto/Servicio del rubro:
+               Filtra SOLO a los productos permitidos del rubro -->
           <field name="product_id" required="1"
-                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
-                          ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 domain="[('id','in', rubro_id.allowed_product_ids)]"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
           <!-- Cantidad -->
@@ -25,7 +25,7 @@
           <!-- Tabulador -->
           <field name="tabulator_percent" string="Tabulador"/>
 
-          <!-- IVA -->
+          <!-- IVA (si tu modelo no tiene amount_tax, elimina esta columna) -->
           <field name="amount_tax" string="IVA" readonly="1"/>
 
           <!-- Subtotal -->
