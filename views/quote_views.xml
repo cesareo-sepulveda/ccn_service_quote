@@ -122,7 +122,7 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','mano_obra'), ('rubro_id.code','=','mano_obra')
+                         ('rubro_id.code','=','mano_obra'), ('rubro_id.code','=','mano_obra')
                        ]"/>
               </page>
 
@@ -147,7 +147,7 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','uniforme'), ('rubro_id.code','=','uniforme')
+                         ('rubro_id.code','=','uniforme'), ('rubro_id.code','=','uniforme')
                        ]"/>
               </page>
 
@@ -172,7 +172,7 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','epp'), ('rubro_id.code','=','epp')
+                         ('rubro_id.code','=','epp'), ('rubro_id.code','=','epp')
                        ]"/>
               </page>
 
@@ -197,7 +197,7 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','epp_alturas'), ('rubro_id.code','=','epp_alturas')
+                         ('rubro_id.code','=','epp_alturas'), ('rubro_id.code','=','epp_alturas')
                        ]"/>
               </page>
 
@@ -222,7 +222,7 @@
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','equipo_especial_limpieza'), ('rubro_id.code','=','equipo_especial_limpieza')
+                         ('rubro_id.code','=','equipo_especial_limpieza'), ('rubro_id.code','=','equipo_especial_limpieza')
                        ]"/>
               </page>
 
@@ -248,7 +248,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','comunicacion_computo'), ('rubro_id.code','=','comunicacion_computo')
+                         ('rubro_id.code','=','comunicacion_computo'), ('rubro_id.code','=','comunicacion_computo')
                        ]"/>
               </page>
 
@@ -274,7 +274,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','herramienta_menor_jardineria'), ('rubro_id.code','=','herramienta_menor_jardineria')
+                         ('rubro_id.code','=','herramienta_menor_jardineria'), ('rubro_id.code','=','herramienta_menor_jardineria')
                        ]"/>
               </page>
 
@@ -300,7 +300,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','material_limpieza'), ('rubro_id.code','=','material_limpieza')
+                         ('rubro_id.code','=','material_limpieza'), ('rubro_id.code','=','material_limpieza')
                        ]"/>
               </page>
 
@@ -326,7 +326,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','perfil_medico'), ('rubro_id.code','=','perfil_medico')
+                         ('rubro_id.code','=','perfil_medico'), ('rubro_id.code','=','perfil_medico')
                        ]"/>
               </page>
 
@@ -352,7 +352,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','maquinaria_limpieza'), ('rubro_id.code','=','maquinaria_limpieza')
+                         ('rubro_id.code','=','maquinaria_limpieza'), ('rubro_id.code','=','maquinaria_limpieza')
                        ]"/>
               </page>
 
@@ -378,7 +378,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','maquinaria_jardineria'), ('rubro_id.code','=','maquinaria_jardineria')
+                         ('rubro_id.code','=','maquinaria_jardineria'), ('rubro_id.code','=','maquinaria_jardineria')
                        ]"/>
               </page>
 
@@ -404,7 +404,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','fertilizantes_tierra_lama'), ('rubro_id.code','=','fertilizantes_tierra_lama')
+                         ('rubro_id.code','=','fertilizantes_tierra_lama'), ('rubro_id.code','=','fertilizantes_tierra_lama')
                        ]"/>
               </page>
 
@@ -430,7 +430,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','consumibles_jardineria'), ('rubro_id.code','=','consumibles_jardineria')
+                         ('rubro_id.code','=','consumibles_jardineria'), ('rubro_id.code','=','consumibles_jardineria')
                        ]"/>
               </page>
 
@@ -456,7 +456,7 @@
                          ('site_id','=', current_site_id),
                          
                          ('service_type','=', current_service_type),
-                         '|', ('rubro_code','=','capacitacion'), ('rubro_id.code','=','capacitacion')
+                         ('rubro_id.code','=','capacitacion'), ('rubro_id.code','=','capacitacion')
                        ]"/>
               </page>
 
