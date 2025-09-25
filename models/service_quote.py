@@ -19,10 +19,10 @@ class ServiceQuote(models.Model):
         default=lambda self: self.env.company.currency_id.id,
     )
 
-    # --- Sitios ---
+    # --- Sitios: "General" por defecto (virtual en memoria) -----------------
     def _default_site_ids(self):
-        """Provee un sitio 'General' virtual al crear."""
-        return [Command.create({"name": self.env._("General")})]
+        # sequence alto negativo para que siempre quede arriba al guardar
+        return [Command.create({"name": self.env._("General"), "active": True, "sequence": -999})]
 
     site_ids = fields.One2many(
         "ccn.service.quote.site", "quote_id", string="Sitios",
@@ -31,34 +31,28 @@ class ServiceQuote(models.Model):
 
     @api.model
     def default_get(self, fields_list):
-        """Deja 'General' listo en site_ids; el compute de current_site_id lo toma solo."""
+        """Crea 'General' como línea virtual y lo deja seleccionado en current_site_id."""
         defaults = super().default_get(fields_list)
+        # Asegura que siempre haya un virtual 'General' en el form nuevo
         defaults.setdefault("site_ids", self._default_site_ids())
+
+        # Simula el record en memoria y ejecuta onchange para fijar current_site_id
+        if not self.env.context.get("_ccn_skip_default_site_onchange"):
+            rec = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
+            rec._onchange_site_ids_set_current()
+            # Convierte el cache del 'new' en valores de escritura y los mezcla al default
+            defaults.update(rec._convert_to_write(rec._cache))
         return defaults
 
-    # --- current_site_id: calculado para autoseleccionar el primer sitio (incluye virtuales) ---
-    current_site_id = fields.Many2one(
-        'ccn.service.quote.site',
-        string='Sitio actual',
-        compute="_compute_current_site_id",
-        inverse="_inverse_current_site_id",
-        store=True,  # se persiste para que recuerde tu última selección en registros guardados
-    )
-
-    @api.depends('site_ids')
-    def _compute_current_site_id(self):
-        """
-        Si no hay selección y existen sitios (aunque sean virtuales),
-        selecciona el primero (el 'General' creado por defecto).
-        No pisamos manualmente la selección si ya hay valor.
-        """
+    @api.onchange("site_ids")
+    def _onchange_site_ids_set_current(self):
+        """Si no hay selección, toma el primer sitio (el 'General' virtual)."""
         for quote in self:
-            if not quote.current_site_id and quote.site_ids:
-                quote.current_site_id = quote.site_ids[0]
-
-    def _inverse_current_site_id(self):
-        # Inversa vacía: permite escribir manualmente current_site_id y persistirlo.
-        return
+            if quote.site_ids:
+                if quote.current_site_id not in quote.site_ids:
+                    quote.current_site_id = quote.site_ids[0]
+            else:
+                quote.current_site_id = False
 
     # Modo de presentación
     display_mode = fields.Selection(
@@ -78,6 +72,11 @@ class ServiceQuote(models.Model):
     bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
 
     # Filtros de edición
+    current_site_id = fields.Many2one(
+        'ccn.service.quote.site',
+        string='Sitio actual',
+        # IMPORTANTE: SIN dominio aquí (el dominio vive en la vista)
+    )
     current_service_type = fields.Selection(
         [
             ('jardineria', 'Jardinería'),
@@ -228,11 +227,12 @@ class ServiceQuote(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        # Garantiza el 'General' al crear desde API/imports
         for vals in vals_list:
             if not vals.get('site_ids'):
                 vals['site_ids'] = self._default_site_ids()
         quotes = super().create(vals_list)
-        # Si por algún motivo current_site_id quedó vacío, selecciónalo post-create
+        # Si current_site_id quedó vacío, fijarlo al primer sitio real
         for quote in quotes:
             if not quote.current_site_id and quote.site_ids:
                 quote.current_site_id = quote.site_ids[0].id
