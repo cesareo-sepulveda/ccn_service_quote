@@ -86,13 +86,11 @@ class CCNServiceQuoteLine(models.Model):
         compute='_compute_price_unit_final',
         store=False,
     )
-    # Muestra de impuestos (descriptivo)
     taxes_display = fields.Char(
         string='Detalle de impuestos',
         compute='_compute_taxes_display',
         store=False,
     )
-    # IVA estimado (opcional; para compatibilidad con vistas que lo usan)
     amount_tax = fields.Monetary(
         string='IVA',
         compute='_compute_amount_tax',
@@ -138,14 +136,11 @@ class CCNServiceQuoteLine(models.Model):
 
     @api.depends('price_unit_final', 'quantity', 'product_id')
     def _compute_amount_tax(self):
-        """Cálculo simple del IVA (suma de porcentajes) para mostrar.
-        No reemplaza el motor fiscal de Odoo."""
         for line in self:
             total = (line.price_unit_final or 0.0) * (line.quantity or 0.0)
             rate = 0.0
             taxes = getattr(line.product_id, 'taxes_id', False)
             if taxes:
-                # Suma simple de porcentajes (percent)
                 rate = sum(t.amount for t in taxes if getattr(t, 'amount_type', 'percent') == 'percent') / 100.0
             amt = total * rate
             if line.quote_id.currency_id:
