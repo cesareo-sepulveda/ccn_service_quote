@@ -274,6 +274,36 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
+    # ==========================================================
+    # MÉTODO LLAMADO POR data/migrate_fix_general.xml
+    # ==========================================================
+    @api.model
+    def _fix_general_sites(self, limit=100000):
+        """
+        Usado por data/migrate_fix_general.xml:
+        - Garantiza que cada cotización tenga un sitio 'General' activo y al frente.
+        - Si no hay current_site_id, lo fija al 'General'.
+        """
+        Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
+        quotes = self.search([], limit=limit)
+        for q in quotes:
+            general = Site.search([
+                ('quote_id', '=', q.id),
+                ('name', '=ilike', 'general'),
+            ], limit=1)
+            if general:
+                general.write({'active': True, 'sequence': -999})
+            else:
+                general = Site.create({
+                    'quote_id': q.id,
+                    'name': 'General',
+                    'active': True,
+                    'sequence': -999,
+                })
+            if not q.current_site_id:
+                q.write({'current_site_id': general.id})
+        return True
+
 
 # =====================================================================
 # LÍNEA (detalle)  — queda en ESTE MISMO ARCHIVO
@@ -316,7 +346,9 @@ class CCNServiceQuoteLine(models.Model):
 
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
-    rubro_code = fields.Char(
+    # ⚠️ IMPORTANTE: Debe ser Selection para coincidir con ccn.service.rubro.code
+    rubro_code = fields.Selection(
+        RUBRO_CODES,
         string='Código de Rubro',
         related='rubro_id.code',
         store=True,
@@ -324,7 +356,7 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
-    # Producto
+    # Producto (filtrado por rubro)
     product_id = fields.Many2one(
         'product.product',
         string='Producto/Servicio',
