@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
 from odoo import Command, api, fields, models, _
+import logging
 from odoo.exceptions import ValidationError
+
+_logger = logging.getLogger(__name__)
 
 RUBRO_CODES = [
     ("mano_obra","Mano de Obra"),
@@ -264,3 +267,31 @@ class ServiceQuote(models.Model):
             if not quote.current_site_id and quote.site_ids:
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
+
+class ServiceQuoteLine(models.Model):
+    _name = 'ccn.service.quote.line'
+    _description = 'CCN Service Quote Line'
+
+    _logger.info("ServiceQuoteLine model registered successfully")
+
+    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade', index=True)
+    site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null', index=True)
+    service_type = fields.Selection([
+        ('jardineria', 'Jardinería'),
+        ('limpieza', 'Limpieza'),
+        ('mantenimiento', 'Mantenimiento'),
+        ('materiales', 'Materiales'),
+        ('servicios_especiales', 'Servicios Especiales'),
+        ('almacenaje', 'Almacenaje'),
+        ('fletes', 'Fletes'),
+    ], string='Tipo de Servicio', index=True)
+    type = fields.Selection([
+        ('servicio', 'Servicio'),
+        ('material', 'Material'),
+    ], string='Tipo', default='servicio', required=True, index=True)
+    rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
+    rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True, index=True)
+    product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True, index=True)
+    quantity = fields.Float(string='Cantidad', default=1.0)
+    price_unit = fields.Monetary(string='Precio Unitario', currency_field='currency_id')
+    currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)

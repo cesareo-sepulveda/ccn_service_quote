@@ -7,7 +7,7 @@ from . import (
     add_package_wizard,
     patch_rubro_code,
     product,
-    quote_line,
+    #quote_line,
     quote_line_enhancements,
     quote_line_extend,
     quote_line_related,
