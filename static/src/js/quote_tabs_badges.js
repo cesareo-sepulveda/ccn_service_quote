@@ -90,40 +90,23 @@
     return byCode;
   }
 
-  // === Pintado (calcula estados desde el DOM de cada tab) ===
-  function paintFromDOM(nb, byCode, last){
+  // === Pintado (usa únicamente rubro_state_* del DOM) ===
+  function paintFromStates(formRoot, nb, byCode, last){
     let changed = false;
     for(const [code, link] of Object.entries(byCode)){
-      // Buscar el tree en la tab
-      const li = link.closest('li');
-      const target = li ? li.getAttribute('aria-controls') || li.querySelector('a')?.getAttribute('data-bs-target') || li.querySelector('a')?.getAttribute('href') : null;
-      const paneId = target ? target.replace('#', '') : null;
-      const pane = paneId ? document.getElementById(paneId) : null;
-      const tree = pane ? pane.querySelector('.o_list_view') : null;
-      const rows = tree ? tree.querySelectorAll('.o_data_row') : [];
-      const hasRows = rows.length > 0;
-
-      // Buscar el botón "Quitar No Aplica"
-      const buttons = pane ? pane.querySelectorAll('button') : [];
-      const unmarkButton = [...buttons].find(btn => btn.textContent.includes('Quitar No Aplica'));
-      const isAck = unmarkButton && unmarkButton.offsetParent !== null; // visible
-
-      let st = 0;
-      if (hasRows) st = 1; // filled
-      else if (isAck) st = 2; // ack
-      // else 0 empty
-
-      if (last[code] !== st){
-        applyTab(link, st);
-        last[code] = st;
+      const st = readIntField(formRoot, STATE_FIELD(code));
+      const sNorm = (st === 1 || st === 2) ? st : 0; // 0/otros → rojo
+      if (last[code] !== sNorm){
+        applyTab(link, sNorm);
+        last[code] = sNorm;
         changed = true;
       }
     }
     return changed;
   }
 
-  // === Observa cambios en el notebook para re-pintar ===
-  function watchNotebook(nb, byCode, last){
+  // === Observa cambios en el form para re-pintar cuando cambien rubro_state_* ===
+  function watchStates(formRoot, nb, byCode, last){
     let scheduled = false;
     const schedule = () => {
       if (scheduled) return;
@@ -131,19 +114,16 @@
       // throttle con setTimeout
       setTimeout(() => {
         scheduled = false;
-        try{ paintFromDOM(nb, byCode, last); }catch(_e){}
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, 0);
       setTimeout(() => {
-        try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 0);
-      setTimeout(() => {
-        try{ paintFromDOM(nb, byCode, last); }catch(_e){}
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, 30);
       setTimeout(() => {
-        try{ paintFromDOM(nb, byCode, last); }catch(_e){}
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, 120);
       setTimeout(() => {
-        try{ paintFromDOM(nb, byCode, last); }catch(_e){}
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, 360);
     };
 
@@ -169,17 +149,18 @@
       }catch(_e){}
     });
 
-    mo.observe(nb, {
+    mo.observe(formRoot, {
       childList: true,
       subtree: true,
       characterData: true,
       attributes: true,
+      attributeFilter: ["data-value", "value", "class"],
     });
 
     // Exponer para debug opcional
     window.__ccnTabsWatch = {
       dump(){ console.log(JSON.parse(JSON.stringify(last))); },
-      repaint(){ paintFromDOM(nb, byCode, last); }
+      repaint(){ paintFromStates(formRoot, nb, byCode, last); }
     };
   }
 
@@ -203,9 +184,9 @@
       if (!Object.keys(byCode).length) return; // no tabs mapeadas; salir limpio
       const last = {};
       // Pintado inicial (sin clics, inmediato)
-      try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      // Observa cambios en el notebook
-      watchNotebook(nb, byCode, last);
+      try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      // Observa cambios de los campos de estado
+      watchStates(formRoot, nb, byCode, last);
     });
   }catch(_e){}
 })();
