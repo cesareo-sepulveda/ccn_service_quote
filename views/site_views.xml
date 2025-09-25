@@ -2,44 +2,9 @@
 <odoo>
   <data>
 
-    <!-- Subvistas reutilizables del comodelo de líneas -->
-    <record id="ccn_view_quote_line_list_inline" model="ir.ui.view">
-      <field name="name">ccn.quote.line.list.inline</field>
-      <field name="model">ccn.service.quote.line</field>
-      <field name="arch" type="xml">
-        <list editable="bottom" string="Líneas del sitio">
-          <field name="rubro_id"/>
-          <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-          <field name="quantity"/>
-          <field name="product_base_price" string="Precio base" readonly="1"/>
-          <field name="tabulator_percent" string="Tabulador"/>
-          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
-          <field name="taxes_display" string="Impuestos" readonly="1"/>
-          <field name="total_price" string="Subtotal" readonly="1"/>
-        </list>
-      </field>
-    </record>
-
-    <record id="ccn_view_quote_line_form_inline" model="ir.ui.view">
-      <field name="name">ccn.quote.line.form.inline</field>
-      <field name="model">ccn.service.quote.line</field>
-      <field name="arch" type="xml">
-        <form string="Línea de sitio">
-          <group>
-            <field name="rubro_id"/>
-            <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-            <field name="quantity"/>
-            <field name="product_base_price" string="Precio base" readonly="1"/>
-            <field name="tabulator_percent" string="Tabulador"/>
-            <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
-            <field name="taxes_display" string="Impuestos" readonly="1"/>
-            <field name="total_price" string="Subtotal" readonly="1"/>
-          </group>
-        </form>
-      </field>
-    </record>
-
-    <!-- FORM del modelo Sitio -->
+    <!-- ================================
+         FORM del modelo de Sitio (con indicadores ARRIBA)
+         ================================ -->
     <record id="ccn_view_site_form" model="ir.ui.view">
       <field name="name">ccn.site.form</field>
       <field name="model">ccn.service.quote.site</field>
@@ -59,11 +24,15 @@
 
             <notebook>
               <page string="Líneas">
-                <field name="line_ids"
-                       mode="list,form"
-                       views="[(list, ref('ccn_service_quote.ccn_view_quote_line_list_inline')),
-                               (form, ref('ccn_service_quote.ccn_view_quote_line_form_inline'))]"
-                       context="{'default_quote_id': quote_id, 'default_site_id': id}"/>
+                <field name="line_ids" mode="list">
+                  <list editable="bottom" string="Líneas del sitio">
+                    <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+                    <field name="quantity"/>
+                    <field name="tabulator_percent"/>
+                    <field name="price_unit_final" readonly="1"/>
+                    <field name="total_price" readonly="1"/>
+                  </list>
+                </field>
               </page>
 
               <page string="Resumen del sitio">
@@ -84,61 +53,9 @@
       </field>
     </record>
 
-    <!-- Herencia de la Quote para insertar selector y pestaña Sitio actual -->
-    <record id="ccn_view_quote_form_sites" model="ir.ui.view">
-      <field name="name">ccn.quote.form.sites</field>
-      <field name="model">ccn.service.quote</field>
-      <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
-      <field name="arch" type="xml">
-
-        <!-- Reemplaza el selector original del encabezado -->
-        <xpath expr="//form/sheet/group/field[@name='current_site_id']" position="replace"/>
-
-        <!-- Inserta selector + lista de sitios -->
-        <xpath expr="//form/sheet/group" position="after">
-          <group>
-            <group string="Sitio en edición">
-              <field name="current_site_id"
-                     domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
-                     context="{'default_quote_id': id}"
-                     options="{'no_open': True, 'no_create_edit': True}"
-                     colspan="2"/>
-            </group>
-            <group string="Sitios">
-              <field name="site_ids"
-                     mode="list"
-                     context="{'default_quote_id': id}"
-                     options="{'no_open': True, 'no_create_edit': True}">
-                <list editable="bottom">
-                  <field name="sequence"/>
-                  <field name="name"/>
-                </list>
-              </field>
-            </group>
-          </group>
-        </xpath>
-
-        <!-- Reemplaza cualquier bloque antiguo de líneas por el notebook con el form del sitio actual -->
-        <xpath expr="//form//field[@name='line_ids']" position="replace">
-          <notebook>
-
-            <page string="Sitio actual">
-              <field name="site_ids"
-                     domain="[('id','=', current_site_id)]"
-                     mode="form"
-                     views="[(form, ref('ccn_service_quote.ccn_view_site_form'))]"
-                     context="{'default_quote_id': id}"
-                     options="{'no_open': True, 'no_create_edit': True}"/>
-            </page>
-
-            <page string="Resumen Global">
-              <div class="o_form_label">Tabla global pendiente (se llenará en el siguiente paso).</div>
-            </page>
-
-          </notebook>
-        </xpath>
-      </field>
-    </record>
+    <!-- IMPORTANTE: NO heredar la vista de la cotización aquí -->
+    <!-- El archivo anterior tenía un <record id="ccn_view_quote_form_sites" ... inherit_id="ccn_service_quote.ccn_view_quote_form"/> -->
+    <!-- Ese bloque ya NO debe existir para evitar duplicados -->
 
   </data>
 </odoo>
