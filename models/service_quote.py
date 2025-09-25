@@ -21,7 +21,7 @@ class ServiceQuote(models.Model):
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
     partner_id = fields.Many2one('res.partner', string='Cliente', required=True, index=True)
 
-    # Moneda (necesaria para Monetary)
+    # Moneda (necesaria para campos Monetary; no es obligatorio mostrarla en la vista)
     currency_id = fields.Many2one(
         'res.currency',
         string='Moneda',
@@ -54,14 +54,17 @@ class ServiceQuote(models.Model):
         """Asegura sitio 'General' virtual y posiciona current_site_id."""
         defaults = super().default_get(fields_list)
         defaults.setdefault("site_ids", self._default_site_ids())
+
         if not self.env.context.get("_ccn_skip_default_site_onchange"):
             quote = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
             quote._onchange_site_ids_set_current()
             defaults.update(quote._convert_to_write(quote._cache))
+
         return defaults
 
     @api.onchange("site_ids")
     def _onchange_site_ids_set_current(self):
+        """Sincroniza current_site_id con los sitios disponibles (primer elemento)."""
         for quote in self:
             if quote.site_ids:
                 if quote.current_site_id not in quote.site_ids:
@@ -70,7 +73,7 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = False
 
     def action_ensure_general(self):
-        """Botón 'Sitio General'."""
+        """Botón 'Sitio General': garantiza que exista 'General' y lo selecciona."""
         Site = self.env['ccn.service.quote.site'].sudo()
         for quote in self:
             gen_id = Site.get_or_create_general(quote.id)
@@ -131,7 +134,7 @@ class ServiceQuote(models.Model):
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
     # -------------------------
-    # Parámetros
+    # Parámetros (afectan indicadores del sitio)
     # -------------------------
     admin_percent = fields.Float(string='Administración (%)', default=0.0)
     utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
@@ -140,7 +143,7 @@ class ServiceQuote(models.Model):
     bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
 
     # -------------------------
-    # Líneas (todas) y por rubro
+    # Líneas (todas) y por rubro (para pestañas)
     # -------------------------
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
@@ -164,6 +167,7 @@ class ServiceQuote(models.Model):
     # -------------------------
     ack_ids = fields.One2many('ccn.service.quote.ack', 'quote_id', string='ACKs')
 
+    # Dominio base de líneas según el ámbito visible actual
     def _scope_domain(self):
         """Dominio de líneas restringido al contexto visible actual."""
         self.ensure_one()
@@ -176,7 +180,7 @@ class ServiceQuote(models.Model):
             domain.append(('type', '=', self.current_type))
         return domain
 
-    # Helpers ACK
+    # Helpers ACK (ámbito actual)
     def _ack_domain_for_code(self, code):
         self.ensure_one()
         if not (self.current_site_id and self.current_service_type and code):
@@ -213,8 +217,8 @@ class ServiceQuote(models.Model):
                 acks = Ack.search(dom)
                 acks.unlink()
 
+    # Botones desde la vista con context={'rubro_code': '...'}
     def action_mark_rubro_empty(self):
-        """Desde botón con context={'rubro_code': '...'}"""
         code = (self.env.context or {}).get('rubro_code')
         if code:
             self._set_ack(code, True)
@@ -227,8 +231,28 @@ class ServiceQuote(models.Model):
         return True
 
     # -------------------------
-    # Estados / Conteos por rubro (separación estricta)
+    # Estados / Conteos por rubro
     # -------------------------
+    # Estados por rubro (0=rojo, 1=verde, 2=ámbar)
+    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states", string="Estado Mano de Obra")
+    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states", string="Estado Uniforme")
+    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states", string="Estado EPP")
+    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states", string="Estado EPP Alturas")
+    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states", string="Estado Equipo Especial Limpieza")
+    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states", string="Estado Comunicación y Cómputo")
+    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states", string="Estado Herr. Menor Jardinería")
+    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states", string="Estado Material de Limpieza")
+    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states", string="Estado Perfil Médico")
+    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Limpieza")
+    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Jardinería")
+    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states", string="Estado Fertilizantes y Tierra Lama")
+    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states", string="Estado Consumibles Jardinería")
+    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states", string="Estado Capacitación")
+
+    # Conteos de ejemplo (opcionales)
+    mano_obra_count = fields.Integer(compute='_compute_rubro_counts')
+    uniforme_count  = fields.Integer(compute='_compute_rubro_counts')
+
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
         'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
@@ -342,7 +366,9 @@ class ServiceQuoteLine(models.Model):
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
     total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
+    # -------------------------
     # Cómputos
+    # -------------------------
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
@@ -380,7 +406,9 @@ class ServiceQuoteLine(models.Model):
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
 
+    # -------------------------
     # Defaults por contexto
+    # -------------------------
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -400,7 +428,9 @@ class ServiceQuoteLine(models.Model):
                 res['rubro_id'] = rubro.id
         return res
 
+    # -------------------------
     # Consistencia sitio ⇄ cotización
+    # -------------------------
     @api.constrains('site_id', 'quote_id')
     def _check_site_matches_quote(self):
         for rec in self:
