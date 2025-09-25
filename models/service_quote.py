@@ -96,6 +96,22 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
+    # Campos separados por rubro para evitar duplicación en tabs
+    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra')
+    line_ids_uniforme = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme')
+    line_ids_epp = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP')
+    line_ids_epp_alturas = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas')
+    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial Limpieza')
+    line_ids_comunicacion_computo = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación y Cómputo')
+    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Herramienta Menor Jardinería')
+    line_ids_material_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Material Limpieza')
+    line_ids_perfil_medico = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Perfil Médico')
+    line_ids_maquinaria_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Limpieza')
+    line_ids_maquinaria_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Jardinería')
+    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Fertilizantes y Tierra Lama')
+    line_ids_consumibles_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles Jardinería')
+    line_ids_capacitacion = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación')
+
 
     # Estados por rubro (filtrados por sitio/servicio/tipo actual)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
