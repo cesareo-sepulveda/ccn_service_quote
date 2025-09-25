@@ -135,16 +135,16 @@
       }, 0);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 2000);
+      }, 0);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 4000);
+      }, 30);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 6000);
+      }, 120);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 8000);
+      }, 360);
     };
 
     const mo = new MutationObserver((muts) => {
@@ -169,7 +169,7 @@
       }catch(_e){}
     });
 
-    mo.observe(nb, {
+    mo.observe(formRoot, {
       childList: true,
       subtree: true,
       characterData: true,
