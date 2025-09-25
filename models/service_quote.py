@@ -346,11 +346,11 @@ class CCNServiceQuoteLine(models.Model):
 
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
-    # ⚠️ IMPORTANTE: Debe ser Selection para coincidir con ccn.service.rubro.code
-    rubro_code = fields.Selection(
-        RUBRO_CODES,
+
+    # ⚠️ Ahora es Char calculado (NO related) para evitar choque de tipos con Selection.
+    rubro_code = fields.Char(
         string='Código de Rubro',
-        related='rubro_id.code',
+        compute='_compute_rubro_code',
         store=True,
         readonly=True,
         index=True,
@@ -415,6 +415,11 @@ class CCNServiceQuoteLine(models.Model):
     )
 
     # ===== Cómputos =====
+    @api.depends('rubro_id', 'rubro_id.code')
+    def _compute_rubro_code(self):
+        for rec in self:
+            rec.rubro_code = rec.rubro_id.code or False
+
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
