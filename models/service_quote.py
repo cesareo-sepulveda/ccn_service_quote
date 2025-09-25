@@ -210,10 +210,6 @@ class ServiceQuote(models.Model):
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
         defaults.setdefault("site_ids", self._default_site_ids())
-        if not self.env.context.get("_ccn_skip_default_site_onchange"):
-            quote = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
-            quote._onchange_site_ids_set_current()
-            defaults.update(quote._convert_to_write(quote._cache))
         return defaults
 
     @api.onchange("site_ids")
