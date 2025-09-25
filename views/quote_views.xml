@@ -112,7 +112,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'mano_obra',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -121,7 +121,6 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','mano_obra'), ('rubro_id.code','=','mano_obra')
                        ]"/>
@@ -138,7 +137,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'uniforme',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -147,7 +146,6 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','uniforme'), ('rubro_id.code','=','uniforme')
                        ]"/>
@@ -164,7 +162,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'epp',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -173,7 +171,6 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','epp'), ('rubro_id.code','=','epp')
                        ]"/>
@@ -190,7 +187,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'epp_alturas',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -199,7 +196,6 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','epp_alturas'), ('rubro_id.code','=','epp_alturas')
                        ]"/>
@@ -216,7 +212,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'equipo_especial_limpieza',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -225,7 +221,6 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','equipo_especial_limpieza'), ('rubro_id.code','=','equipo_especial_limpieza')
                        ]"/>
@@ -242,7 +237,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'comunicacion_computo',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -251,7 +246,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','comunicacion_computo'), ('rubro_id.code','=','comunicacion_computo')
                        ]"/>
@@ -268,7 +263,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'herramienta_menor_jardineria',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -277,7 +272,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','herramienta_menor_jardineria'), ('rubro_id.code','=','herramienta_menor_jardineria')
                        ]"/>
@@ -294,7 +289,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'material_limpieza',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -303,7 +298,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','material_limpieza'), ('rubro_id.code','=','material_limpieza')
                        ]"/>
@@ -320,7 +315,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'perfil_medico',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -329,7 +324,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','perfil_medico'), ('rubro_id.code','=','perfil_medico')
                        ]"/>
@@ -346,7 +341,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'maquinaria_limpieza',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -355,7 +350,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','maquinaria_limpieza'), ('rubro_id.code','=','maquinaria_limpieza')
                        ]"/>
@@ -372,7 +367,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'maquinaria_jardineria',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -381,7 +376,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','maquinaria_jardineria'), ('rubro_id.code','=','maquinaria_jardineria')
                        ]"/>
@@ -398,7 +393,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'fertilizantes_tierra_lama',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -407,7 +402,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','fertilizantes_tierra_lama'), ('rubro_id.code','=','fertilizantes_tierra_lama')
                        ]"/>
@@ -424,7 +419,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'consumibles_jardineria',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -433,7 +428,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','consumibles_jardineria'), ('rubro_id.code','=','consumibles_jardineria')
                        ]"/>
@@ -450,7 +445,7 @@
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-                         'default_type': current_type,
+                         
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'capacitacion',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -459,7 +454,7 @@
                        domain="[
                          ('quote_id','=', id),
                          ('site_id','=', current_site_id),
-                         ('type','=', current_type),
+                         
                          ('service_type','=', current_service_type),
                          '|', ('rubro_code','=','capacitacion'), ('rubro_id.code','=','capacitacion')
                        ]"/>
