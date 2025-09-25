@@ -135,13 +135,16 @@
       }, 0);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
-      }, 500);
-      setTimeout(() => {
-        try{ paintFromDOM(nb, byCode, last); }catch(_e){}
       }, 1000);
       setTimeout(() => {
         try{ paintFromDOM(nb, byCode, last); }catch(_e){}
       }, 2000);
+      setTimeout(() => {
+        try{ paintFromDOM(nb, byCode, last); }catch(_e){}
+      }, 3000);
+      setTimeout(() => {
+        try{ paintFromDOM(nb, byCode, last); }catch(_e){}
+      }, 4000);
     };
 
     const mo = new MutationObserver((muts) => {
