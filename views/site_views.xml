@@ -2,9 +2,7 @@
 <odoo>
   <data>
 
-    <!-- =========================================================
-         Subvistas del detalle (ccn.service.quote.line) - REUTILIZABLES
-         ========================================================= -->
+    <!-- Subvistas reutilizables del comodelo de líneas -->
     <record id="ccn_view_quote_line_list_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.list.inline</field>
       <field name="model">ccn.service.quote.line</field>
@@ -41,9 +39,7 @@
       </field>
     </record>
 
-    <!-- ============================================
-         FORM del modelo ccn.service.quote.site (Sitio)
-         ============================================ -->
+    <!-- FORM del modelo Sitio -->
     <record id="ccn_view_site_form" model="ir.ui.view">
       <field name="name">ccn.site.form</field>
       <field name="model">ccn.service.quote.site</field>
@@ -63,7 +59,6 @@
 
             <notebook>
               <page string="Líneas">
-                <!-- Referenciamos las subvistas del comodelo para evitar validación contra 'site' -->
                 <field name="line_ids"
                        mode="list,form"
                        views="[(list, ref('ccn_service_quote.ccn_view_quote_line_list_inline')),
@@ -89,27 +84,22 @@
       </field>
     </record>
 
-    <!-- ==========================================================
-         Herencia del FORM de la Service Quote:
-         - Reemplaza el selector original,
-         - Inserta selector + lista de sitios,
-         - Agrega notebook con pestaña "Sitio actual" reusando el form del Sitio.
-         ========================================================== -->
+    <!-- Herencia de la Quote para insertar selector y pestaña Sitio actual -->
     <record id="ccn_view_quote_form_sites" model="ir.ui.view">
       <field name="name">ccn.quote.form.sites</field>
       <field name="model">ccn.service.quote</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
       <field name="arch" type="xml">
 
-        <!-- 1) Elimina el selector original de sitio del encabezado -->
+        <!-- Reemplaza el selector original del encabezado -->
         <xpath expr="//form/sheet/group/field[@name='current_site_id']" position="replace"/>
 
-        <!-- 2) Inserta selector y lista de sitios debajo del primer group -->
+        <!-- Inserta selector + lista de sitios -->
         <xpath expr="//form/sheet/group" position="after">
           <group>
             <group string="Sitio en edición">
               <field name="current_site_id"
-                     domain="['|', ('id','in', site_ids), ('quote_id','=', id)]"
+                     domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
                      context="{'default_quote_id': id}"
                      options="{'no_open': True, 'no_create_edit': True}"
                      colspan="2"/>
@@ -128,11 +118,10 @@
           </group>
         </xpath>
 
-        <!-- 3) Sustituye cualquier bloque antiguo de líneas por un notebook -->
+        <!-- Reemplaza cualquier bloque antiguo de líneas por el notebook con el form del sitio actual -->
         <xpath expr="//form//field[@name='line_ids']" position="replace">
           <notebook>
 
-            <!-- A) Sitio actual: muestra el FORM del Sitio seleccionado -->
             <page string="Sitio actual">
               <field name="site_ids"
                      domain="[('id','=', current_site_id)]"
@@ -142,7 +131,6 @@
                      options="{'no_open': True, 'no_create_edit': True}"/>
             </page>
 
-            <!-- B) Resumen Global -->
             <page string="Resumen Global">
               <div class="o_form_label">Tabla global pendiente (se llenará en el siguiente paso).</div>
             </page>

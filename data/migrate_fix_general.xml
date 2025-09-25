@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="0">
+    <!-- Ejecuta el fix en cada upgrade del módulo (idempotente) -->
+    <function model="ccn.service.quote" name="_fix_general_sites"/>
+  </data>
+</odoo>
