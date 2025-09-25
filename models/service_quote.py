@@ -85,23 +85,18 @@ class ServiceQuote(models.Model):
         """
         Llamado desde data/migrate_fix_general.xml:
         - Garantiza que cada cotización tenga un sitio 'General' (activo y al frente).
-        - Si hay duplicados 'General' en una misma cotización, mantiene el primero,
-          lo activa y posiciona, y archiva duplicados vacíos.
-        - Asegura current_site_id si falta.
+        - Maneja duplicados y fija current_site_id si falta.
         """
         Site = self.env['ccn.service.quote.site'].sudo()
         Quote = self.env['ccn.service.quote'].sudo()
 
         for q in Quote.search([]):
-            # Buscar todos los 'General' (incluyendo archivados) de esta quote
             generals = Site.with_context(active_test=False).search([
                 ('quote_id', '=', q.id),
                 ('name', '=ilike', 'general'),
             ], order='id')
-
             if generals:
                 keep = generals[0]
-                # Asegurar que esté activo y al tope
                 vals = {}
                 if not keep.active:
                     vals['active'] = True
@@ -109,18 +104,13 @@ class ServiceQuote(models.Model):
                     vals['sequence'] = -999
                 if vals:
                     keep.write(vals)
-
-                # Archivar duplicados vacíos
                 dups = generals - keep
                 empty_dups = dups.filtered(lambda s: not s.line_ids)
                 if empty_dups:
                     empty_dups.write({'active': False})
-
-                # Fijar current_site_id si falta
                 if not q.current_site_id:
                     q.current_site_id = keep.id
             else:
-                # Crear 'General' si no existe
                 new_general = Site.create({
                     'quote_id': q.id,
                     'name': 'General',
@@ -129,7 +119,6 @@ class ServiceQuote(models.Model):
                 })
                 if not q.current_site_id:
                     q.current_site_id = new_general.id
-
         return True
 
     @api.model_create_multi
@@ -255,7 +244,6 @@ class ServiceQuote(models.Model):
             dom = rec._ack_domain_for_code(code)
             if value:
                 if dom[0][0] == 'id' and dom[0][2] == 0:
-                    # ámbito incompleto -> no hacemos nada
                     continue
                 if not Ack.search(dom, limit=1):
                     Ack.create({
@@ -285,7 +273,6 @@ class ServiceQuote(models.Model):
     # -------------------------
     # Estados / Conteos por rubro
     # -------------------------
-    # Estados por rubro (0=rojo, 1=verde, 2=ámbar)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states", string="Estado Mano de Obra")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states", string="Estado Uniforme")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states", string="Estado EPP")
@@ -301,7 +288,6 @@ class ServiceQuote(models.Model):
     rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states", string="Estado Consumibles Jardinería")
     rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states", string="Estado Capacitación")
 
-    # Conteos de ejemplo (opcionales)
     mano_obra_count = fields.Integer(compute='_compute_rubro_counts')
     uniforme_count  = fields.Integer(compute='_compute_rubro_counts')
 
@@ -312,9 +298,6 @@ class ServiceQuote(models.Model):
         'ack_ids.is_empty', 'ack_ids.rubro_code', 'ack_ids.site_id', 'ack_ids.service_type',
     )
     def _compute_rubro_states(self):
-        """0 = rojo (no hay líneas y sin ACK)
-           1 = verde (hay líneas en el ámbito actual)
-           2 = ámbar (no hay líneas en el ámbito actual pero ACK marcado)"""
         def _state(cnt, ack):
             return 1 if cnt > 0 else (2 if ack else 0)
 
@@ -326,7 +309,6 @@ class ServiceQuote(models.Model):
                 dom = base + ['|', ('rubro_code', '=', code), ('rubro_id.code', '=', code)]
                 return Line.search_count(dom)
 
-            # ACK por ámbito
             acc = lambda code: rec._has_ack(code)
 
             rec.rubro_state_mano_obra                 = _state(count('mano_obra'),                 acc('mano_obra'))
@@ -395,10 +377,10 @@ class ServiceQuoteLine(models.Model):
     ], string='Tipo', default='servicio', required=True)
 
     # Rubro
-    rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro')
+    rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True)
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
-    # Producto / Servicio
+    # Producto / Servicio (filtrado por rubro via onchange)
     product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True)
 
     # Cantidad
@@ -417,6 +399,45 @@ class ServiceQuoteLine(models.Model):
     price_unit_final   = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
     total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
+
+    # -------------------------
+    # Onchange: dominio dinámico de producto por rubro
+    # -------------------------
+    @api.onchange('rubro_id')
+    def _onchange_rubro_id_set_product_domain(self):
+        """
+        Limita la lista de productos al conjunto permitido por el rubro.
+        Si no hay rubro, no muestra ninguno (obliga a elegir rubro primero).
+        Además, si el producto actual no está permitido, se limpia.
+        """
+        if not self.rubro_id:
+            domain = [('id', '=', 0)]
+            return {'domain': {'product_id': domain}, 'value': {'product_id': False}}
+
+        allowed_ids = self.rubro_id.allowed_product_ids.ids
+        domain = [('id', 'in', allowed_ids or [0])]
+        vals = {}
+        if self.product_id and self.product_id.id not in allowed_ids:
+            vals['product_id'] = False
+        return {'domain': {'product_id': domain}, 'value': vals}
+
+    # -------------------------
+    # Validaciones
+    # -------------------------
+    @api.constrains('product_id', 'rubro_id')
+    def _check_product_allowed_in_rubro(self):
+        """
+        Asegura que el producto pertenezca al conjunto permitido del rubro.
+        Si el rubro no tiene productos configurados, no se permite seleccionar ninguno.
+        """
+        for rec in self:
+            if rec.rubro_id:
+                allowed = rec.rubro_id.allowed_product_ids
+                if not allowed or (rec.product_id and rec.product_id not in allowed):
+                    raise ValidationError(
+                        _("El producto '%s' no está permitido para el rubro '%s'.")
+                        % (rec.product_id.display_name if rec.product_id else '-', rec.rubro_id.display_name)
+                    )
 
     # -------------------------
     # Cómputos

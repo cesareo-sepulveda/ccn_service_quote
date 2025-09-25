@@ -41,6 +41,16 @@ class CCNServiceRubro(models.Model):
     )
     active = fields.Boolean(default=True)
 
+    # >>> Productos permitidos para este rubro (clave para filtrar product_id en líneas)
+    allowed_product_ids = fields.Many2many(
+        'product.product',
+        'ccn_rubro_product_rel',   # tabla rel
+        'rubro_id',                # columna FK a este modelo
+        'product_id',              # columna FK al producto
+        string='Productos permitidos',
+        help="Sólo estos productos podrán seleccionarse en las líneas que usen este rubro."
+    )
+
     _sql_constraints = [
         ("uniq_code", "unique(code)", "El código de rubro debe ser único."),
     ]
