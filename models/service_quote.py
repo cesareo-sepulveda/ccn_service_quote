@@ -51,7 +51,7 @@ class ServiceQuote(models.Model):
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
     partner_id = fields.Many2one('res.partner', string='Cliente', required=True, index=True)
 
-    # Moneda (necesaria para Monetary; no es obligatorio mostrarla en la vista)
+    # Moneda (necesaria para Monetary)
     currency_id = fields.Many2one(
         'res.currency',
         string='Moneda',
@@ -406,7 +406,7 @@ class ServiceQuoteLine(models.Model):
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True)
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
-    # Producto / Servicio (SIN domain en el modelo; lo pone el onchange)
+    # Producto / Servicio (dominio lo ponen la vista y el onchange)
     product_id = fields.Many2one(
         'product.product',
         string='Producto/Servicio',
@@ -430,31 +430,37 @@ class ServiceQuoteLine(models.Model):
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
     total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
-    # --- Onchange: restringe y limpia producto fuera de rubro
+    # --- Onchange: dominio seguro basado en TEMPLATE ---
     @api.onchange('rubro_id')
     def _onchange_rubro_id_set_product_domain(self):
         """
-        Si no hay rubro => dominio 'id = 0' (no muestra nada) y limpia product_id.
-        Si hay rubro => limita a allowed_product_ids y limpia si no pertenece.
+        Si no hay rubro => lista vacía.
+        Si hay rubro => solo productos cuyo TEMPLATE tenga ese rubro
+                        y no estén excluidos del cotizador.
         """
         if not self.rubro_id:
             return {'domain': {'product_id': [('id', '=', 0)]}, 'value': {'product_id': False}}
-        allowed = self.rubro_id.allowed_product_ids.ids
+        dom = [
+            ('product_tmpl_id.ccn_exclude_from_quote', '=', False),
+            ('product_tmpl_id.ccn_rubro_ids', 'in', [self.rubro_id.id]),
+        ]
         vals = {}
-        if self.product_id and self.product_id.id not in allowed:
-            vals['product_id'] = False
-        return {'domain': {'product_id': [('id', 'in', allowed or [0])]}, 'value': vals}
+        if self.product_id:
+            tmpl = self.product_id.product_tmpl_id
+            if not tmpl or (self.rubro_id not in tmpl.ccn_rubro_ids):
+                vals['product_id'] = False
+        return {'domain': {'product_id': dom}, 'value': vals}
 
     # --- Validación dura por ORM
     @api.constrains('product_id', 'rubro_id')
     def _check_product_allowed_in_rubro(self):
         for rec in self:
-            if rec.rubro_id:
-                allowed = rec.rubro_id.allowed_product_ids
-                if not allowed or (rec.product_id and rec.product_id not in allowed):
+            if rec.product_id and rec.rubro_id:
+                tmpl = rec.product_id.product_tmpl_id
+                if not tmpl or (rec.rubro_id not in tmpl.ccn_rubro_ids):
                     raise ValidationError(
                         _("El producto '%s' no está permitido para el rubro '%s'.")
-                        % (rec.product_id.display_name if rec.product_id else '-', rec.rubro_id.display_name)
+                        % (rec.product_id.display_name, rec.rubro_id.display_name)
                     )
 
     # --- Cómputos

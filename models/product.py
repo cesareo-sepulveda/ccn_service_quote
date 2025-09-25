@@ -11,11 +11,11 @@ class ProductTemplate(models.Model):
         help="Si está activo, este producto no aparecerá en el selector del cotizador."
     )
 
-    # Relación con Rubros para filtrar productos por rubro en las líneas del quote
+    # Rubros permitidos para el cotizador (a nivel TEMPLATE)
     ccn_rubro_ids = fields.Many2many(
         "ccn.service.rubro",
-        "ccn_rubro_product_rel",
-        "product_tmpl_id",
-        "rubro_id",
+        "ccn_rubro_product_rel",   # tabla rel
+        "product_tmpl_id",         # columna FK a product.template
+        "rubro_id",                # columna FK a ccn.service.rubro
         string="Rubros Cotizador"
     )

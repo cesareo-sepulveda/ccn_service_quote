@@ -2,20 +2,22 @@
 <odoo>
   <data>
 
+    <!-- Lista inline para ccn.service.quote.line -->
     <record id="ccn_view_quote_line_list_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.list.inline</field>
       <field name="model">ccn.service.quote.line</field>
       <field name="arch" type="xml">
         <list editable="bottom" string="Líneas del rubro">
-          <!-- El rubro viene en la línea / por contexto -->
+          <!-- Rubro primero (obligatorio) -->
           <field name="rubro_id" required="1"/>
           <field name="rubro_code" invisible="1" column_invisible="1"/>
 
-          <!-- Producto/Servicio del rubro:
-               - Sin domain aquí (lo define el onchange del modelo)
-               - Readonly hasta elegir rubro para no abrir el autocompletar sin filtro -->
+          <!-- Producto/Servicio: dominio seguro por TEMPLATE del producto -->
           <field name="product_id" required="1"
-                 attrs="{'readonly':[('rubro_id','=',False)]}"
+                 domain="[
+                   ('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                   ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])
+                 ]"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
           <!-- Cantidad -->
@@ -27,9 +29,8 @@
           <!-- Tabulador -->
           <field name="tabulator_percent" string="Tabulador"/>
 
-          <!-- IVA (si tu modelo no lo tiene, elimina esta línea) -->
+          <!-- Impuestos (si no lo usas, puedes ocultar) -->
           <field name="taxes_display" string="Impuestos" readonly="1" invisible="1"/>
-          <!-- <field name="amount_tax" string="IVA" readonly="1"/> -->
 
           <!-- Subtotal -->
           <field name="total_price" string="Subtotal" readonly="1"/>
@@ -43,16 +44,19 @@
       </field>
     </record>
 
-    <!-- (Opcional) Form inline coherente -->
+    <!-- (Opcional) Form inline para abrir una línea -->
     <record id="ccn_view_quote_line_form_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.form.inline</field>
       <field name="model">ccn.service.quote.line</field>
       <field name="arch" type="xml">
-        <form string="Línea">
+        <form string="Línea del rubro">
           <group>
             <field name="rubro_id" required="1"/>
             <field name="product_id" required="1"
-                   attrs="{'readonly':[('rubro_id','=',False)]}"
+                   domain="[
+                     ('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                     ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])
+                   ]"
                    options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
             <field name="quantity"/>
             <field name="tabulator_percent"/>
