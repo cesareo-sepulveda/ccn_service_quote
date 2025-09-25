@@ -111,11 +111,11 @@
     const schedule = () => {
       if (scheduled) return;
       scheduled = true;
-      // throttle con más delay
-      requestAnimationFrame(() => {
+      // throttle con setTimeout
+      setTimeout(() => {
         scheduled = false;
         try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-      });
+      }, 0);
       setTimeout(() => {
         try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, 30);
