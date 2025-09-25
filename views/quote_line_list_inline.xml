@@ -2,35 +2,31 @@
 <odoo>
   <data>
 
-    <!-- Lista inline para ccn.service.quote.line (RUBRO OCULTO) -->
+    <!-- LIST INLINE (para usar dentro de la quote por rubro) -->
     <record id="ccn_view_quote_line_list_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.list.inline</field>
       <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
       <field name="arch" type="xml">
         <list editable="bottom" string="Líneas del rubro">
-          <!-- Rubro oculto (se fija por pestaña vía ctx_rubro_code) -->
-          <field name="rubro_id" required="1" invisible="1" column_invisible="1"/>
+          <!-- Ocultamos rubro en columnas (lo fija la pestaña) -->
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
           <field name="rubro_code" invisible="1" column_invisible="1"/>
 
-          <!-- Producto/Servicio: dominio por TEMPLATE y rubro -->
+          <!-- Producto/Servicio del rubro -->
           <field name="product_id" required="1"
-                 domain="[
-                   ('product_tmpl_id.ccn_exclude_from_quote','=',False),
-                   ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])
-                 ]"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                          ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
           <!-- Cantidad -->
           <field name="quantity"/>
 
-          <!-- Precio Unitario (final) -->
-          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
-
           <!-- Tabulador -->
           <field name="tabulator_percent" string="Tabulador"/>
 
-          <!-- Impuestos (opcional oculto) -->
-          <field name="taxes_display" string="Impuestos" readonly="1" invisible="1"/>
+          <!-- Precio Unitario (final) -->
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
 
           <!-- Subtotal -->
           <field name="total_price" string="Subtotal" readonly="1"/>
@@ -38,31 +34,39 @@
           <!-- Metadatos ocultos -->
           <field name="quote_id" invisible="1" column_invisible="1"/>
           <field name="site_id" invisible="1" column_invisible="1"/>
-          <field name="type" invisible="1" column_invisible="1"/>
           <field name="service_type" invisible="1" column_invisible="1"/>
+          <field name="type" invisible="1" column_invisible="1"/>
           <field name="currency_id" invisible="1" column_invisible="1"/>
         </list>
       </field>
     </record>
 
-    <!-- Form inline (también con rubro oculto) -->
+    <!-- FORM INLINE (por si el usuario abre una línea) -->
     <record id="ccn_view_quote_line_form_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.form.inline</field>
       <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
       <field name="arch" type="xml">
-        <form string="Línea del rubro">
+        <form string="Línea">
           <group>
-            <field name="rubro_id" required="1" invisible="1"/>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+
             <field name="product_id" required="1"
-                   domain="[
-                     ('product_tmpl_id.ccn_exclude_from_quote','=',False),
-                     ('product_tmpl_id.ccn_rubro_ids','in',[rubro_id])
-                   ]"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                            ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])] "
                    options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+
             <field name="quantity"/>
             <field name="tabulator_percent"/>
             <field name="price_unit_final" readonly="1"/>
             <field name="total_price" readonly="1"/>
+
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
           </group>
         </form>
       </field>

@@ -2,11 +2,9 @@
 <odoo>
   <data>
 
-    <!-- =========================================================
-         LIST VIEW (lista inicial) de ccn.service.quote
-         Incluye Cliente, Nombre de cotización, Tipo de servicio,
-         Sitio actual y fechas útiles. Prioridad alta para que se use.
-       ========================================================= -->
+    <!-- ================================
+         LISTA (vista inicial)
+       ================================ -->
     <record id="ccn_view_quote_list" model="ir.ui.view">
       <field name="name">ccn.quote.list</field>
       <field name="model">ccn.service.quote</field>
@@ -25,9 +23,9 @@
       </field>
     </record>
 
-    <!-- ==========================================
-         SEARCH VIEW para facilitar filtros/búsquedas
-       ========================================== -->
+    <!-- ================================
+         SEARCH (filtros/búsqueda)
+       ================================ -->
     <record id="ccn_view_quote_search" model="ir.ui.view">
       <field name="name">ccn.quote.search</field>
       <field name="model">ccn.service.quote</field>
@@ -49,60 +47,76 @@
       </field>
     </record>
 
-    <!-- =========================================================
-         FORM VIEW (completo) de ccn.service.quote
-         Mantiene la separación Sitio + Tipo de servicio + Tipo + Rubro
-         usando line_ids con dominio por pestaña.
-       ========================================================= -->
+    <!-- ================================
+         FORM (con etiquetas explícitas)
+       ================================ -->
     <record id="ccn_view_quote_form" model="ir.ui.view">
       <field name="name">ccn.quote.form</field>
       <field name="model">ccn.service.quote</field>
       <field name="type">form</field>
       <field name="arch" type="xml">
-        <form string="Cotizador Especial CCN">
+        <form string="Cotizador Especial CCN" class="ccn-quote">
           <sheet>
 
-            <!-- ===== Cabecera ===== -->
-            <group>
-              <field name="partner_id" string="Cliente" required="1"/>
-              <field name="name" string="Nombre de la cotización" colspan="2"/>
+            <!-- ===== Cabecera con etiquetas a la izquierda (2 columnas) ===== -->
+            <group col="2">
 
-              <!-- Sitio + botón "Sitio General" -->
-              <group col="4" colspan="2">
-                <field name="current_site_id"
-                       string="Sitio"
-                       domain="[('quote_id','in',[False, id])]"
-                       context="{'default_quote_id': id}"
-                       options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-                <button name="action_ensure_general"
-                        type="object"
-                        string="Sitio General"
-                        class="btn btn-secondary"/>
-              </group>
+              <!-- Cliente -->
+              <label for="partner_id" string="Cliente"/>
+              <field name="partner_id" required="1"/>
 
-              <!-- Ámbito -->
-              <field name="current_service_type" string="Tipo de servicio" colspan="2"/>
+              <!-- Nombre de la cotización -->
+              <label for="name" string="Nombre de la cotización"/>
+              <field name="name"/>
 
-              <!-- Parámetros -->
-              <field name="display_mode" string="Modo de presentación" colspan="2"/>
-              <field name="admin_percent" string="Administración (%)" colspan="2"/>
-              <field name="utility_percent" string="Utilidad (%)" colspan="2"/>
-              <field name="financial_percent" string="Costo Financiero (%)" colspan="2"/>
-              <field name="transporte_rate" string="Tarifa Transporte P/P" colspan="2"/>
-              <field name="bienestar_rate" string="Tarifa Bienestar P/P" colspan="2"/>
+              <!-- Sitio + botón (en fila siguiente, botón bajo el campo) -->
+              <label for="current_site_id" string="Sitio"/>
+              <field name="current_site_id"
+                     domain="[('quote_id','in',[False, id])]"
+                     context="{'default_quote_id': id}"
+                     options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+
+              <label/>  <!-- celda vacía para alinear -->
+              <button name="action_ensure_general"
+                      type="object"
+                      string="Sitio General"
+                      class="btn btn-secondary"/>
+
+              <!-- Tipo de servicio -->
+              <label for="current_service_type" string="Tipo de servicio"/>
+              <field name="current_service_type"/>
+
+              <!-- Parámetros (alineados en la misma columna izquierda) -->
+              <label for="display_mode" string="Modo de presentación"/>
+              <field name="display_mode"/>
+
+              <label for="admin_percent" string="Administración (%)"/>
+              <field name="admin_percent"/>
+
+              <label for="utility_percent" string="Utilidad (%)"/>
+              <field name="utility_percent"/>
+
+              <label for="financial_percent" string="Costo Financiero (%)"/>
+              <field name="financial_percent"/>
+
+              <label for="transporte_rate" string="Tarifa Transporte P/P"/>
+              <field name="transporte_rate"/>
+
+              <label for="bienestar_rate" string="Tarifa Bienestar P/P"/>
+              <field name="bienestar_rate"/>
+
             </group>
 
-            <!-- ===== Tabs por rubro (visibles cuando hay Tipo de servicio) ===== -->
+            <!-- ===== Tabs por rubro (solo visibles con tipo de servicio) ===== -->
             <notebook invisible="not current_service_type">
 
-              <!-- ====================== Mano de Obra ====================== -->
+              <!-- Mano de Obra -->
               <page string="Mano de Obra" name="page_mano_obra"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -122,14 +136,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Uniforme ====================== -->
+              <!-- Uniforme -->
               <page string="Uniforme" name="page_uniforme"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -149,14 +162,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== EPP ====================== -->
+              <!-- EPP -->
               <page string="EPP" name="page_epp"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -176,14 +188,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== EPP Alturas (solo jardinería) ====================== -->
+              <!-- EPP Alturas (solo jardinería) -->
               <page string="EPP Alturas" name="page_epp_alturas"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp_alturas'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp_alturas'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -203,14 +214,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Equipo Especial de Limpieza (solo limpieza) ====================== -->
+              <!-- Equipo Especial de Limpieza (solo limpieza) -->
               <page string="Equipo Especial de Limpieza" name="page_equipo_especial_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'equipo_especial_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'equipo_especial_limpieza'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -230,14 +240,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Comunicación y Cómputo ====================== -->
+              <!-- Comunicación y Cómputo -->
               <page string="Comunicación y Cómputo" name="page_comunicacion_computo"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'comunicacion_computo'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'comunicacion_computo'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -257,14 +266,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Herr. Menor Jardinería (solo jardinería) ====================== -->
+              <!-- Herr. Menor Jardinería (solo jardinería) -->
               <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -284,14 +292,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Material de Limpieza (solo limpieza) ====================== -->
+              <!-- Material de Limpieza (solo limpieza) -->
               <page string="Material de Limpieza" name="page_material_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'material_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'material_limpieza'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -311,14 +318,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Perfil Médico ====================== -->
+              <!-- Perfil Médico -->
               <page string="Perfil Médico" name="page_perfil_medico"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'perfil_medico'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'perfil_medico'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -338,14 +344,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Maquinaria de Limpieza (solo limpieza) ====================== -->
+              <!-- Maquinaria de Limpieza (solo limpieza) -->
               <page string="Maquinaria de Limpieza" name="page_maquinaria_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_limpieza'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -365,14 +370,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Maquinaria de Jardinería (solo jardinería) ====================== -->
+              <!-- Maquinaria de Jardinería (solo jardinería) -->
               <page string="Maquinaria de Jardinería" name="page_maquinaria_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_jardineria'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -392,14 +396,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Fertilizantes y Tierra Lama (solo jardinería) ====================== -->
+              <!-- Fertilizantes y Tierra Lama (solo jardinería) -->
               <page string="Fertilizantes y Tierra Lama" name="page_fertilizantes_tierra_lama"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -419,14 +422,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Consumibles de Jardinería (solo jardinería) ====================== -->
+              <!-- Consumibles de Jardinería (solo jardinería) -->
               <page string="Consumibles de Jardinería" name="page_consumibles_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'consumibles_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'consumibles_jardineria'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -446,14 +448,13 @@
                        ]"/>
               </page>
 
-              <!-- ====================== Capacitación ====================== -->
+              <!-- Capacitación -->
               <page string="Capacitación" name="page_capacitacion"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'capacitacion'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'capacitacion'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,

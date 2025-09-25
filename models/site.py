@@ -2,12 +2,12 @@
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
 
-
 class CCNServiceQuoteSite(models.Model):
     _name = "ccn.service.quote.site"
     _description = "Sitio de la Cotización CCN"
     _order = "sequence, id"
 
+    # Básicos
     name = fields.Char(required=True, index=True)
     sequence = fields.Integer(default=10)
     active = fields.Boolean(default=True)
@@ -20,12 +20,14 @@ class CCNServiceQuoteSite(models.Model):
         ondelete='cascade'
     )
 
+    # Líneas del sitio
     line_ids = fields.One2many(
         "ccn.service.quote.line",
         "site_id",
         string="Líneas",
     )
 
+    # Moneda (heredada de la quote)
     currency_id = fields.Many2one(
         "res.currency",
         string='Moneda',
@@ -34,18 +36,43 @@ class CCNServiceQuoteSite(models.Model):
         readonly=True,
     )
 
-    headcount = fields.Float(compute="_compute_indicators", store=True, readonly=True)
-    subtotal1 = fields.Monetary(compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id")
-    admin_amt = fields.Monetary(compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id")
-    util_amt = fields.Monetary(compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id")
-    subtotal2 = fields.Monetary(compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id")
-    transporte_amt = fields.Monetary(compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id")
-    bienestar_amt = fields.Monetary(compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id")
-    financial_amt = fields.Monetary(compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id")
-    total_monthly = fields.Monetary(compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id")
+    # Indicadores calculados del sitio
+    headcount = fields.Float(
+        compute="_compute_indicators", store=True, readonly=True
+    )
+    subtotal1 = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    admin_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    util_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    subtotal2 = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    transporte_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    bienestar_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    financial_amt = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
+    total_monthly = fields.Monetary(
+        compute="_compute_indicators", store=True, readonly=True, currency_field="currency_id"
+    )
 
-    is_general = fields.Boolean(string="Es General", compute="_compute_is_general", store=True)
+    # Flags
+    is_general = fields.Boolean(
+        string="Es General",
+        compute="_compute_is_general",
+        store=True
+    )
 
+    # Cálculos de indicadores
     @api.depends(
         "line_ids.quantity",
         "line_ids.price_unit_final",
@@ -88,6 +115,7 @@ class CCNServiceQuoteSite(models.Model):
             site.financial_amt = financial_amt
             site.total_monthly = total
 
+    # Computados / Constraints
     @api.depends('name')
     def _compute_is_general(self):
         for rec in self:
@@ -108,6 +136,7 @@ class CCNServiceQuoteSite(models.Model):
                 if dup:
                     raise ValidationError("Solo puede existir un sitio llamado 'General' por cotización.")
 
+    # Creación / Escritura: normaliza y prioriza 'General'
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -117,8 +146,7 @@ class CCNServiceQuoteSite(models.Model):
                 vals.setdefault('active', True)
                 if 'sequence' not in vals or vals.get('sequence') is None:
                     vals['sequence'] = -999
-        records = super().create(vals_list)
-        return records
+        return super().create(vals_list)
 
     def write(self, vals):
         if 'name' in vals and vals.get('name'):
@@ -131,13 +159,16 @@ class CCNServiceQuoteSite(models.Model):
                     vals['active'] = True
         return super().write(vals)
 
+    # UX: 'General' siempre primero en los dropdowns
     @api.model
     def name_search(self, name='', args=None, operator='ilike', limit=80):
         args = args or []
         res = super().name_search(name=name, args=args, operator=operator, limit=limit)
+
         generals = self.with_context(active_test=False).search(args + [('name', '=ilike', 'general')])
         general_ids = generals.ids
-        if general_ids:
+
+        if general_ids and res:
             ids_in_res = [r[0] for r in res]
             generals_in_res = [gid for gid in general_ids if gid in ids_in_res]
             if generals_in_res:
@@ -145,10 +176,12 @@ class CCNServiceQuoteSite(models.Model):
                 front = [(gid, id2label[gid]) for gid in generals_in_res]
                 tail = [(i, id2label[i]) for i in ids_in_res if i not in generals_in_res]
                 res = front + tail
+
         if limit:
             res = res[:limit]
         return res
 
+    # Helper: obtener/crear General para una cotización
     @api.model
     def get_or_create_general(self, quote_id):
         if not quote_id:
