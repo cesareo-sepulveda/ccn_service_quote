@@ -72,7 +72,7 @@ class ServiceQuote(models.Model):
     current_site_id = fields.Many2one(
         'ccn.service.quote.site',
         string='Sitio actual',
-        domain="[('quote_id','=', id)]",
+        # IMPORTANTE: SIN dominio aquí. El dominio flexible vive en la VISTA.
     )
     current_service_type = fields.Selection(
         [
@@ -96,8 +96,8 @@ class ServiceQuote(models.Model):
 
     # Líneas separadas por rubro (para pestañas)
     line_mano_obra_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra', domain=[('rubro_code', '=', 'mano_obra')])
-    line_uniforme_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme', domain=[('rubro_code', '=', 'uniforme')])
-    line_epp_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP', domain=[('rubro_code', '=', 'epp')])
+    line_uniforme_ids  = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme', domain=[('rubro_code', '=', 'uniforme')])
+    line_epp_ids       = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP', domain=[('rubro_code', '=', 'epp')])
     line_epp_alturas_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas', domain=[('rubro_code', '=', 'epp_alturas')])
     line_equipo_especial_limpieza_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial de Limpieza', domain=[('rubro_code', '=', 'equipo_especial_limpieza')])
     line_comunicacion_computo_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación y Cómputo', domain=[('rubro_code', '=', 'comunicacion_computo')])
@@ -183,6 +183,7 @@ class ServiceQuote(models.Model):
             rec.mano_obra_count = len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == 'mano_obra'))
             rec.uniforme_count  = len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == 'uniforme'))
 
+    # === Botones ACK ===
     def _ack_field_for_code(self, code):
         mapping = {
             'mano_obra': 'ack_mano_obra_empty',
@@ -237,30 +238,9 @@ class ServiceQuote(models.Model):
         for quote in self:
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
-    # ---- Runner para upgrade/migración (idempotente) ----
-    @api.model
-    def _fix_general_sites(self):
-        Quote = self.sudo()
-        Site  = self.env['ccn.service.quote.site'].sudo()
-        Line  = self.env['ccn.service.quote.line'].sudo()
-
-        for q in Quote.search([]):
-            generals = q.site_ids.filtered(lambda s: (s.name or '').strip().lower() == 'general')
-            if not generals:
-                canonical = Site.create({'quote_id': q.id, 'name': 'General', 'active': True, 'sequence': -999})
-            else:
-                canonical = generals.sorted(key=lambda s: ((s.sequence or 0), s.id))[0]
-                dups = generals - canonical
-                if dups:
-                    Line.search([('site_id', 'in', dups.ids)]).write({'site_id': canonical.id})
-                    dups.write({'active': False})
-            canonical.write({'active': True, 'sequence': -999})
-            if not q.current_site_id or q.current_site_id not in q.site_ids:
-                q.current_site_id = canonical.id
-
 
 # ---------------------------------------------------------------------------
-# SITE (se define en models/site.py)
+# SITE (definido en models/site.py)
 # ---------------------------------------------------------------------------
 
 
