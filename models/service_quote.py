@@ -97,12 +97,7 @@ class ServiceQuote(models.Model):
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
     # Filtered lines for tabs
-    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', compute='_compute_line_ids_mano_obra', string='Líneas Mano de Obra')
-
-    @api.depends('line_ids', 'current_site_id', 'current_service_type')
-    def _compute_line_ids_mano_obra(self):
-        for rec in self:
-            rec.line_ids_mano_obra = rec.line_ids.filtered(lambda l: l.rubro_id.code == 'mano_obra' and l.site_id == rec.current_site_id and l.service_type == rec.current_service_type)
+    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra')
 
     # Estados por rubro (filtrados por sitio/servicio/tipo actual)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
