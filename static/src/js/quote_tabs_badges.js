@@ -111,11 +111,20 @@
     const schedule = () => {
       if (scheduled) return;
       scheduled = true;
-      // throttle
+      // throttle con más delay
       requestAnimationFrame(() => {
         scheduled = false;
         try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       });
+      setTimeout(() => {
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      }, 100);
+      setTimeout(() => {
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      }, 300);
+      setTimeout(() => {
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      }, 600);
     };
 
     const mo = new MutationObserver((muts) => {

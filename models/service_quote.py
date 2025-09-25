@@ -132,6 +132,11 @@ class ServiceQuote(models.Model):
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
         'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
+        'line_ids_mano_obra', 'line_ids_uniforme', 'line_ids_epp', 'line_ids_epp_alturas',
+        'line_ids_equipo_especial_limpieza', 'line_ids_comunicacion_computo',
+        'line_ids_herramienta_menor_jardineria', 'line_ids_material_limpieza',
+        'line_ids_perfil_medico', 'line_ids_maquinaria_limpieza', 'line_ids_maquinaria_jardineria',
+        'line_ids_fertilizantes_tierra_lama', 'line_ids_consumibles_jardineria', 'line_ids_capacitacion',
         'current_site_id', 'current_service_type', 'current_type'
     )
     def _compute_rubro_states(self):
