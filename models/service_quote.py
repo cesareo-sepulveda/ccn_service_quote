@@ -13,7 +13,9 @@ class ServiceQuote(models.Model):
          'El nombre de la cotización debe ser único por cliente.'),
     ]
 
+    # --- Básicos ---
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
+    partner_id = fields.Many2one('res.partner', string='Cliente', required=True)
     currency_id = fields.Many2one(
         'res.currency', string='Moneda', required=True,
         default=lambda self: self.env.company.currency_id.id,
@@ -21,7 +23,7 @@ class ServiceQuote(models.Model):
 
     # --- Sitios: "General" por defecto (virtual en memoria) -----------------
     def _default_site_ids(self):
-        # sequence alto negativo para que siempre quede arriba al guardar
+        # sequence muy negativo para que quede al frente al guardar
         return [Command.create({"name": self.env._("General"), "active": True, "sequence": -999})]
 
     site_ids = fields.One2many(
@@ -29,18 +31,25 @@ class ServiceQuote(models.Model):
         default=_default_site_ids,
     )
 
+    current_site_id = fields.Many2one(
+        'ccn.service.quote.site',
+        string='Sitio actual',
+        # SIN dominio aquí; el dominio flexible vive en la vista
+    )
+
     @api.model
     def default_get(self, fields_list):
-        """Crea 'General' como línea virtual y lo deja seleccionado en current_site_id."""
+        """
+        Inyecta un 'General' virtual y deja seleccionado current_site_id
+        en formularios nuevos (antes de guardar).
+        """
         defaults = super().default_get(fields_list)
-        # Asegura que siempre haya un virtual 'General' en el form nuevo
         defaults.setdefault("site_ids", self._default_site_ids())
 
-        # Simula el record en memoria y ejecuta onchange para fijar current_site_id
+        # Simula el registro en memoria y ejecuta onchange para fijar current_site_id
         if not self.env.context.get("_ccn_skip_default_site_onchange"):
             rec = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
             rec._onchange_site_ids_set_current()
-            # Convierte el cache del 'new' en valores de escritura y los mezcla al default
             defaults.update(rec._convert_to_write(rec._cache))
         return defaults
 
@@ -48,13 +57,12 @@ class ServiceQuote(models.Model):
     def _onchange_site_ids_set_current(self):
         """Si no hay selección, toma el primer sitio (el 'General' virtual)."""
         for quote in self:
-            if quote.site_ids:
-                if quote.current_site_id not in quote.site_ids:
-                    quote.current_site_id = quote.site_ids[0]
-            else:
+            if quote.site_ids and (quote.current_site_id not in quote.site_ids):
+                quote.current_site_id = quote.site_ids[0]
+            elif not quote.site_ids:
                 quote.current_site_id = False
 
-    # Modo de presentación
+    # --- Modo de presentación / Parámetros -----------------
     display_mode = fields.Selection(
         [
             ('by_rubro', 'Acumulado por rubro'),
@@ -64,19 +72,13 @@ class ServiceQuote(models.Model):
         string='Modo de presentación', default='itemized', required=True,
     )
 
-    # Parámetros
-    admin_percent = fields.Float(string='Administración (%)', default=0.0)
-    utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
+    admin_percent     = fields.Float(string='Administración (%)', default=0.0)
+    utility_percent   = fields.Float(string='Utilidad (%)', default=0.0)
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
-    transporte_rate = fields.Float(string='Tarifa Transporte P/P', default=0.0)
-    bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
+    transporte_rate   = fields.Float(string='Tarifa Transporte P/P', default=0.0)
+    bienestar_rate    = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
 
-    # Filtros de edición
-    current_site_id = fields.Many2one(
-        'ccn.service.quote.site',
-        string='Sitio actual',
-        # IMPORTANTE: SIN dominio aquí (el dominio vive en la vista)
-    )
+    # --- Filtros de edición -----------------
     current_service_type = fields.Selection(
         [
             ('jardineria', 'Jardinería'),
@@ -94,13 +96,13 @@ class ServiceQuote(models.Model):
         string='Tipo actual', default='servicio',
     )
 
-    # Líneas
+    # --- Líneas -----------------
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
     # Líneas separadas por rubro (para pestañas)
     line_mano_obra_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra', domain=[('rubro_code', '=', 'mano_obra')])
     line_uniforme_ids  = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme', domain=[('rubro_code', '=', 'uniforme')])
-    line_epp_ids       = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP', domain=[('rubro_code', '=', 'epp')])
+    line_epp_ids       = fields.One2Many = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP', domain=[('rubro_code', '=', 'epp')])
     line_epp_alturas_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas', domain=[('rubro_code', '=', 'epp_alturas')])
     line_equipo_especial_limpieza_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial de Limpieza', domain=[('rubro_code', '=', 'equipo_especial_limpieza')])
     line_comunicacion_computo_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación y Cómputo', domain=[('rubro_code', '=', 'comunicacion_computo')])
@@ -113,7 +115,7 @@ class ServiceQuote(models.Model):
     line_consumibles_jardineria_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles Jardinería', domain=[('rubro_code', '=', 'consumibles_jardineria')])
     line_capacitacion_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación', domain=[('rubro_code', '=', 'capacitacion')])
 
-    # --- ACK "No aplica" ---
+    # --- ACK "No aplica" por rubro ---
     ack_mano_obra_empty                 = fields.Boolean(string="No aplica Mano de Obra")
     ack_uniforme_empty                  = fields.Boolean(string="No aplica Uniforme")
     ack_epp_empty                       = fields.Boolean(string="No aplica EPP")
@@ -129,7 +131,7 @@ class ServiceQuote(models.Model):
     ack_consumibles_jardineria_empty    = fields.Boolean(string="No aplica Consumibles de Jardinería")
     ack_capacitacion_empty              = fields.Boolean(string="No aplica Capacitación")
 
-    # --- ESTADOS por rubro (0 rojo, 1 verde, 2 ámbar) ---
+    # --- Estados por rubro (0 = rojo, 1 = verde, 2 = ámbar) ---
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
@@ -157,6 +159,9 @@ class ServiceQuote(models.Model):
         'ack_fertilizantes_tierra_lama_empty', 'ack_consumibles_jardineria_empty', 'ack_capacitacion_empty',
     )
     def _compute_rubro_states(self):
+        """0 = rojo (no hay líneas y sin ACK)
+           1 = verde (hay líneas)
+           2 = ámbar (no hay líneas pero ACK marcado)"""
         def _state(cnt, ack): return 1 if cnt > 0 else (2 if ack else 0)
         for rec in self:
             lines = rec.line_ids
@@ -225,17 +230,17 @@ class ServiceQuote(models.Model):
             self._set_ack(code, False)
         return True
 
+    # --- Crear: garantiza 'General' en BD y fija current_site_id post-create ---
     @api.model_create_multi
     def create(self, vals_list):
-        # Garantiza el 'General' al crear desde API/imports
         for vals in vals_list:
+            # Si no trae sitios, inyecta General
             if not vals.get('site_ids'):
                 vals['site_ids'] = self._default_site_ids()
         quotes = super().create(vals_list)
-        # Si current_site_id quedó vacío, fijarlo al primer sitio real
-        for quote in quotes:
-            if not quote.current_site_id and quote.site_ids:
-                quote.current_site_id = quote.site_ids[0].id
+        for q in quotes:
+            # Asegurar que General exista en BD y quede seleccionado
+            self._ensure_general_for_quote(q)
         return quotes
 
     @api.onchange('current_service_type')
@@ -243,14 +248,37 @@ class ServiceQuote(models.Model):
         for quote in self:
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
+    # --- Acción accesible desde UI: botón "Asegurar 'General'" ---
+    def action_ensure_general(self):
+        for q in self:
+            self._ensure_general_for_quote(q)
+        return {"type": "ir.actions.client", "tag": "reload"}
+
+    # --- Utilidad central: buscar/crear/fijar 'General' por cotización ---
+    def _ensure_general_for_quote(self, quote):
+        Site = self.env['ccn.service.quote.site'].sudo()
+        general = Site.search([
+            ('quote_id', '=', quote.id),
+            ('name', '=ilike', 'general'),
+        ], limit=1)
+        if not general:
+            general = Site.create({
+                'quote_id': quote.id,
+                'name': 'General',
+                'active': True,
+                'sequence': -999,
+            })
+        else:
+            general.write({'active': True, 'sequence': -999})
+        if not quote.current_site_id:
+            quote.current_site_id = general.id
+
     # ---- Runner para upgrade/migración (idempotente) ----
     @api.model
     def _fix_general_sites(self):
-        Quote = self.sudo()
         Site  = self.env['ccn.service.quote.site'].sudo()
         Line  = self.env['ccn.service.quote.line'].sudo()
-
-        for q in Quote.search([]):
+        for q in self.sudo().search([]):
             generals = Site.search([
                 ('quote_id', '=', q.id),
                 ('name', '=ilike', 'general'),
@@ -271,11 +299,6 @@ class ServiceQuote(models.Model):
             canonical.write({'active': True, 'sequence': -999})
             if not q.current_site_id or q.current_site_id not in q.site_ids:
                 q.current_site_id = canonical.id
-
-
-# ---------------------------------------------------------------------------
-# SITE (definido en models/site.py)
-# ---------------------------------------------------------------------------
 
 
 # ---------------------------------------------------------------------------
@@ -303,17 +326,25 @@ class ServiceQuoteLine(models.Model):
         ('material', 'Material'),
     ], string='Tipo', default='servicio', required=True)
 
+    # Rubro
     rubro_id   = fields.Many2one('ccn.service.rubro', string='Rubro')
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
+    # Producto / Servicio
     product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True)
-    quantity   = fields.Float(string='Cantidad', default=1.0)
 
+    # Cantidad
+    quantity = fields.Float(string='Cantidad', default=1.0)
+
+    # Moneda
     currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)
 
-    tabulator_percent = fields.Selection([('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')],
-                                         string='Tabulador', default='0', required=True)
+    # Tabulador
+    tabulator_percent = fields.Selection([
+        ('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%'),
+    ], string='Tabulador', default='0', required=True)
 
+    # Precios / totales
     product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=False)
     price_unit_final   = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
