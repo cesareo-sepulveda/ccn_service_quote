@@ -13,7 +13,7 @@
           <sheet>
 
             <!-- =======================
-                 Cabecera compacta (1 columna)
+                 Cabecera (una columna)
                  ======================= -->
             <group>
               <group>
@@ -21,19 +21,21 @@
                 <field name="partner_id" required="1"/>
                 <field name="name" required="1"/>
 
-                <!-- Sitio actual + botón inmediatamente debajo del nombre -->
-                <div class="o_row">
-                  <field name="current_site_id"
-                         string="Sitio actual"
-                         domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
-                         context="{'default_quote_id': id}"
-                         options="{'no_open': True, 'no_create_edit': True}"
-                         class="o_me_2"/>
-                  <button name="action_ensure_general"
-                          type="object"
-                          class="btn-secondary"
-                          string="Sitio General"/>
-                </div>
+                <!-- Sitio con etiqueta a la izquierda + botón "Sitio General" -->
+                <group col="2" class="o_mb_0">
+                  <label for="current_site_id" string="Sitio"/>
+                  <div class="o_row">
+                    <field name="current_site_id"
+                           domain="['|', ('id','=', current_site_id), ('quote_id','=', id)]"
+                           context="{'default_quote_id': id}"
+                           options="{'no_open': True, 'no_create_edit': True}"
+                           class="o_me_2"/>
+                    <button name="action_ensure_general"
+                            type="object"
+                            class="btn-secondary"
+                            string="Sitio General"/>
+                  </div>
+                </group>
 
                 <!-- Parámetros alineados a la izquierda -->
                 <field name="current_service_type" string="Tipo de servicio"/>
