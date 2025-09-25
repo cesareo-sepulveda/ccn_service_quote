@@ -10,3 +10,4 @@ access_ccn_service_package_user,access_ccn_service_package_user,model_ccn_servic
 access_ccn_service_package_line_user,access_ccn_service_package_line_user,model_ccn_service_package_line,base.group_user,1,0,0,0
 access_ccn_service_quote_site_user,access.ccn.service.quote.site.user,model_ccn_service_quote_site,base.group_user,1,1,1,0
 access_ccn_service_quote_pick_wizard,ccn_service_quote_pick_wizard,model_ccn_service_quote_pick_wizard,,1,1,1,1
+access_ccn_service_quote_ack_user,access_ccn_service_quote_ack_user,model_ccn_service_quote_ack,base.group_user,1,1,1,1

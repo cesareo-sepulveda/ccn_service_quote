@@ -1,76 +1,152 @@
 # -*- coding: utf-8 -*-
 from odoo import Command, api, fields, models, _
+from odoo.exceptions import ValidationError
 
+
+# ---------------------------------------------------------------------------
+# QUOTE (encabezado)
+# ---------------------------------------------------------------------------
 class ServiceQuote(models.Model):
     _name = 'ccn.service.quote'
     _description = 'CCN Service Quote'
     _sql_constraints = [
-        ('ccn_service_quote_partner_name_uniq',
-         'unique(partner_id, name)',
-         'El nombre de la cotización debe ser único por cliente.'),
+        (
+            'ccn_service_quote_partner_name_uniq',
+            'unique(partner_id, name)',
+            'El nombre de la cotización debe ser único por cliente.',
+        )
     ]
 
-    # --- Básicos ---
+    # Identificación
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
-    partner_id = fields.Many2one('res.partner', string='Cliente', required=True)
+    partner_id = fields.Many2one('res.partner', string='Cliente', required=True, index=True)
+
+    # Moneda (necesaria para Monetary)
     currency_id = fields.Many2one(
-        'res.currency', string='Moneda', required=True,
+        'res.currency',
+        string='Moneda',
+        required=True,
         default=lambda self: self.env.company.currency_id.id,
     )
 
-    # --- Sitios: General por defecto (virtual) ---
+    # -------------------------
+    # Sitios
+    # -------------------------
     def _default_site_ids(self):
-        return [Command.create({"name": self.env._("General"), "active": True, "sequence": -999})]
+        """Proveer un sitio 'General' virtual desde el arranque."""
+        return [Command.create({"name": self.env._("General")})]
 
-    site_ids = fields.One2many("ccn.service.quote.site", "quote_id", string="Sitios", default=_default_site_ids)
-    current_site_id = fields.Many2one('ccn.service.quote.site', string='Sitio actual')
+    site_ids = fields.One2many(
+        "ccn.service.quote.site",
+        "quote_id",
+        string="Sitios",
+        default=_default_site_ids,
+    )
+
+    current_site_id = fields.Many2one(
+        'ccn.service.quote.site',
+        string='Sitio actual',
+        domain="[('quote_id','=', id)]",
+    )
 
     @api.model
     def default_get(self, fields_list):
+        """Asegura sitio 'General' virtual y posiciona current_site_id."""
         defaults = super().default_get(fields_list)
         defaults.setdefault("site_ids", self._default_site_ids())
         if not self.env.context.get("_ccn_skip_default_site_onchange"):
-            rec = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
-            rec._onchange_site_ids_set_current()
-            defaults.update(rec._convert_to_write(rec._cache))
+            quote = self.with_context(_ccn_skip_default_site_onchange=True).new(defaults)
+            quote._onchange_site_ids_set_current()
+            defaults.update(quote._convert_to_write(quote._cache))
         return defaults
 
     @api.onchange("site_ids")
     def _onchange_site_ids_set_current(self):
         for quote in self:
-            if quote.site_ids and (quote.current_site_id not in quote.site_ids):
-                quote.current_site_id = quote.site_ids[0]
-            elif not quote.site_ids:
+            if quote.site_ids:
+                if quote.current_site_id not in quote.site_ids:
+                    quote.current_site_id = quote.site_ids[0]
+            else:
                 quote.current_site_id = False
 
-    # --- Presentación / Parámetros ---
+    def action_ensure_general(self):
+        """Botón 'Sitio General'."""
+        Site = self.env['ccn.service.quote.site'].sudo()
+        for quote in self:
+            gen_id = Site.get_or_create_general(quote.id)
+            quote.current_site_id = gen_id
+        return True
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('site_ids'):
+                vals['site_ids'] = self._default_site_ids()
+        quotes = super().create(vals_list)
+        for quote in quotes:
+            if not quote.current_site_id and quote.site_ids:
+                quote.current_site_id = quote.site_ids[0].id
+        return quotes
+
+    # -------------------------
+    # Ámbito visible de edición
+    # -------------------------
     display_mode = fields.Selection(
-        [('by_rubro', 'Acumulado por rubro'), ('total_only', 'Acumulado General'), ('itemized', 'Resumen')],
-        string='Modo de presentación', default='itemized', required=True,
+        [
+            ('by_rubro', 'Acumulado por rubro'),
+            ('total_only', 'Acumulado General'),
+            ('itemized', 'Resumen'),
+        ],
+        string='Modo de presentación',
+        default='itemized',
+        required=True,
     )
-    admin_percent     = fields.Float(string='Administración (%)', default=0.0)
-    utility_percent   = fields.Float(string='Utilidad (%)', default=0.0)
-    financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
-    transporte_rate   = fields.Float(string='Tarifa Transporte P/P', default=0.0)
-    bienestar_rate    = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
 
     current_service_type = fields.Selection(
         [
-            ('jardineria', 'Jardinería'), ('limpieza', 'Limpieza'), ('mantenimiento', 'Mantenimiento'),
-            ('materiales', 'Materiales'), ('servicios_especiales', 'Servicios Especiales'),
-            ('almacenaje', 'Almacenaje'), ('fletes', 'Fletes'),
+            ('jardineria', 'Jardinería'),
+            ('limpieza', 'Limpieza'),
+            ('mantenimiento', 'Mantenimiento'),
+            ('materiales', 'Materiales'),
+            ('servicios_especiales', 'Servicios Especiales'),
+            ('almacenaje', 'Almacenaje'),
+            ('fletes', 'Fletes'),
         ],
-        string='Tipo de Servicio/Vista',
+        string='Tipo de servicio',
     )
-    current_type = fields.Selection([('servicio', 'Servicio'), ('material', 'Material')], string='Tipo actual', default='servicio')
 
-    # --- Líneas (maestro) ---
+    # Campo interno para separar Servicio/Material (no mostrar en la vista si no lo necesitas)
+    current_type = fields.Selection(
+        [
+            ('servicio', 'Servicio'),
+            ('material', 'Material'),
+        ],
+        string='Tipo actual',
+        default='servicio',
+    )
+
+    @api.onchange('current_service_type')
+    def _onchange_current_service_type(self):
+        for quote in self:
+            quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
+
+    # -------------------------
+    # Parámetros
+    # -------------------------
+    admin_percent = fields.Float(string='Administración (%)', default=0.0)
+    utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
+    financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
+    transporte_rate = fields.Float(string='Tarifa Transporte P/P', default=0.0)
+    bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
+
+    # -------------------------
+    # Líneas (todas) y por rubro
+    # -------------------------
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # --- Líneas por rubro (O2M “virtual” con domain) ---
     line_mano_obra_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra', domain=[('rubro_code', '=', 'mano_obra')])
-    line_uniforme_ids  = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme', domain=[('rubro_code', '=', 'uniforme')])
-    line_epp_ids       = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP', domain=[('rubro_code', '=', 'epp')])
+    line_uniforme_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme', domain=[('rubro_code', '=', 'uniforme')])
+    line_epp_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP', domain=[('rubro_code', '=', 'epp')])
     line_epp_alturas_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas', domain=[('rubro_code', '=', 'epp_alturas')])
     line_equipo_especial_limpieza_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial de Limpieza', domain=[('rubro_code', '=', 'equipo_especial_limpieza')])
     line_comunicacion_computo_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación y Cómputo', domain=[('rubro_code', '=', 'comunicacion_computo')])
@@ -83,102 +159,62 @@ class ServiceQuote(models.Model):
     line_consumibles_jardineria_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles Jardinería', domain=[('rubro_code', '=', 'consumibles_jardineria')])
     line_capacitacion_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación', domain=[('rubro_code', '=', 'capacitacion')])
 
-    # --- ACKs ---
-    ack_mano_obra_empty                 = fields.Boolean(string="No aplica Mano de Obra")
-    ack_uniforme_empty                  = fields.Boolean(string="No aplica Uniforme")
-    ack_epp_empty                       = fields.Boolean(string="No aplica EPP")
-    ack_epp_alturas_empty               = fields.Boolean(string="No aplica EPP Alturas")
-    ack_equipo_especial_limpieza_empty  = fields.Boolean(string="No aplica Equipo Especial Limpieza")
-    ack_comunicacion_computo_empty      = fields.Boolean(string="No aplica Comunicación y Cómputo")
-    ack_herramienta_menor_jardineria_empty = fields.Boolean(string="No aplica Herr. Menor Jardinería")
-    ack_material_limpieza_empty         = fields.Boolean(string="No aplica Material de Limpieza")
-    ack_perfil_medico_empty             = fields.Boolean(string="No aplica Perfil Médico")
-    ack_maquinaria_limpieza_empty       = fields.Boolean(string="No aplica Maquinaria de Limpieza")
-    ack_maquinaria_jardineria_empty     = fields.Boolean(string="No aplica Maquinaria de Jardinería")
-    ack_fertilizantes_tierra_lama_empty = fields.Boolean(string="No aplica Fertilizantes y Tierra Lama")
-    ack_consumibles_jardineria_empty    = fields.Boolean(string="No aplica Consumibles de Jardinería")
-    ack_capacitacion_empty              = fields.Boolean(string="No aplica Capacitación")
+    # -------------------------
+    # ACK por ámbito (site + service_type + rubro)
+    # -------------------------
+    ack_ids = fields.One2many('ccn.service.quote.ack', 'quote_id', string='ACKs')
 
-    # --- Estados por rubro (0/1/2) y conteos ---
-    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
+    def _scope_domain(self):
+        """Dominio de líneas restringido al contexto visible actual."""
+        self.ensure_one()
+        domain = [('quote_id', '=', self.id)]
+        if self.current_site_id:
+            domain.append(('site_id', '=', self.current_site_id.id))
+        if self.current_service_type:
+            domain.append(('service_type', '=', self.current_service_type))
+        if self.current_type:
+            domain.append(('type', '=', self.current_type))
+        return domain
 
-    mano_obra_count = fields.Integer(compute='_compute_rubro_counts')
-    uniforme_count  = fields.Integer(compute='_compute_rubro_counts')
+    # Helpers ACK
+    def _ack_domain_for_code(self, code):
+        self.ensure_one()
+        if not (self.current_site_id and self.current_service_type and code):
+            # Sin ámbito completo no hay ACK aplicable
+            return [('id', '=', 0)]
+        return [
+            ('quote_id', '=', self.id),
+            ('site_id', '=', self.current_site_id.id),
+            ('service_type', '=', self.current_service_type),
+            ('rubro_code', '=', code),
+            ('is_empty', '=', True),
+        ]
 
-    @api.depends(
-        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
-        'ack_mano_obra_empty', 'ack_uniforme_empty', 'ack_epp_empty', 'ack_epp_alturas_empty',
-        'ack_equipo_especial_limpieza_empty', 'ack_comunicacion_computo_empty',
-        'ack_herramienta_menor_jardineria_empty', 'ack_material_limpieza_empty',
-        'ack_perfil_medico_empty', 'ack_maquinaria_limpieza_empty', 'ack_maquinaria_jardineria_empty',
-        'ack_fertilizantes_tierra_lama_empty', 'ack_consumibles_jardineria_empty', 'ack_capacitacion_empty',
-    )
-    def _compute_rubro_states(self):
-        def _state(cnt, ack): return 1 if cnt > 0 else (2 if ack else 0)
-        for rec in self:
-            lines = rec.line_ids
-            def count(code):
-                return len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code))
-            rec.rubro_state_mano_obra                 = _state(count('mano_obra'),                rec.ack_mano_obra_empty)
-            rec.rubro_state_uniforme                  = _state(count('uniforme'),                 rec.ack_uniforme_empty)
-            rec.rubro_state_epp                       = _state(count('epp'),                      rec.ack_epp_empty)
-            rec.rubro_state_epp_alturas               = _state(count('epp_alturas'),              rec.ack_epp_alturas_empty)
-            rec.rubro_state_equipo_especial_limpieza  = _state(count('equipo_especial_limpieza'), rec.ack_equipo_especial_limpieza_empty)
-            rec.rubro_state_comunicacion_computo      = _state(count('comunicacion_computo'),     rec.ack_comunicacion_computo_empty)
-            rec.rubro_state_herramienta_menor_jardineria = _state(count('herramienta_menor_jardineria'), rec.ack_herramienta_menor_jardineria_empty)
-            rec.rubro_state_material_limpieza         = _state(count('material_limpieza'),        rec.ack_material_limpieza_empty)
-            rec.rubro_state_perfil_medico             = _state(count('perfil_medico'),            rec.ack_perfil_medico_empty)
-            rec.rubro_state_maquinaria_limpieza       = _state(count('maquinaria_limpieza'),      rec.ack_maquinaria_limpieza_empty)
-            rec.rubro_state_maquinaria_jardineria     = _state(count('maquinaria_jardineria'),    rec.ack_maquinaria_jardineria_empty)
-            rec.rubro_state_fertilizantes_tierra_lama = _state(count('fertilizantes_tierra_lama'),rec.ack_fertilizantes_tierra_lama_empty)
-            rec.rubro_state_consumibles_jardineria    = _state(count('consumibles_jardineria'),   rec.ack_consumibles_jardineria_empty)
-            rec.rubro_state_capacitacion              = _state(count('capacitacion'),             rec.ack_capacitacion_empty)
-
-    @api.depends('line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code')
-    def _compute_rubro_counts(self):
-        for rec in self:
-            lines = rec.line_ids
-            rec.mano_obra_count = len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == 'mano_obra'))
-            rec.uniforme_count  = len(lines.filtered(lambda l: (getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == 'uniforme'))
-
-    def _ack_field_for_code(self, code):
-        mapping = {
-            'mano_obra': 'ack_mano_obra_empty', 'uniforme': 'ack_uniforme_empty',
-            'epp': 'ack_epp_empty', 'epp_alturas': 'ack_epp_alturas_empty',
-            'equipo_especial_limpieza': 'ack_equipo_especial_limpieza_empty',
-            'comunicacion_computo': 'ack_comunicacion_computo_empty',
-            'herramienta_menor_jardineria': 'ack_herramienta_menor_jardineria_empty',
-            'material_limpieza': 'ack_material_limpieza_empty',
-            'perfil_medico': 'ack_perfil_medico_empty',
-            'maquinaria_limpieza': 'ack_maquinaria_limpieza_empty',
-            'maquinaria_jardineria': 'ack_maquinaria_jardineria_empty',
-            'fertilizantes_tierra_lama': 'ack_fertilizantes_tierra_lama_empty',
-            'consumibles_jardineria': 'ack_consumibles_jardineria_empty',
-            'capacitacion': 'ack_capacitacion_empty',
-        }
-        return mapping.get(code)
+    def _has_ack(self, code):
+        return bool(self.env['ccn.service.quote.ack'].search_count(self._ack_domain_for_code(code)))
 
     def _set_ack(self, code, value):
-        field_name = self._ack_field_for_code(code)
-        if not field_name:
-            return
+        Ack = self.env['ccn.service.quote.ack']
         for rec in self:
-            rec[field_name] = bool(value)
+            dom = rec._ack_domain_for_code(code)
+            if value:
+                if dom[0][0] == 'id' and dom[0][2] == 0:
+                    # ámbito incompleto -> no hacemos nada
+                    continue
+                if not Ack.search(dom, limit=1):
+                    Ack.create({
+                        'quote_id': rec.id,
+                        'site_id': rec.current_site_id.id,
+                        'service_type': rec.current_service_type,
+                        'rubro_code': code,
+                        'is_empty': True,
+                    })
+            else:
+                acks = Ack.search(dom)
+                acks.unlink()
 
     def action_mark_rubro_empty(self):
+        """Desde botón con context={'rubro_code': '...'}"""
         code = (self.env.context or {}).get('rubro_code')
         if code:
             self._set_ack(code, True)
@@ -190,98 +226,123 @@ class ServiceQuote(models.Model):
             self._set_ack(code, False)
         return True
 
-    # --- Crear: garantiza General y fija current_site_id ---
-    @api.model_create_multi
-    def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get('site_ids'):
-                vals['site_ids'] = self._default_site_ids()
-        quotes = super().create(vals_list)
-        for q in quotes:
-            self._ensure_general_for_quote(q)
-        return quotes
+    # -------------------------
+    # Estados / Conteos por rubro (separación estricta)
+    # -------------------------
+    @api.depends(
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
+        'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
+        'current_site_id', 'current_service_type', 'current_type',
+        'ack_ids.is_empty', 'ack_ids.rubro_code', 'ack_ids.site_id', 'ack_ids.service_type',
+    )
+    def _compute_rubro_states(self):
+        """0 = rojo (no hay líneas y sin ACK)
+           1 = verde (hay líneas en el ámbito actual)
+           2 = ámbar (no hay líneas en el ámbito actual pero ACK marcado)"""
+        def _state(cnt, ack):
+            return 1 if cnt > 0 else (2 if ack else 0)
 
-    @api.onchange('current_service_type')
-    def _onchange_current_service_type(self):
-        for quote in self:
-            quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
+        Line = self.env['ccn.service.quote.line']
+        for rec in self:
+            base = rec._scope_domain()
 
-    def action_ensure_general(self):
-        for q in self:
-            self._ensure_general_for_quote(q)
-        return {"type": "ir.actions.client", "tag": "reload"}
+            def count(code):
+                dom = base + ['|', ('rubro_code', '=', code), ('rubro_id.code', '=', code)]
+                return Line.search_count(dom)
 
-    def _ensure_general_for_quote(self, quote):
-        Site = self.env['ccn.service.quote.site'].sudo()
-        general = Site.search([('quote_id', '=', quote.id), ('name', '=ilike', 'general')], limit=1)
-        if not general:
-            general = Site.create({'quote_id': quote.id, 'name': 'General', 'active': True, 'sequence': -999})
-        else:
-            general.write({'active': True, 'sequence': -999})
-        if not quote.current_site_id:
-            quote.current_site_id = general.id
+            # ACK por ámbito
+            acc = lambda code: rec._has_ack(code)
 
-    @api.model
-    def _fix_general_sites(self):
-        Site  = self.env['ccn.service.quote.site'].sudo()
-        Line  = self.env['ccn.service.quote.line'].sudo()
-        for q in self.sudo().search([]):
-            generals = Site.search([('quote_id', '=', q.id), ('name', '=ilike', 'general')])
-            if not generals:
-                canonical = Site.create({'quote_id': q.id, 'name': 'General', 'active': True, 'sequence': -999})
-            else:
-                canonical = generals.sorted(key=lambda s: ((s.sequence or 0), s.id))[0]
-                dups = generals - canonical
-                if dups:
-                    Line.search([('site_id', 'in', dups.ids)]).write({'site_id': canonical.id})
-                    dups.write({'active': False})
-            canonical.write({'active': True, 'sequence': -999})
-            if not q.current_site_id or q.current_site_id not in q.site_ids:
-                q.current_site_id = canonical.id
+            rec.rubro_state_mano_obra                 = _state(count('mano_obra'),                 acc('mano_obra'))
+            rec.rubro_state_uniforme                  = _state(count('uniforme'),                  acc('uniforme'))
+            rec.rubro_state_epp                       = _state(count('epp'),                       acc('epp'))
+            rec.rubro_state_epp_alturas               = _state(count('epp_alturas'),               acc('epp_alturas'))
+            rec.rubro_state_equipo_especial_limpieza  = _state(count('equipo_especial_limpieza'),  acc('equipo_especial_limpieza'))
+            rec.rubro_state_comunicacion_computo      = _state(count('comunicacion_computo'),      acc('comunicacion_computo'))
+            rec.rubro_state_herramienta_menor_jardineria = _state(count('herramienta_menor_jardineria'), acc('herramienta_menor_jardineria'))
+            rec.rubro_state_material_limpieza         = _state(count('material_limpieza'),         acc('material_limpieza'))
+            rec.rubro_state_perfil_medico             = _state(count('perfil_medico'),             acc('perfil_medico'))
+            rec.rubro_state_maquinaria_limpieza       = _state(count('maquinaria_limpieza'),       acc('maquinaria_limpieza'))
+            rec.rubro_state_maquinaria_jardineria     = _state(count('maquinaria_jardineria'),     acc('maquinaria_jardineria'))
+            rec.rubro_state_fertilizantes_tierra_lama = _state(count('fertilizantes_tierra_lama'), acc('fertilizantes_tierra_lama'))
+            rec.rubro_state_consumibles_jardineria    = _state(count('consumibles_jardineria'),    acc('consumibles_jardineria'))
+            rec.rubro_state_capacitacion              = _state(count('capacitacion'),              acc('capacitacion'))
 
-    # --- NUEVO: desactivar vistas heredadas viejas que rompen el layout ---
-    @api.model
-    def _deactivate_old_quote_views(self):
-        # Desactiva de forma segura vistas heredadas anteriores del propio módulo
-        for xmlid in [
-            'ccn_service_quote.ccn_view_quote_form_sites',          # la que insertaba el selector
-            'ccn_service_quote.ccn_view_quote_form_sites_v2',       # por si quedó otra variante
-        ]:
-            view = self.env.ref(xmlid, raise_if_not_found=False)
-            if view:
-                view.sudo().write({'active': False})
+    @api.depends(
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
+        'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
+        'current_site_id', 'current_service_type', 'current_type'
+    )
+    def _compute_rubro_counts(self):
+        Line = self.env['ccn.service.quote.line']
+        for rec in self:
+            base = rec._scope_domain()
+
+            def count(code):
+                dom = base + ['|', ('rubro_code', '=', code), ('rubro_id.code', '=', code)]
+                return Line.search_count(dom)
+
+            rec.mano_obra_count = count('mano_obra')
+            rec.uniforme_count  = count('uniforme')
 
 
+# ---------------------------------------------------------------------------
+# LINE (detalle)
+# ---------------------------------------------------------------------------
 class ServiceQuoteLine(models.Model):
     _name = 'ccn.service.quote.line'
     _description = 'CCN Service Quote Line'
 
-    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade')
-    site_id  = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null')
+    # Relaciones
+    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade', index=True)
+    site_id = fields.Many2one(
+        'ccn.service.quote.site',
+        string='Sitio',
+        ondelete='set null',
+        domain="[('quote_id', '=', quote_id)]",
+        index=True,
+    )
 
     service_type = fields.Selection([
-        ('jardineria', 'Jardinería'), ('limpieza', 'Limpieza'), ('mantenimiento', 'Mantenimiento'),
-        ('materiales', 'Materiales'), ('servicios_especiales', 'Servicios Especiales'),
-        ('almacenaje', 'Almacenaje'), ('fletes', 'Fletes'),
-    ], string='Tipo de Servicio/Vista')
+        ('jardineria', 'Jardinería'),
+        ('limpieza', 'Limpieza'),
+        ('mantenimiento', 'Mantenimiento'),
+        ('materiales', 'Materiales'),
+        ('servicios_especiales', 'Servicios Especiales'),
+        ('almacenaje', 'Almacenaje'),
+        ('fletes', 'Fletes'),
+    ], string='Tipo de servicio')
 
-    type = fields.Selection([('servicio', 'Servicio'), ('material', 'Material')], string='Tipo', default='servicio', required=True)
+    type = fields.Selection([
+        ('servicio', 'Servicio'),
+        ('material', 'Material'),
+    ], string='Tipo', default='servicio', required=True)
 
-    rubro_id   = fields.Many2one('ccn.service.rubro', string='Rubro')
+    # Rubro
+    rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro')
     rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True)
 
+    # Producto / Servicio
     product_id = fields.Many2one('product.product', string='Producto/Servicio', required=True)
+
+    # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
 
+    # Moneda
     currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)
 
-    tabulator_percent = fields.Selection([('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')], string='Tabulador', default='0', required=True)
+    # Tabulador
+    tabulator_percent = fields.Selection([
+        ('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%'),
+    ], string='Tabulador', default='0', required=True)
 
+    # Precios / impuestos / totales
     product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=False)
     price_unit_final   = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=False)
     taxes_display      = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
     total_price        = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
+    # Cómputos
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
@@ -319,6 +380,7 @@ class ServiceQuoteLine(models.Model):
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
 
+    # Defaults por contexto
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -336,4 +398,32 @@ class ServiceQuoteLine(models.Model):
             rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
             if rubro:
                 res['rubro_id'] = rubro.id
+        return res
+
+    # Consistencia sitio ⇄ cotización
+    @api.constrains('site_id', 'quote_id')
+    def _check_site_matches_quote(self):
+        for rec in self:
+            if rec.site_id and rec.quote_id and rec.site_id.quote_id != rec.quote_id:
+                raise ValidationError("El sitio seleccionado pertenece a otra cotización.")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            site_id = vals.get('site_id')
+            qid = vals.get('quote_id')
+            if site_id and not qid:
+                site = self.env['ccn.service.quote.site'].browse(site_id)
+                vals['quote_id'] = site.quote_id.id
+            elif site_id and qid:
+                site = self.env['ccn.service.quote.site'].browse(site_id)
+                if site and site.quote_id.id != qid:
+                    raise ValidationError("El sitio seleccionado pertenece a otra cotización.")
+        return super().create(vals_list)
+
+    def write(self, vals):
+        res = super().write(vals)
+        for rec in self:
+            if rec.site_id and rec.quote_id and rec.site_id.quote_id != rec.quote_id:
+                raise ValidationError("El sitio seleccionado pertenece a otra cotización.")
         return res

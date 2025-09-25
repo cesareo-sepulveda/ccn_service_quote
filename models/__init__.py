@@ -3,6 +3,7 @@
 from . import (
     service_quote,
     site,
+    ack,
     add_package_wizard,
     patch_rubro_code,
     product,
