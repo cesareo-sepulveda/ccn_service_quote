@@ -42,13 +42,10 @@ class CCNServiceRubro(models.Model):
     active = fields.Boolean(default=True)
 
     # Productos permitidos para este rubro
-    # NOTA: Usamos los nombres de columna por defecto de Odoo para evitar
-    # conflictos con tablas rel ya existentes: <modelo>_id / <comodelo>_id
+    # Usamos una tabla rel NUEVA para evitar conflictos con una tabla heredada/antigua
     allowed_product_ids = fields.Many2many(
         comodel_name='product.product',
-        relation='ccn_rubro_product_rel',
-        column1='ccn_service_rubro_id',   # <-- columna FK hacia este modelo (por defecto)
-        column2='product_product_id',      # <-- columna FK hacia product.product (por defecto)
+        relation='ccn_rubro_product_map',  # <- NUEVA tabla rel (no choca con la vieja)
         string='Productos permitidos',
         help="Sólo estos productos podrán seleccionarse en las líneas que usen este rubro."
     )
