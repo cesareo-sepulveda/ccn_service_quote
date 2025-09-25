@@ -118,13 +118,13 @@
       });
       setTimeout(() => {
         try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-      }, 2000);
-      setTimeout(() => {
-        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-      }, 4000);
+      }, 3000);
       setTimeout(() => {
         try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, 6000);
+      setTimeout(() => {
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      }, 9000);
     };
 
     const mo = new MutationObserver((muts) => {

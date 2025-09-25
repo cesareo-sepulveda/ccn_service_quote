@@ -99,22 +99,22 @@
             </group>
 
             <!-- Campos de estado invisibles para el JS de coloreado -->
-            <group>
-              <field name="rubro_state_mano_obra" style="display:none;"/>
-              <field name="rubro_state_uniforme" style="display:none;"/>
-              <field name="rubro_state_epp" style="display:none;"/>
-              <field name="rubro_state_epp_alturas" style="display:none;"/>
-              <field name="rubro_state_equipo_especial_limpieza" style="display:none;"/>
-              <field name="rubro_state_comunicacion_computo" style="display:none;"/>
-              <field name="rubro_state_herramienta_menor_jardineria" style="display:none;"/>
-              <field name="rubro_state_material_limpieza" style="display:none;"/>
-              <field name="rubro_state_perfil_medico" style="display:none;"/>
-              <field name="rubro_state_maquinaria_limpieza" style="display:none;"/>
-              <field name="rubro_state_maquinaria_jardineria" style="display:none;"/>
-              <field name="rubro_state_fertilizantes_tierra_lama" style="display:none;"/>
-              <field name="rubro_state_consumibles_jardineria" style="display:none;"/>
-              <field name="rubro_state_capacitacion" style="display:none;"/>
-            </group>
+            <div style="display:none;">
+              <field name="rubro_state_mano_obra"/>
+              <field name="rubro_state_uniforme"/>
+              <field name="rubro_state_epp"/>
+              <field name="rubro_state_epp_alturas"/>
+              <field name="rubro_state_equipo_especial_limpieza"/>
+              <field name="rubro_state_comunicacion_computo"/>
+              <field name="rubro_state_herramienta_menor_jardineria"/>
+              <field name="rubro_state_material_limpieza"/>
+              <field name="rubro_state_perfil_medico"/>
+              <field name="rubro_state_maquinaria_limpieza"/>
+              <field name="rubro_state_maquinaria_jardineria"/>
+              <field name="rubro_state_fertilizantes_tierra_lama"/>
+              <field name="rubro_state_consumibles_jardineria"/>
+              <field name="rubro_state_capacitacion"/>
+            </div>
 
             <!-- ===== Tabs por rubro (solo visibles con tipo de servicio) ===== -->
             <notebook invisible="not current_service_type">
