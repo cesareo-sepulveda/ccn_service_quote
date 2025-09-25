@@ -6,6 +6,7 @@
       <field name="name">ccn.quote.form.filter.products</field>
       <field name="model">ccn.service.quote</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
+      <field name="active">False</field>
       <field name="arch" type="xml">
 
         <!-- Reemplazamos el <field name="line_ids"/> original por un widget con list/form -->

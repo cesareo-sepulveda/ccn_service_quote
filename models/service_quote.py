@@ -121,8 +121,8 @@ class ServiceQuote(models.Model):
     def _compute_rubro_states(self):
         def state_for(rec, code):
             lines = rec.line_ids.filtered(lambda l:
-                (not rec.current_site_id or l.site_id.id == rec.current_site_id.id) and
-                (not rec.current_service_type or l.service_type == rec.current_service_type) and
+                (rec.current_site_id and l.site_id.id == rec.current_site_id.id) and
+                (rec.current_service_type and l.service_type == rec.current_service_type) and
                 (not rec.current_type or l.type == rec.current_type) and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
