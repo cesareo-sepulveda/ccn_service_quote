@@ -129,21 +129,21 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # Estados por rubro filtrados por sitio/servicio/tipo actual
-    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states", string="Estado Mano de Obra")
-    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states", string="Estado Uniforme")
-    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states", string="Estado EPP")
-    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states", string="Estado EPP Alturas")
-    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states", string="Estado Equipo Especial Limpieza")
-    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states", string="Estado Comunicación y Cómputo")
-    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states", string="Estado Herr. Menor Jardinería")
-    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states", string="Estado Material de Limpieza")
-    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states", string="Estado Perfil Médico")
-    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Limpieza")
-    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states", string="Estado Maquinaria Jardinería")
-    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states", string="Estado Fertilizantes y Tierra Lama")
-    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states", string="Estado Consumibles Jardinería")
-    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states", string="Estado Capacitación")
+    # Estados por rubro (filtrados por sitio/servicio/tipo actual)
+    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
 
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
@@ -274,16 +274,9 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    # ==========================================================
-    # MÉTODO LLAMADO POR data/migrate_fix_general.xml
-    # ==========================================================
+    # Usado por data/migrate_fix_general.xml
     @api.model
     def _fix_general_sites(self, limit=100000):
-        """
-        Usado por data/migrate_fix_general.xml:
-        - Garantiza que cada cotización tenga un sitio 'General' activo y al frente.
-        - Si no hay current_site_id, lo fija al 'General'.
-        """
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
         quotes = self.search([], limit=limit)
         for q in quotes:
@@ -306,7 +299,7 @@ class ServiceQuote(models.Model):
 
 
 # =====================================================================
-# LÍNEA (detalle)  — queda en ESTE MISMO ARCHIVO
+# LÍNEA (detalle)
 # =====================================================================
 class CCNServiceQuoteLine(models.Model):
     _name = 'ccn.service.quote.line'
@@ -347,7 +340,7 @@ class CCNServiceQuoteLine(models.Model):
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # ⚠️ Ahora es Char calculado (NO related) para evitar choque de tipos con Selection.
+    # ⚠️ Char compute (NO related) para evitar choque con Selection de rubro_id.code
     rubro_code = fields.Char(
         string='Código de Rubro',
         compute='_compute_rubro_code',
@@ -362,8 +355,10 @@ class CCNServiceQuoteLine(models.Model):
         string='Producto/Servicio',
         required=True,
         index=True,
-        domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),"
-               "('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]",
+        # Evitamos 'in' con lista vacía; usamos OR de igualdades
+        domain="['&', ('product_tmpl_id.ccn_exclude_from_quote','=',False), "
+               "'|', ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')), "
+                     "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
     )
 
     # Cantidad
@@ -504,7 +499,9 @@ class CCNServiceQuoteLine(models.Model):
             'domain': {
                 'product_id': [
                     ('product_tmpl_id.ccn_exclude_from_quote','=', False),
-                    ('product_tmpl_id.ccn_rubro_ids.code','in', list(filter(None, [code])))
+                    '|',
+                        ('product_tmpl_id.ccn_rubro_ids.code','=', code),
+                        ('product_tmpl_id.ccn_rubro_ids.code','=', False),  # evita dominio inválido si no hay code
                 ]
             }
         }
