@@ -2,6 +2,58 @@
 <odoo>
   <data>
 
+    <!-- =========================================================
+         LIST VIEW (lista inicial) de ccn.service.quote
+         Incluye Cliente, Nombre de cotización, Tipo de servicio,
+         Sitio actual y fechas útiles. Prioridad alta para que se use.
+       ========================================================= -->
+    <record id="ccn_view_quote_list" model="ir.ui.view">
+      <field name="name">ccn.quote.list</field>
+      <field name="model">ccn.service.quote</field>
+      <field name="type">list</field>
+      <field name="priority">1</field>
+      <field name="arch" type="xml">
+        <list string="Cotizaciones CCN" default_order="partner_id,name">
+          <field name="partner_id" string="Cliente"/>
+          <field name="name" string="Cotización"/>
+          <field name="current_service_type" string="Tipo de servicio"/>
+          <field name="current_site_id" string="Sitio actual" optional="hide"/>
+          <field name="display_mode" string="Modo presentación" optional="hide"/>
+          <field name="create_date" string="Creado" optional="hide"/>
+          <field name="write_date" string="Actualizado" optional="hide"/>
+        </list>
+      </field>
+    </record>
+
+    <!-- ==========================================
+         SEARCH VIEW para facilitar filtros/búsquedas
+       ========================================== -->
+    <record id="ccn_view_quote_search" model="ir.ui.view">
+      <field name="name">ccn.quote.search</field>
+      <field name="model">ccn.service.quote</field>
+      <field name="type">search</field>
+      <field name="arch" type="xml">
+        <search string="Buscar Cotizaciones">
+          <field name="name" string="Cotización"/>
+          <field name="partner_id" string="Cliente"/>
+          <field name="current_service_type" string="Tipo de servicio"/>
+          <filter string="Jardinería" name="f_jardineria"
+                  domain="[('current_service_type','=','jardineria')]"/>
+          <filter string="Limpieza" name="f_limpieza"
+                  domain="[('current_service_type','=','limpieza')]"/>
+          <group expand="0" string="Agrupar por">
+            <filter string="Cliente" name="g_partner" context="{'group_by':'partner_id'}"/>
+            <filter string="Tipo de servicio" name="g_service_type" context="{'group_by':'current_service_type'}"/>
+          </group>
+        </search>
+      </field>
+    </record>
+
+    <!-- =========================================================
+         FORM VIEW (completo) de ccn.service.quote
+         Mantiene la separación Sitio + Tipo de servicio + Tipo + Rubro
+         usando line_ids con dominio por pestaña.
+       ========================================================= -->
     <record id="ccn_view_quote_form" model="ir.ui.view">
       <field name="name">ccn.quote.form</field>
       <field name="model">ccn.service.quote</field>
