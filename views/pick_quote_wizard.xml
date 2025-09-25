@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data>
+
     <record id="view_pick_quote_wizard" model="ir.ui.view">
       <field name="name">ccn.pick.quote.wizard</field>
       <field name="model">ccn.service.quote.pick.wizard</field>
@@ -8,26 +9,25 @@
         <form string="Agregar cotización CCN">
           <group>
             <field name="order_id" invisible="1"/>
-            <!-- Requerido solo en la UI; en BD NO -->
-            <field name="quote_id"
-                required="1"
-                domain="[('partner_id','=', partner_id)]"
-                options="{'no_open': True}"/>
-
+            <field name="quote_id" required="1"
+                   options="{'no_create_edit': True, 'no_quick_create': True}"/>
           </group>
           <footer>
-            <button string="Agregar" type="object" name="action_apply" class="btn-primary"/>
-            <button string="Cancelar" special="cancel"/>
+            <button string="Confirmar" type="object" name="action_confirm" class="btn-primary"/>
+            <button string="Cancelar" special="cancel" class="btn-secondary"/>
           </footer>
         </form>
       </field>
     </record>
 
-    <record id="action_ccn_pick_quote" model="ir.actions.act_window">
-      <field name="name">Elegir cotización CCN</field>
+    <!-- Acción para abrir el wizard (útil si luego la llamas desde un botón) -->
+    <record id="action_pick_quote_wizard" model="ir.actions.act_window">
+      <field name="name">Agregar cotización CCN</field>
       <field name="res_model">ccn.service.quote.pick.wizard</field>
       <field name="view_mode">form</field>
       <field name="target">new</field>
+      <field name="view_id" ref="view_pick_quote_wizard"/>
     </record>
+
   </data>
 </odoo>

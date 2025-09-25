@@ -17,4 +17,5 @@ from . import (
     rubro_flag,
     sale_order,
     service_package,
+    pick_quote_wizard
 )
