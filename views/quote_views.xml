@@ -136,7 +136,6 @@
                           'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                         }"
                         domain="[
-                          ('rubro_id.code','=','mano_obra'),
                           ('site_id','=', current_site_id),
                           ('service_type','=', current_service_type)
                         ]"/>
