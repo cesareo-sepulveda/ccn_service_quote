@@ -99,7 +99,7 @@
       if (scheduled) return;
       scheduled = true;
       setTimeout(() => { scheduled = false; try{ paintFromStates(formRoot, nb, byCode, last); }catch(_){} }, 0);
-      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_){} }, 60);
+      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_){} }, 80);
       setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_){} }, 200);
     };
 
@@ -110,7 +110,12 @@
           if (!(t instanceof Element)) continue;
           const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
           if (name.startsWith("rubro_state_")) { schedule(); return; }
-          const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"]');
+          if (name === "current_site_id" || name === "current_service_type") { schedule(); return; }
+          const holder = t.closest?.(
+            '[name^="rubro_state_"], [data-name^="rubro_state_"], ' +
+            '[name="current_site_id"], [data-name="current_site_id"], ' +
+            '[name="current_service_type"], [data-name="current_service_type"]'
+          );
           if (holder){ schedule(); return; }
         }
       }catch(_e){}
@@ -122,6 +127,18 @@
       characterData: true,
       attributes: true,
       attributeFilter: ["data-value", "value", "class"],
+    });
+
+    // Repaint si el usuario cambia los selects de Sitio / Servicio
+    document.addEventListener("change", (ev)=>{
+      try{
+        const t = ev.target;
+        if (!(t instanceof Element)) return;
+        const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
+        if (name === "current_site_id" || name === "current_service_type"){
+          schedule();
+        }
+      }catch(_e){}
     });
 
     window.__ccnTabsWatch = {

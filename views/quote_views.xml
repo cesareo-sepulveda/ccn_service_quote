@@ -70,23 +70,7 @@
               <field name="bienestar_rate" string="Tarifa Bienestar P/P"/>
             </group>
 
-            <!-- Estados invisibles para JS -->
-            <field name="rubro_state_mano_obra" invisible="1"/>
-            <field name="rubro_state_uniforme" invisible="1"/>
-            <field name="rubro_state_epp" invisible="1"/>
-            <field name="rubro_state_epp_alturas" invisible="1"/>
-            <field name="rubro_state_equipo_especial_limpieza" invisible="1"/>
-            <field name="rubro_state_comunicacion_computo" invisible="1"/>
-            <field name="rubro_state_herramienta_menor_jardineria" invisible="1"/>
-            <field name="rubro_state_material_limpieza" invisible="1"/>
-            <field name="rubro_state_perfil_medico" invisible="1"/>
-            <field name="rubro_state_maquinaria_limpieza" invisible="1"/>
-            <field name="rubro_state_maquinaria_jardineria" invisible="1"/>
-            <field name="rubro_state_fertilizantes_tierra_lama" invisible="1"/>
-            <field name="rubro_state_consumibles_jardineria" invisible="1"/>
-            <field name="rubro_state_capacitacion" invisible="1"/>
-
-            <!-- Re-render al cambiar alcance -->
+            <!-- Estos ocultos sólo fuerzan rerender en el front -->
             <field name="current_site_id" invisible="1"/>
             <field name="current_service_type" invisible="1"/>
 
@@ -100,10 +84,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'mano_obra'}"/>
                 <field name="line_ids_mano_obra" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -122,10 +103,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'uniforme'}"/>
                 <field name="line_ids_uniforme" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -144,10 +122,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'epp'}"/>
                 <field name="line_ids_epp" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -166,10 +141,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'epp_alturas'}"/>
                 <field name="line_ids_epp_alturas" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -188,10 +160,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'equipo_especial_limpieza'}"/>
                 <field name="line_ids_equipo_especial_limpieza" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -210,10 +179,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'comunicacion_computo'}"/>
                 <field name="line_ids_comunicacion_computo" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -232,10 +198,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
                 <field name="line_ids_herramienta_menor_jardineria" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -254,10 +217,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'material_limpieza'}"/>
                 <field name="line_ids_material_limpieza" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -276,10 +236,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'perfil_medico'}"/>
                 <field name="line_ids_perfil_medico" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -298,10 +255,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'maquinaria_limpieza'}"/>
                 <field name="line_ids_maquinaria_limpieza" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -320,10 +274,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'maquinaria_jardineria'}"/>
                 <field name="line_ids_maquinaria_jardineria" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -342,10 +293,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
                 <field name="line_ids_fertilizantes_tierra_lama" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -364,10 +312,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'consumibles_jardineria'}"/>
                 <field name="line_ids_consumibles_jardineria" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -386,10 +331,7 @@
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'capacitacion'}"/>
                 <field name="line_ids_capacitacion" mode="list"
-                       domain="[
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"
+                       domain="[('site_id','=', current_site_id), ('service_type','=', current_service_type)]"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,

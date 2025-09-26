@@ -57,6 +57,7 @@ class ServiceQuote(models.Model):
         'ccn.service.quote.site',
         string='Sitio actual',
         domain="[('quote_id','=', id)]",
+        store=True,
     )
 
     current_service_type = fields.Selection(
@@ -70,12 +71,14 @@ class ServiceQuote(models.Model):
             ('fletes', 'Fletes'),
         ],
         string='Tipo de servicio',
+        store=True,
     )
 
     current_type = fields.Selection(
         [('servicio', 'Servicio'), ('material', 'Material')],
         string='Tipo actual',
         default='servicio',
+        store=True,
     )
 
     display_mode = fields.Selection(
@@ -88,6 +91,7 @@ class ServiceQuote(models.Model):
         default='itemized',
         required=True,
     )
+
     admin_percent = fields.Float(string='Administración (%)', default=0.0)
     utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
@@ -96,31 +100,35 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # Estados por rubro (filtrados por sitio/servicio/tipo actual)
-    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
+    # Estados por rubro (filtrados por sitio/servicio/tipo actual)  ➜ ahora store=True
+    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states", store=True)
 
     @api.depends(
+        # líneas y sus campos que afectan presencia por rubro
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
         'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
+        # alcance actual
         'current_site_id', 'current_service_type', 'current_type'
     )
     def _compute_rubro_states(self):
         def state_for(rec, code):
+            if not (rec.current_site_id and rec.current_service_type):
+                # sin alcance no pintamos verde/ámbar
+                return 0
             lines = rec.line_ids.filtered(lambda l:
-                rec.current_site_id and rec.current_service_type and
                 l.site_id.id == rec.current_site_id.id and
                 l.service_type == rec.current_service_type and
                 (l.rubro_code == code or getattr(l.rubro_id, 'code', False) == code) and
@@ -129,8 +137,8 @@ class ServiceQuote(models.Model):
             cnt = len(lines)
             ack = self.env['ccn.service.quote.ack'].search_count([
                 ('quote_id', '=', rec.id),
-                ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
-                ('service_type', '=', rec.current_service_type or False),
+                ('site_id', '=', rec.current_site_id.id),
+                ('service_type', '=', rec.current_service_type),
                 ('rubro_code', '=', code),
                 ('ack', '=', True),
             ]) > 0
@@ -239,7 +247,6 @@ class ServiceQuote(models.Model):
         return quotes
 
     # ======= UTILIDADES =======
-
     @api.model
     def _fix_general_sites(self, limit=100000):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
@@ -264,7 +271,7 @@ class ServiceQuote(models.Model):
 
     @api.model
     def migrate_fill_rubro_and_scope(self, limit=200000):
-        """Opcional: repara líneas antiguas sin service_type/rubro_id."""
+        """Repara líneas antiguas sin service_type/rubro_id (idempotente)."""
         Line = self.env['ccn.service.quote.line'].sudo()
         domain = ['|', ('rubro_id', '=', False), ('service_type', '=', False)]
         for line in Line.search(domain, limit=limit):
@@ -274,14 +281,12 @@ class ServiceQuote(models.Model):
                 if len(rubros) == 1:
                     vals['rubro_id'] = rubros.id
             if not line.service_type:
-                # Si el tipo de línea es 'material' y no hay service_type, asumimos 'materiales'
-                vals['service_type'] = 'materiales' if line.type == 'material' else line.service_type
+                vals['service_type'] = 'materiales' if line.type == 'material' else 'jardineria'
             if vals:
                 line.write(vals)
         return True
 
-    # ========= X2M por RUBRO (sólo filtro fijo por rubro) =========
-    # Los filtros dinámicos por sitio/servicio van en la VISTA.
+    # ========= X2M por RUBRO (filtro fijo por rubro) =========
     line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id',
         domain="[('rubro_id.code','=','mano_obra')]", string="Líneas Mano de Obra")
     line_ids_uniforme = fields.One2many('ccn.service.quote.line', 'quote_id',
@@ -320,22 +325,9 @@ class CCNServiceQuoteLine(models.Model):
     _description = 'CCN Service Quote Line'
     _order = 'id desc'
 
-    # Relaciones principales
-    quote_id = fields.Many2one(
-        'ccn.service.quote',
-        string='Cotización',
-        required=True,
-        ondelete='cascade',
-        index=True,
-    )
-    site_id = fields.Many2one(
-        'ccn.service.quote.site',
-        string='Sitio',
-        ondelete='set null',
-        index=True,
-    )
+    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade', index=True)
+    site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null', index=True)
 
-    # Contexto de vista
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -351,19 +343,10 @@ class CCNServiceQuoteLine(models.Model):
         ('material', 'Material'),
     ], string='Tipo', default='servicio', required=True, index=True)
 
-    # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True, index=True)
 
-    # Almacenado para filtros/agrupaciones
-    rubro_code = fields.Char(
-        string='Código de Rubro',
-        related='rubro_id.code',
-        store=True,
-        readonly=True,
-        index=True,
-    )
+    rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True, index=True)
 
-    # Producto (filtrado por rubro)
     product_id = fields.Many2one(
         'product.product',
         string='Producto/Servicio',
@@ -374,55 +357,21 @@ class CCNServiceQuoteLine(models.Model):
                      "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
     )
 
-    # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
 
-    # Moneda
-    currency_id = fields.Many2one(
-        'res.currency',
-        string='Moneda',
-        related='quote_id.currency_id',
-        store=True,
-        readonly=True,
-    )
+    currency_id = fields.Many2one('res.currency', string='Moneda',
+                                  related='quote_id.currency_id', store=True, readonly=True)
 
-    # Tabulador
     tabulator_percent = fields.Selection(
         [('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')],
-        string='Tabulador',
-        default='0',
-        required=True,
-    )
+        string='Tabulador', default='0', required=True)
 
-    # Precios / impuestos / totales (simplificados)
-    product_base_price = fields.Monetary(
-        string='Precio base',
-        compute='_compute_product_base_price',
-        store=True,
-    )
-    price_unit_final = fields.Monetary(
-        string='Precio Unitario',
-        compute='_compute_price_unit_final',
-        store=True,
-    )
-    taxes_display = fields.Char(
-        string='Detalle de impuestos',
-        compute='_compute_taxes_display',
-        store=False,
-    )
-    amount_tax = fields.Monetary(
-        string='IVA',
-        compute='_compute_amount_tax',
-        store=False,
-        currency_field='currency_id',
-    )
-    total_price = fields.Monetary(
-        string='Subtotal final',
-        compute='_compute_total_price',
-        store=False,
-    )
+    product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=True)
+    price_unit_final = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=True)
+    taxes_display = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
+    amount_tax = fields.Monetary(string='IVA', compute='_compute_amount_tax', store=False, currency_field='currency_id')
+    total_price = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
-    # ===== Cómputos =====
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
@@ -472,7 +421,6 @@ class CCNServiceQuoteLine(models.Model):
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
 
-    # ===== Defaults desde contexto =====
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -487,7 +435,6 @@ class CCNServiceQuoteLine(models.Model):
         if 'default_service_type' in ctx and 'service_type' in self._fields:
             res.setdefault('service_type', ctx.get('default_service_type'))
 
-        # Fijar rubro por pestaña
         code = ctx.get('ctx_rubro_code')
         if code and 'rubro_id' in self._fields and not res.get('rubro_id'):
             rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
