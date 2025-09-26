@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
   <data noupdate="0">
-    <!-- Asegura sitio 'General' -->
+    <!-- Solo ejecuta el fix de “General”. Nada de migrate_fill_rubro_and_scope -->
     <function model="ccn.service.quote" name="_fix_general_sites"/>
-    <!-- Migra líneas antiguas (wrapper en el modelo quote, no en el line) -->
-    <function model="ccn.service.quote" name="migrate_fill_rubro_and_scope"/>
   </data>
 </odoo>
