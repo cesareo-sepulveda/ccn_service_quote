@@ -137,7 +137,7 @@
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'uniforme',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
