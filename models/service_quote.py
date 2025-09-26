@@ -237,9 +237,11 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    # Usado por data/migrate_fix_general.xml
+    # ======= UTILIDADES / MIGRACIONES =======
+
     @api.model
     def _fix_general_sites(self, limit=100000):
+        """Idempotente: asegura que cada cotización tenga sitio 'General' activo y como current si falta."""
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
         quotes = self.search([], limit=limit)
         for q in quotes:
@@ -258,6 +260,39 @@ class ServiceQuote(models.Model):
                 })
             if not q.current_site_id:
                 q.write({'current_site_id': general.id})
+        return True
+
+    @api.model
+    def _deactivate_old_quote_views(self):
+        """No-op segura (o desactiva vistas legacy si existen)."""
+        View = self.env['ir.ui.view'].sudo().with_context(active_test=False)
+        xmlids = [
+            'ccn_service_quote.ccn_view_quote_form_tabs',  # legacy si existiera
+        ]
+        for xid in xmlids:
+            rec = self.env.ref(xid, raise_if_not_found=False)
+            if rec:
+                try:
+                    rec.write({'active': False})
+                except Exception:
+                    pass
+        return True
+
+    @api.model
+    def migrate_fill_rubro_and_scope(self, limit=200000):
+        """Idempotente y segura: corrige líneas viejas sin rubro/tipo."""
+        Line = self.env['ccn.service.quote.line'].sudo()
+        domain = ['|', ('rubro_id', '=', False), ('rubro_code', '=', False)]
+        for line in Line.search(domain, limit=limit):
+            vals = {}
+            if not line.rubro_id and line.product_id:
+                rubros = line.product_id.product_tmpl_id.ccn_rubro_ids
+                if len(rubros) == 1:
+                    vals['rubro_id'] = rubros.id
+            if line.service_type == 'materiales' and line.type != 'material':
+                vals['type'] = 'material'
+            if vals:
+                line.write(vals)
         return True
 
 
@@ -284,7 +319,7 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
-    # Contexto de vista
+    # Contexto
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -303,7 +338,7 @@ class CCNServiceQuoteLine(models.Model):
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # ✅ Campo almacenado para dominios y búsquedas
+    # Almacenado para filtros/agrupaciones
     rubro_code = fields.Char(
         string='Código de Rubro',
         related='rubro_id.code',
@@ -429,13 +464,10 @@ class CCNServiceQuoteLine(models.Model):
 
         if 'default_quote_id' in ctx and 'quote_id' in self._fields:
             res.setdefault('quote_id', ctx.get('default_quote_id'))
-
         if 'default_site_id' in ctx and 'site_id' in self._fields:
             res.setdefault('site_id', ctx.get('default_site_id'))
-
         if 'default_type' in ctx and 'type' in self._fields:
             res.setdefault('type', ctx.get('default_type'))
-
         if 'default_service_type' in ctx and 'service_type' in self._fields:
             res.setdefault('service_type', ctx.get('default_service_type'))
 
