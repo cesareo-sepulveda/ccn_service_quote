@@ -3,6 +3,10 @@
 from . import (
     service_quote,
     site,
+    # Bucket por Rubro (Sitio × Tipo × Rubro)
+    scope_rubro,
+    # Migración para rellenar bucket_id en líneas existentes
+    migrate_fill_buckets,
     ack,
     add_package_wizard,
     patch_rubro_code,

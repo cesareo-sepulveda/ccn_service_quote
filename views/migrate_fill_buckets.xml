@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data noupdate="0">
+    <!-- Ejecuta la migración en cada upgrade del módulo (idempotente) -->
+    <function model="ccn.service.quote.line" name="migrate_fill_buckets"/>
+  </data>
+</odoo>

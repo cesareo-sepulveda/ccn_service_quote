@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="ccn_view_bucket_tree" model="ir.ui.view">
+      <field name="name">ccn.bucket.tree</field>
+      <field name="model">ccn.service.quote.scope.rubro</field>
+      <field name="arch" type="xml">
+        <list string="Buckets (Sitio × Tipo × Rubro)">
+          <field name="quote_id"/>
+          <field name="site_id"/>
+          <field name="service_type"/>
+          <field name="rubro_id"/>
+          <field name="name" optional="hide"/>
+        </list>
+      </field>
+    </record>
+
+    <record id="ccn_view_bucket_form" model="ir.ui.view">
+      <field name="name">ccn.bucket.form</field>
+      <field name="model">ccn.service.quote.scope.rubro</field>
+      <field name="arch" type="xml">
+        <form string="Bucket">
+          <sheet>
+            <group>
+              <field name="quote_id" readonly="1"/>
+              <field name="site_id" readonly="1"/>
+              <field name="service_type" readonly="1"/>
+              <field name="rubro_id" readonly="1"/>
+            </group>
+            <group>
+              <field name="line_ids" mode="list"/>
+            </group>
+          </sheet>
+        </form>
+      </field>
+    </record>
+
+    <record id="ccn_action_bucket" model="ir.actions.act_window">
+      <field name="name">Buckets por Rubro</field>
+      <field name="res_model">ccn.service.quote.scope.rubro</field>
+      <field name="view_mode">list,form</field>
+    </record>
+
+  </data>
+</odoo>
