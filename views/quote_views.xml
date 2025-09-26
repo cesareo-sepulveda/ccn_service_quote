@@ -2,9 +2,7 @@
 <odoo>
   <data>
 
-    <!-- ================================
-         LISTA (vista inicial)
-       ================================ -->
+    <!-- LISTA -->
     <record id="ccn_view_quote_list" model="ir.ui.view">
       <field name="name">ccn.quote.list</field>
       <field name="model">ccn.service.quote</field>
@@ -23,9 +21,7 @@
       </field>
     </record>
 
-    <!-- ================================
-         SEARCH (filtros/búsqueda)
-       ================================ -->
+    <!-- SEARCH -->
     <record id="ccn_view_quote_search" model="ir.ui.view">
       <field name="name">ccn.quote.search</field>
       <field name="model">ccn.service.quote</field>
@@ -35,10 +31,8 @@
           <field name="name" string="Cotización"/>
           <field name="partner_id" string="Cliente"/>
           <field name="current_service_type" string="Tipo de servicio"/>
-          <filter string="Jardinería" name="f_jardineria"
-                  domain="[('current_service_type','=','jardineria')]"/>
-          <filter string="Limpieza" name="f_limpieza"
-                  domain="[('current_service_type','=','limpieza')]"/>
+          <filter string="Jardinería" name="f_jardineria" domain="[('current_service_type','=','jardineria')]"/>
+          <filter string="Limpieza" name="f_limpieza" domain="[('current_service_type','=','limpieza')]"/>
           <group expand="0" string="Agrupar por">
             <filter string="Cliente" name="g_partner" context="{'group_by':'partner_id'}"/>
             <filter string="Tipo de servicio" name="g_service_type" context="{'group_by':'current_service_type'}"/>
@@ -47,9 +41,7 @@
       </field>
     </record>
 
-    <!-- ================================
-         FORM (con etiquetas explícitas)
-       ================================ -->
+    <!-- FORM -->
     <record id="ccn_view_quote_form" model="ir.ui.view">
       <field name="name">ccn.quote.form</field>
       <field name="model">ccn.service.quote</field>
@@ -57,8 +49,6 @@
       <field name="arch" type="xml">
         <form string="Cotizador Especial CCN" class="ccn-quote">
           <sheet>
-
-            <!-- ===== Cabecera ===== -->
             <group col="2">
               <field name="partner_id" required="1" string="Cliente"/>
               <field name="name" string="Nombre de la cotización"/>
@@ -69,10 +59,7 @@
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
               <div class="o_form_label"/>
-              <button name="action_ensure_general"
-                      type="object"
-                      string="Sitio General"
-                      class="btn btn-secondary"/>
+              <button name="action_ensure_general" type="object" string="Sitio General" class="btn btn-secondary"/>
 
               <field name="current_service_type" string="Tipo de servicio"/>
               <field name="display_mode" string="Modo de presentación"/>
@@ -99,11 +86,10 @@
             <field name="rubro_state_consumibles_jardineria" invisible="1"/>
             <field name="rubro_state_capacitacion" invisible="1"/>
 
-            <!-- Campos invisibles para forzar re-renderizado cuando cambian -->
+            <!-- Forzar re-render -->
             <field name="current_site_id" invisible="1"/>
             <field name="current_service_type" invisible="1"/>
 
-            <!-- ===== Tabs por rubro ===== -->
             <notebook invisible="not current_service_type">
 
               <!-- Mano de Obra -->
@@ -123,8 +109,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','mano_obra'),
+                         ('rubro_code','=','mano_obra'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -147,8 +132,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','uniforme'),
+                         ('rubro_code','=','uniforme'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -171,8 +155,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','epp'),
+                         ('rubro_code','=','epp'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -195,8 +178,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','epp_alturas'),
+                         ('rubro_code','=','epp_alturas'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -219,8 +201,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','equipo_especial_limpieza'),
+                         ('rubro_code','=','equipo_especial_limpieza'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -243,14 +224,13 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','comunicacion_computo'),
+                         ('rubro_code','=','comunicacion_computo'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
-              <!-- Herr. Menor Jardinería (solo jardinería) -->
+              <!-- Herr. Menor Jardinería -->
               <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -267,14 +247,13 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','herramienta_menor_jardineria'),
+                         ('rubro_code','=','herramienta_menor_jardineria'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
-              <!-- Material de Limpieza (solo limpieza) -->
+              <!-- Material de Limpieza -->
               <page string="Material de Limpieza" name="page_material_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -291,8 +270,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','material_limpieza'),
+                         ('rubro_code','=','material_limpieza'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -315,14 +293,13 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','perfil_medico'),
+                         ('rubro_code','=','perfil_medico'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
-              <!-- Maquinaria de Limpieza (solo limpieza) -->
+              <!-- Maquinaria de Limpieza -->
               <page string="Maquinaria de Limpieza" name="page_maquinaria_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -339,14 +316,13 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','maquinaria_limpieza'),
+                         ('rubro_code','=','maquinaria_limpieza'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
-              <!-- Maquinaria de Jardinería (solo jardinería) -->
+              <!-- Maquinaria de Jardinería -->
               <page string="Maquinaria de Jardinería" name="page_maquinaria_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -363,14 +339,13 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','maquinaria_jardineria'),
+                         ('rubro_code','=','maquinaria_jardineria'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
-              <!-- Fertilizantes y Tierra Lama (solo jardinería) -->
+              <!-- Fertilizantes y Tierra Lama -->
               <page string="Fertilizantes y Tierra Lama" name="page_fertilizantes_tierra_lama"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -387,14 +362,13 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','fertilizantes_tierra_lama'),
+                         ('rubro_code','=','fertilizantes_tierra_lama'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
-              <!-- Consumibles de Jardinería (solo jardinería) -->
+              <!-- Consumibles de Jardinería -->
               <page string="Consumibles de Jardinería" name="page_consumibles_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
@@ -411,8 +385,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','consumibles_jardineria'),
+                         ('rubro_code','=','consumibles_jardineria'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -435,8 +408,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_id.code','=','capacitacion'),
+                         ('rubro_code','=','capacitacion'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
