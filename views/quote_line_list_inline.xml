@@ -9,29 +9,38 @@
       <field name="type">list</field>
       <field name="arch" type="xml">
         <list editable="bottom" string="Líneas del rubro">
+          <!-- Ocultamos rubro en columnas (lo fija la pestaña) -->
           <field name="rubro_id" invisible="1" column_invisible="1"/>
           <field name="rubro_code" invisible="1" column_invisible="1"/>
 
+          <!-- Producto/Servicio del rubro -->
+          <!-- El dominio lo inyecta la vista heredada view_ccn_quote_line_inline_product_domain
+               y/o el propio field en el modelo; aquí mantenemos limpio -->
           <field name="product_id" required="1"
-                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
-                          ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_id.code])]"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
+          <!-- Cantidad -->
           <field name="quantity"/>
+
+          <!-- Tabulador -->
           <field name="tabulator_percent" string="Tabulador"/>
-          <!-- (si quieres mostrar) <field name="price_unit_final" string="Precio Unitario" readonly="1"/> -->
+
+          <!-- Precio Unitario (final) -->
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+
+          <!-- Subtotal -->
           <field name="total_price" string="Subtotal" readonly="1"/>
 
+          <!-- Metadatos ocultos -->
           <field name="quote_id" invisible="1" column_invisible="1"/>
           <field name="site_id" invisible="1" column_invisible="1"/>
           <field name="service_type" invisible="1" column_invisible="1"/>
-          <field name="type" invisible="1" column_invisible="1"/>
           <field name="currency_id" invisible="1" column_invisible="1"/>
         </list>
       </field>
     </record>
 
-    <!-- FORM INLINE -->
+    <!-- FORM INLINE (por si el usuario abre una línea) -->
     <record id="ccn_view_quote_line_form_inline" model="ir.ui.view">
       <field name="name">ccn.quote.line.form.inline</field>
       <field name="model">ccn.service.quote.line</field>
@@ -43,8 +52,6 @@
             <field name="rubro_code" invisible="1"/>
 
             <field name="product_id" required="1"
-                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
-                            ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_id.code])] "
                    options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
             <field name="quantity"/>
@@ -55,14 +62,13 @@
             <field name="quote_id" invisible="1"/>
             <field name="site_id" invisible="1"/>
             <field name="service_type" invisible="1"/>
-            <field name="type" invisible="1"/>
             <field name="currency_id" invisible="1"/>
           </group>
         </form>
       </field>
     </record>
 
-    <!-- Árbol “genérico” si lo usas fuera -->
+    <!-- (Opcional) Árbol general, si lo usas en alguna acción separada -->
     <record id="ccn_view_quote_line_tree" model="ir.ui.view">
       <field name="name">ccn.quote.line.tree</field>
       <field name="model">ccn.service.quote.line</field>
@@ -70,8 +76,6 @@
       <field name="arch" type="xml">
         <list editable="bottom">
           <field name="product_id" required="1"
-                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
-                          ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_id.code])]"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
           <field name="quantity"/>
           <field name="tabulator_percent" string="Tabulador"/>
@@ -82,7 +86,6 @@
           <field name="quote_id" invisible="1"/>
           <field name="site_id" invisible="1"/>
           <field name="service_type" invisible="1"/>
-          <field name="type" invisible="1"/>
           <field name="rubro_code" invisible="1"/>
         </list>
       </field>
