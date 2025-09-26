@@ -123,22 +123,6 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # ---------- Alias O2M por rubro (para las pestañas) ----------
-    line_ids_mano_obra                 = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','mano_obra')])
-    line_ids_uniforme                  = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','uniforme')])
-    line_ids_epp                       = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','epp')])
-    line_ids_epp_alturas               = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','epp_alturas')])
-    line_ids_equipo_especial_limpieza  = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','equipo_especial_limpieza')])
-    line_ids_comunicacion_computo      = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','comunicacion_computo')])
-    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','herramienta_menor_jardineria')])
-    line_ids_material_limpieza         = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','material_limpieza')])
-    line_ids_perfil_medico             = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','perfil_medico')])
-    line_ids_maquinaria_limpieza       = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','maquinaria_limpieza')])
-    line_ids_maquinaria_jardineria     = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','maquinaria_jardineria')])
-    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','fertilizantes_tierra_lama')])
-    line_ids_consumibles_jardineria    = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','consumibles_jardineria')])
-    line_ids_capacitacion              = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','capacitacion')])
-
     # ---------- Estados por rubro (filtrados por sitio/servicio) ----------
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
@@ -162,7 +146,6 @@ class ServiceQuote(models.Model):
     )
     def _compute_rubro_states(self):
         def state_for(rec, code):
-            # Filtra por sitio + servicio + rubro
             lines = rec.line_ids.filtered(lambda l:
                 (rec.current_site_id and l.site_id.id == rec.current_site_id.id) and
                 (rec.current_service_type and l.service_type == rec.current_service_type) and
@@ -266,7 +249,7 @@ class ServiceQuote(models.Model):
 
     @api.onchange('current_service_type')
     def _onchange_current_service_type(self):
-        # Ya no usamos campo 'type' en líneas
+        # No más campo 'type' en líneas
         return
 
     @api.model_create_multi
@@ -279,6 +262,54 @@ class ServiceQuote(models.Model):
             if not quote.current_site_id and quote.site_ids:
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
+
+    # ---------- Hooks utilitarios llamados por XML ----------
+    @api.model
+    def _fix_general_sites(self, limit=100000):
+        """Garantiza un único sitio 'General' activo por cotización y lo pone al frente."""
+        Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
+        Line = self.env['ccn.service.quote.line'].sudo()
+        quotes = self.search([], limit=limit)
+        for q in quotes:
+            generals = Site.search([
+                ('quote_id', '=', q.id),
+                ('name', '=ilike', 'general'),
+            ])
+            if not generals:
+                canonical = Site.create({
+                    'quote_id': q.id,
+                    'name': 'General',
+                    'active': True,
+                    'sequence': -999,
+                })
+            else:
+                canonical = generals.sorted(key=lambda s: ((s.sequence or 0), s.id))[0]
+                dups = (generals - canonical)
+                if dups:
+                    Line.search([('site_id', 'in', dups.ids)]).write({'site_id': canonical.id})
+                    dups.write({'active': False})
+                canonical.write({'active': True, 'sequence': -999})
+            if not q.current_site_id or q.current_site_id not in q.site_ids:
+                q.write({'current_site_id': canonical.id})
+        return True
+
+    @api.model
+    def _deactivate_old_quote_views(self):
+        """Desactiva vistas heredadas antiguas si existen (idempotente)."""
+        IrView = self.env['ir.ui.view'].sudo()
+        # Lista de xmlids “antiguos” conocidos (si no existen, no pasa nada)
+        xmlids = [
+            'ccn_service_quote.ccn_view_quote_form_tabs',  # ejemplo legacy
+        ]
+        for xmlid in xmlids:
+            try:
+                view = self.env.ref(xmlid)
+                if view and view.active:
+                    view.write({'active': False, 'name': f"{view.name} (DISABLED)"})
+            except Exception:
+                # si no existe, continuar
+                continue
+        return True
 
 
 # ==========================================
@@ -317,7 +348,7 @@ class CCNServiceQuoteLine(models.Model):
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # Código de rubro (compute no almacenado; usar rubro_id.code en dominios O2M/BD)
+    # Código de rubro (compute no almacenado; usar rubro_id.code en dominios de BD)
     rubro_code = fields.Char(
         string='Código de Rubro',
         compute='_compute_rubro_code',
@@ -332,7 +363,6 @@ class CCNServiceQuoteLine(models.Model):
         string='Producto/Servicio',
         required=True,
         index=True,
-        # El dominio dinámico por rubro se refuerza en el onchange de rubro_id
         options="{'no_open': True, 'no_create': True, 'no_create_edit': True}",
     )
 
