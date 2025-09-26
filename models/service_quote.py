@@ -6,20 +6,20 @@ from odoo.exceptions import ValidationError
 # Catálogo de rubros (códigos)
 # -------------------------
 RUBRO_CODES = [
-    ("mano_obra", "Mano de Obra"),
-    ("uniforme", "Uniforme"),
-    ("epp", "EPP"),
-    ("epp_alturas", "EPP Alturas"),
-    ("equipo_especial_limpieza", "Equipo Especial de Limpieza"),
-    ("comunicacion_computo", "Comunicación y Cómputo"),
-    ("herramienta_menor_jardineria", "Herramienta Menor de Jardinería"),
-    ("material_limpieza", "Material de Limpieza"),
-    ("perfil_medico", "Perfil Médico"),
-    ("maquinaria_limpieza", "Maquinaria de Limpieza"),
-    ("maquinaria_jardineria", "Maquinaria de Jardinería"),
-    ("fertilizantes_tierra_lama", "Fertilizantes y Tierra Lama"),
-    ("consumibles_jardineria", "Consumibles de Jardinería"),
-    ("capacitacion", "Capacitación"),
+    ("mano_obra","Mano de Obra"),
+    ("uniforme","Uniforme"),
+    ("epp","EPP"),
+    ("epp_alturas","EPP Alturas"),
+    ("equipo_especial_limpieza","Equipo Especial de Limpieza"),
+    ("comunicacion_computo","Comunicación y Cómputo"),
+    ("herramienta_menor_jardineria","Herramienta Menor de Jardinería"),
+    ("material_limpieza","Material de Limpieza"),
+    ("perfil_medico","Perfil Médico"),
+    ("maquinaria_limpieza","Maquinaria de Limpieza"),
+    ("maquinaria_jardineria","Maquinaria de Jardinería"),
+    ("fertilizantes_tierra_lama","Fertilizantes y Tierra Lama"),
+    ("consumibles_jardineria","Consumibles de Jardinería"),
+    ("capacitacion","Capacitación"),
 ]
 
 # =====================================================================
@@ -72,7 +72,7 @@ class ServiceQuote(models.Model):
         string='Tipo de servicio',
     )
 
-    # (Dejamos este flag por compatibilidad, pero NO se usa para aislar datos)
+    # Compatibilidad (no se usa para aislar datos)
     current_type = fields.Selection(
         [('servicio', 'Servicio'), ('material', 'Material')],
         string='Tipo actual',
@@ -89,7 +89,6 @@ class ServiceQuote(models.Model):
         default='itemized',
         required=True,
     )
-
     admin_percent = fields.Float(string='Administración (%)', default=0.0)
     utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
@@ -98,7 +97,7 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # Estados por rubro (aislados por sitio/servicio ACTUALES)
+    # Estados por rubro (filtrados por sitio/servicio actual)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
@@ -120,19 +119,15 @@ class ServiceQuote(models.Model):
         'current_site_id', 'current_service_type'
     )
     def _compute_rubro_states(self):
-        """1 = con líneas, 2 = marcado 'No aplica' (ACK), 0 = vacío.
-        Aisla por sitio + tipo de servicio actuales. NO mezcla entre rubros.
-        """
         def state_for(rec, code):
             if not (rec.current_site_id and rec.current_service_type):
                 return 0
             lines = rec.line_ids.filtered(lambda l:
-                (l.site_id.id == rec.current_site_id.id) and
-                (l.service_type == rec.current_service_type) and
-                (getattr(l.rubro_id, 'code', False) == code)
+                l.site_id.id == rec.current_site_id.id
+                and l.service_type == rec.current_service_type
+                and getattr(l.rubro_id, 'code', False) == code
             )
             cnt = len(lines)
-            # ACK en el modelo ccn.service.quote.ack -> campo booleano 'ack'
             ack = self.env['ccn.service.quote.ack'].search_count([
                 ('quote_id', '=', rec.id),
                 ('site_id', '=', rec.current_site_id.id),
@@ -230,7 +225,6 @@ class ServiceQuote(models.Model):
 
     @api.onchange('current_service_type')
     def _onchange_current_service_type(self):
-        # Mantenemos compatibilidad pero ya no lo usamos para filtrar
         for quote in self:
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
@@ -245,7 +239,7 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    # Utilizado por data/migrate_fix_general.xml
+    # Usado por data/migrate_fix_general.xml
     @api.model
     def _fix_general_sites(self, limit=100000):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
@@ -268,7 +262,6 @@ class ServiceQuote(models.Model):
                 q.write({'current_site_id': general.id})
         return True
 
-    # Llamado por data/cleanup_views.xml (no-op segura)
     @api.model
     def _deactivate_old_quote_views(self):
         return True
@@ -282,22 +275,9 @@ class CCNServiceQuoteLine(models.Model):
     _description = 'CCN Service Quote Line'
     _order = 'id desc'
 
-    # Relaciones principales
-    quote_id = fields.Many2one(
-        'ccn.service.quote',
-        string='Cotización',
-        required=True,
-        ondelete='cascade',
-        index=True,
-    )
-    site_id = fields.Many2one(
-        'ccn.service.quote.site',
-        string='Sitio',
-        ondelete='set null',
-        index=True,
-    )
+    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade', index=True)
+    site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null', index=True)
 
-    # Contexto de vista
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -308,84 +288,33 @@ class CCNServiceQuoteLine(models.Model):
         ('fletes', 'Fletes'),
     ], string='Tipo de Servicio', index=True)
 
-    # Compatibilidad; ya no se usa para aislar
-    type = fields.Selection([
-        ('servicio', 'Servicio'),
-        ('material', 'Material'),
-    ], string='Tipo', default='servicio', index=True)
+    # Compatibilidad, no usado para el aislamiento
+    type = fields.Selection([('servicio', 'Servicio'), ('material', 'Material')], string='Tipo', default='servicio', index=True)
 
-    # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # Char compute (no related) para evitar choques en dominios de producto
-    rubro_code = fields.Char(
-        string='Código de Rubro',
-        compute='_compute_rubro_code',
-        store=False,
-        readonly=True,
-        index=True,
-    )
+    # Char compute NO related (evita choque con selection/code)
+    rubro_code = fields.Char(string='Código de Rubro', compute='_compute_rubro_code', store=False, readonly=True, index=True)
 
-    # Producto (filtrado por rubro)
     product_id = fields.Many2one(
-        'product.product',
-        string='Producto/Servicio',
-        required=True,
-        index=True,
+        'product.product', string='Producto/Servicio', required=True, index=True,
         domain="['&', ('product_tmpl_id.ccn_exclude_from_quote','=',False), "
                "'|', ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')), "
                      "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
     )
 
-    # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
 
-    # Moneda
-    currency_id = fields.Many2one(
-        'res.currency',
-        string='Moneda',
-        related='quote_id.currency_id',
-        store=True,
-        readonly=True,
-    )
+    currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)
 
-    # Tabulador
-    tabulator_percent = fields.Selection(
-        [('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')],
-        string='Tabulador',
-        default='0',
-        required=True,
-    )
+    tabulator_percent = fields.Selection([('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')], string='Tabulador', default='0', required=True)
 
-    # Precios / impuestos / totales (simplificados)
-    product_base_price = fields.Monetary(
-        string='Precio base',
-        compute='_compute_product_base_price',
-        store=True,
-    )
-    price_unit_final = fields.Monetary(
-        string='Precio Unitario',
-        compute='_compute_price_unit_final',
-        store=True,
-    )
-    taxes_display = fields.Char(
-        string='Detalle de impuestos',
-        compute='_compute_taxes_display',
-        store=False,
-    )
-    amount_tax = fields.Monetary(
-        string='IVA',
-        compute='_compute_amount_tax',
-        store=False,
-        currency_field='currency_id',
-    )
-    total_price = fields.Monetary(
-        string='Subtotal final',
-        compute='_compute_total_price',
-        store=False,
-    )
+    product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=True)
+    price_unit_final = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=True)
+    taxes_display = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
+    amount_tax = fields.Monetary(string='IVA', compute='_compute_amount_tax', store=False, currency_field='currency_id')
+    total_price = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
-    # ===== Cómputos =====
     @api.depends('rubro_id', 'rubro_id.code')
     def _compute_rubro_code(self):
         for rec in self:
@@ -440,7 +369,6 @@ class CCNServiceQuoteLine(models.Model):
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
 
-    # ===== Defaults desde contexto =====
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -453,26 +381,23 @@ class CCNServiceQuoteLine(models.Model):
         if 'default_service_type' in ctx and 'service_type' in self._fields:
             res.setdefault('service_type', ctx.get('default_service_type'))
 
-        # Fijar rubro por pestaña (ctx_rubro_code)
         code = ctx.get('ctx_rubro_code')
         if code and 'rubro_id' in self._fields and not res.get('rubro_id'):
             rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
             if rubro:
                 res['rubro_id'] = rubro.id
-
         return res
 
-    # Onchange para reforzar el dominio de producto por rubro
     @api.onchange('rubro_id')
     def _onchange_rubro_id(self):
         code = self.rubro_id.code if self.rubro_id else False
         return {
             'domain': {
                 'product_id': [
-                    ('product_tmpl_id.ccn_exclude_from_quote', '=', False),
+                    ('product_tmpl_id.ccn_exclude_from_quote','=', False),
                     '|',
-                        ('product_tmpl_id.ccn_rubro_ids.code', '=', code),
-                        ('product_tmpl_id.ccn_rubro_ids.code', '=', False),
+                        ('product_tmpl_id.ccn_rubro_ids.code','=', code),
+                        ('product_tmpl_id.ccn_rubro_ids.code','=', False),
                 ]
             }
         }

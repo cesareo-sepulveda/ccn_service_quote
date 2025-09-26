@@ -1,21 +1,15 @@
-"""Load all models for the CCN service quote module."""
-
+# -*- coding: utf-8 -*-
 from . import (
-    service_quote,   # ← ÚNICO que define ccn.service.quote y ccn.service.quote.line
-    site,
-    ack,                 # si tienes el modelo ACK separado, déjalo
-    add_package_wizard,
-    patch_rubro_code,
-    product,
-    quote_line_enhancements,
-    quote_line_extend,
-    quote_line_related,
-    quote_line_tax,
-    quote_partner_user_fields,
-    res_partner,
-    rubro,
-    rubro_flag,
-    sale_order,
-    service_package,
-    pick_quote_wizard
+    service_quote,      # única fuente de ServiceQuote y Line
+    site,               # sitios con indicadores
+    ack,                # modelo de ACK por rubro (usa campo 'ack')
+    product,            # extensión product.template/product.product (ccn_rubro_ids, ccn_exclude_from_quote)
+    res_partner,        # si tienes extensiones al partner
+    rubro,              # catálogo de rubros
+    rubro_flag,         # si lo usas
+    sale_order,         # si lo usas
+    service_package,    # si lo usas
+    add_package_wizard, # si lo usas
+    patch_rubro_code,   # si lo usas
+    pick_quote_wizard   # si lo usas
 )
