@@ -72,7 +72,7 @@ class ServiceQuote(models.Model):
         string='Tipo de servicio',
     )
 
-    # Compatibilidad (no se usa para aislar datos)
+    # (compatibilidad visual; no se usa para aislar datos)
     current_type = fields.Selection(
         [('servicio', 'Servicio'), ('material', 'Material')],
         string='Tipo actual',
@@ -275,7 +275,8 @@ class CCNServiceQuoteLine(models.Model):
     _description = 'CCN Service Quote Line'
     _order = 'id desc'
 
-    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade', index=True)
+    quote_id = fields.Many2one(
+        'ccn.service.quote', string='Cotización', required=True, ondelete='cascade', index=True)
     site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null', index=True)
 
     service_type = fields.Selection([
@@ -288,31 +289,42 @@ class CCNServiceQuoteLine(models.Model):
         ('fletes', 'Fletes'),
     ], string='Tipo de Servicio', index=True)
 
-    # Compatibilidad, no usado para el aislamiento
-    type = fields.Selection([('servicio', 'Servicio'), ('material', 'Material')], string='Tipo', default='servicio', index=True)
+    # (compatibilidad visual; no se usa para aislar datos)
+    type = fields.Selection([('servicio', 'Servicio'), ('material', 'Material')],
+                            string='Tipo', default='servicio', index=True)
 
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # Char compute NO related (evita choque con selection/code)
-    rubro_code = fields.Char(string='Código de Rubro', compute='_compute_rubro_code', store=False, readonly=True, index=True)
+    # Char compute NO related (no almacena; no usarlo en dominios SQL)
+    rubro_code = fields.Char(string='Código de Rubro',
+                             compute='_compute_rubro_code', store=False, readonly=True, index=True)
 
     product_id = fields.Many2one(
-        'product.product', string='Producto/Servicio', required=True, index=True,
+        'product.product',
+        string='Producto/Servicio',
+        required=True,
+        index=True,
         domain="['&', ('product_tmpl_id.ccn_exclude_from_quote','=',False), "
                "'|', ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')), "
-                     "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
+                     "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_id.code)]",
     )
 
     quantity = fields.Float(string='Cantidad', default=1.0)
 
-    currency_id = fields.Many2one('res.currency', string='Moneda', related='quote_id.currency_id', store=True, readonly=True)
+    currency_id = fields.Many2one('res.currency', string='Moneda',
+                                  related='quote_id.currency_id', store=True, readonly=True)
 
-    tabulator_percent = fields.Selection([('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')], string='Tabulador', default='0', required=True)
+    tabulator_percent = fields.Selection(
+        [('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')],
+        string='Tabulador', default='0', required=True)
 
-    product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=True)
-    price_unit_final = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=True)
+    product_base_price = fields.Monetary(string='Precio base',
+                                         compute='_compute_product_base_price', store=True)
+    price_unit_final = fields.Monetary(string='Precio Unitario',
+                                       compute='_compute_price_unit_final', store=True)
     taxes_display = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
-    amount_tax = fields.Monetary(string='IVA', compute='_compute_amount_tax', store=False, currency_field='currency_id')
+    amount_tax = fields.Monetary(string='IVA', compute='_compute_amount_tax', store=False,
+                                 currency_field='currency_id')
     total_price = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
 
     @api.depends('rubro_id', 'rubro_id.code')
