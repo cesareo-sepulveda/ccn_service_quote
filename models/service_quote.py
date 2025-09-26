@@ -22,6 +22,40 @@ RUBRO_CODES = [
     ("capacitacion","Capacitación"),
 ]
 
+
+# =====================================================================
+# ACK por rubro/sitio/servicio
+# =====================================================================
+class ServiceQuoteAck(models.Model):
+    _name = "ccn.service.quote.ack"
+    _description = "ACK de 'No aplica' por Sitio/Servicio/Rubro"
+    _rec_name = "rubro_code"
+    _order = "id desc"
+
+    quote_id = fields.Many2one("ccn.service.quote", required=True, ondelete="cascade", index=True)
+    site_id = fields.Many2one("ccn.service.quote.site", required=True, ondelete="cascade", index=True)
+    service_type = fields.Selection(
+        selection=[
+            ('jardineria', 'Jardinería'),
+            ('limpieza', 'Limpieza'),
+            ('mantenimiento', 'Mantenimiento'),
+            ('materiales', 'Materiales'),
+            ('servicios_especiales', 'Servicios Especiales'),
+            ('almacenaje', 'Almacenaje'),
+            ('fletes', 'Fletes'),
+        ],
+        required=True,
+        index=True,
+    )
+    rubro_code = fields.Selection(RUBRO_CODES, required=True, index=True)
+    ack = fields.Boolean(default=True)
+
+    _sql_constraints = [
+        ("uniq_ack_scope", "unique(quote_id, site_id, service_type, rubro_code)",
+         "Solo puede existir un ACK por sitio, tipo de servicio y rubro."),
+    ]
+
+
 # =====================================================================
 # QUOTE (encabezado)
 # =====================================================================
@@ -82,14 +116,30 @@ class ServiceQuote(models.Model):
         default='itemized',
         required=True,
     )
-
     admin_percent = fields.Float(string='Administración (%)', default=0.0)
     utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
     transporte_rate = fields.Float(string='Tarifa Transporte P/P', default=0.0)
     bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
 
+    # Relación base de líneas
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
+
+    # === One2many POR RUBRO (uno por pestaña) ===
+    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra')
+    line_ids_uniforme = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme')
+    line_ids_epp = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP')
+    line_ids_epp_alturas = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas')
+    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial de Limpieza')
+    line_ids_comunicacion_computo = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación y Cómputo')
+    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Herr. Menor Jardinería')
+    line_ids_material_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Material de Limpieza')
+    line_ids_perfil_medico = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Perfil Médico')
+    line_ids_maquinaria_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria de Limpieza')
+    line_ids_maquinaria_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria de Jardinería')
+    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Fertilizantes y Tierra Lama')
+    line_ids_consumibles_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles de Jardinería')
+    line_ids_capacitacion = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación')
 
     # Estados por rubro (filtrados por sitio/servicio actual)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
@@ -201,7 +251,7 @@ class ServiceQuote(models.Model):
             quote.current_site_id = general.id
         return True
 
-    # Defaults para que "General" aparezca de inmediato
+    # Defaults
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
@@ -228,7 +278,7 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    # Usado por data/migrate_fix_general.xml
+    # Usado en migraciones/datos
     @api.model
     def _fix_general_sites(self, limit=100000):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
@@ -260,7 +310,6 @@ class CCNServiceQuoteLine(models.Model):
     _description = 'CCN Service Quote Line'
     _order = 'id desc'
 
-    # Relaciones principales
     quote_id = fields.Many2one(
         'ccn.service.quote',
         string='Cotización',
@@ -274,8 +323,6 @@ class CCNServiceQuoteLine(models.Model):
         ondelete='set null',
         index=True,
     )
-
-    # Contexto de vista
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -286,10 +333,9 @@ class CCNServiceQuoteLine(models.Model):
         ('fletes', 'Fletes'),
     ], string='Tipo de Servicio', index=True)
 
-    # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # rubro_code stored (Selection) para que el dominio funcione a nivel SQL
+    # rubro_code stored para filtrar en SQL
     rubro_code = fields.Selection(
         selection=RUBRO_CODES,
         string='Código de Rubro',
@@ -299,7 +345,6 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
-    # Producto (filtrado por rubro)
     product_id = fields.Many2one(
         'product.product',
         string='Producto/Servicio',
@@ -310,10 +355,8 @@ class CCNServiceQuoteLine(models.Model):
                      "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
     )
 
-    # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
 
-    # Moneda
     currency_id = fields.Many2one(
         'res.currency',
         string='Moneda',
@@ -322,7 +365,6 @@ class CCNServiceQuoteLine(models.Model):
         readonly=True,
     )
 
-    # Tabulador
     tabulator_percent = fields.Selection(
         [('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')],
         string='Tabulador',
@@ -330,7 +372,6 @@ class CCNServiceQuoteLine(models.Model):
         required=True,
     )
 
-    # Precios / impuestos / totales (simplificados)
     product_base_price = fields.Monetary(
         string='Precio base',
         compute='_compute_product_base_price',
@@ -432,7 +473,6 @@ class CCNServiceQuoteLine(models.Model):
 
         return res
 
-    # Onchange para reforzar el dominio de producto por rubro
     @api.onchange('rubro_id')
     def _onchange_rubro_id(self):
         code = self.rubro_id.code if self.rubro_id else False
