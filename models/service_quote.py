@@ -2,9 +2,9 @@
 from odoo import Command, api, fields, models, _
 from odoo.exceptions import ValidationError
 
-# -------------------------
-# Catálogo de rubros (códigos)
-# -------------------------
+# ==========================================
+# Catálogo de rubros (códigos y etiquetas)
+# ==========================================
 RUBRO_CODES = [
     ("mano_obra","Mano de Obra"),
     ("uniforme","Uniforme"),
@@ -22,9 +22,42 @@ RUBRO_CODES = [
     ("capacitacion","Capacitación"),
 ]
 
-# =====================================================================
-# QUOTE (encabezado)
-# =====================================================================
+# ==========================================
+# ACK "No aplica" por Sitio / Servicio / Rubro
+# ==========================================
+class ServiceQuoteAck(models.Model):
+    _name = "ccn.service.quote.ack"
+    _description = "ACK de 'No aplica' por Sitio/Servicio/Rubro"
+    _rec_name = "rubro_code"
+    _order = "id desc"
+
+    quote_id = fields.Many2one("ccn.service.quote", required=True, ondelete="cascade", index=True)
+    site_id = fields.Many2one("ccn.service.quote.site", required=True, ondelete="cascade", index=True)
+    service_type = fields.Selection(
+        selection=[
+            ('jardineria', 'Jardinería'),
+            ('limpieza', 'Limpieza'),
+            ('mantenimiento', 'Mantenimiento'),
+            ('materiales', 'Materiales'),
+            ('servicios_especiales', 'Servicios Especiales'),
+            ('almacenaje', 'Almacenaje'),
+            ('fletes', 'Fletes'),
+        ],
+        required=True,
+        index=True,
+    )
+    rubro_code = fields.Selection(RUBRO_CODES, required=True, index=True)
+    ack = fields.Boolean(default=True)
+
+    _sql_constraints = [
+        ("uniq_ack_scope", "unique(quote_id, site_id, service_type, rubro_code)",
+         "Solo puede existir un ACK por sitio, tipo de servicio y rubro."),
+    ]
+
+
+# ==========================================
+# Cotización (encabezado)
+# ==========================================
 class ServiceQuote(models.Model):
     _name = 'ccn.service.quote'
     _description = 'CCN Service Quote'
@@ -90,7 +123,23 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # Estados por rubro (filtrados por sitio/servicio actual)
+    # ---------- Alias O2M por rubro (para las pestañas) ----------
+    line_ids_mano_obra                 = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','mano_obra')])
+    line_ids_uniforme                  = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','uniforme')])
+    line_ids_epp                       = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','epp')])
+    line_ids_epp_alturas               = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','epp_alturas')])
+    line_ids_equipo_especial_limpieza  = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','equipo_especial_limpieza')])
+    line_ids_comunicacion_computo      = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','comunicacion_computo')])
+    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','herramienta_menor_jardineria')])
+    line_ids_material_limpieza         = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','material_limpieza')])
+    line_ids_perfil_medico             = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','perfil_medico')])
+    line_ids_maquinaria_limpieza       = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','maquinaria_limpieza')])
+    line_ids_maquinaria_jardineria     = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','maquinaria_jardineria')])
+    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','fertilizantes_tierra_lama')])
+    line_ids_consumibles_jardineria    = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','consumibles_jardineria')])
+    line_ids_capacitacion              = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','capacitacion')])
+
+    # ---------- Estados por rubro (filtrados por sitio/servicio) ----------
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
@@ -113,6 +162,7 @@ class ServiceQuote(models.Model):
     )
     def _compute_rubro_states(self):
         def state_for(rec, code):
+            # Filtra por sitio + servicio + rubro
             lines = rec.line_ids.filtered(lambda l:
                 (rec.current_site_id and l.site_id.id == rec.current_site_id.id) and
                 (rec.current_service_type and l.service_type == rec.current_service_type) and
@@ -144,7 +194,7 @@ class ServiceQuote(models.Model):
             rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
             rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
 
-    # ACK granular
+    # ---------- ACK helpers ----------
     def _ensure_ack(self, rubro_code, value):
         for rec in self:
             if not (rec.current_site_id and rec.current_service_type and rubro_code):
@@ -178,7 +228,7 @@ class ServiceQuote(models.Model):
             self._ensure_ack(code, False)
         return True
 
-    # Botón para garantizar/crear Sitio "General"
+    # ---------- Utilidades de sitio ----------
     def action_ensure_general(self):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
         for quote in self:
@@ -198,7 +248,7 @@ class ServiceQuote(models.Model):
             quote.current_site_id = general.id
         return True
 
-    # Defaults para que "General" aparezca de inmediato
+    # ---------- Defaults / onchange ----------
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
@@ -216,7 +266,7 @@ class ServiceQuote(models.Model):
 
     @api.onchange('current_service_type')
     def _onchange_current_service_type(self):
-        # Sin campo 'type' en líneas; no hacemos nada más aquí
+        # Ya no usamos campo 'type' en líneas
         return
 
     @api.model_create_multi
@@ -231,9 +281,9 @@ class ServiceQuote(models.Model):
         return quotes
 
 
-# =====================================================================
-# LÍNEA (detalle)
-# =====================================================================
+# ==========================================
+# Línea de cotización (detalle)
+# ==========================================
 class CCNServiceQuoteLine(models.Model):
     _name = 'ccn.service.quote.line'
     _description = 'CCN Service Quote Line'
@@ -254,7 +304,6 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
-    # Contexto de vista
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -268,7 +317,7 @@ class CCNServiceQuoteLine(models.Model):
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # Char compute (NO related) — solo para mostrar/filtrar UI; en dominios usar rubro_id.code
+    # Código de rubro (compute no almacenado; usar rubro_id.code en dominios O2M/BD)
     rubro_code = fields.Char(
         string='Código de Rubro',
         compute='_compute_rubro_code',
@@ -277,15 +326,14 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
-    # Producto (filtrado por rubro)
+    # Producto/Servicio
     product_id = fields.Many2one(
         'product.product',
         string='Producto/Servicio',
         required=True,
         index=True,
-        domain="['&', ('product_tmpl_id.ccn_exclude_from_quote','=',False), "
-               "'|', ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')), "
-                     "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
+        # El dominio dinámico por rubro se refuerza en el onchange de rubro_id
+        options="{'no_open': True, 'no_create': True, 'no_create_edit': True}",
     )
 
     # Cantidad
@@ -415,7 +463,7 @@ class CCNServiceQuoteLine(models.Model):
 
         return res
 
-    # Onchange para reforzar el dominio de producto por rubro
+    # Onchange para reforzar dominio de producto por rubro
     @api.onchange('rubro_id')
     def _onchange_rubro_id(self):
         code = self.rubro_id.code if self.rubro_id else False
@@ -429,19 +477,3 @@ class CCNServiceQuoteLine(models.Model):
                 ]
             }
         }
-
-    # Alias O2M por rubro (usar dominios buscables)
-    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','mano_obra')])
-    line_ids_uniforme = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','uniforme')])
-    line_ids_epp = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','epp')])
-    line_ids_epp_alturas = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','epp_alturas')])
-    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','equipo_especial_limpieza')])
-    line_ids_comunicacion_computo = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','comunicacion_computo')])
-    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','herramienta_menor_jardineria')])
-    line_ids_material_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','material_limpieza')])
-    line_ids_perfil_medico = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','perfil_medico')])
-    line_ids_maquinaria_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','maquinaria_limpieza')])
-    line_ids_maquinaria_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','maquinaria_jardineria')])
-    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','fertilizantes_tierra_lama')])
-    line_ids_consumibles_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','consumibles_jardineria')])
-    line_ids_capacitacion = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_id.code','=','capacitacion')])
