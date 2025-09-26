@@ -1,12 +1,22 @@
+/** CCN Quote Tabs — pinta leyendo rubro_state_* desde el DOM (sin RPC/URL/res_id)
+ *  - Re-pinta en:
+ *    a) cambio de rubro_state_*
+ *    b) clic/tecla en tabs
+ *    c) cambio de Sitio o Tipo de servicio
+ *  - Estados: 1 => verde, 2 => ámbar, 0/otros => rojo
+ *  - Odoo 18 CE, sin imports
+ */
 (function () {
   "use strict";
 
+  // === normalización (acentos, espacios)
   function norm(s){
     return String(s||"").trim().toLowerCase()
       .normalize("NFD").replace(/\p{Diacritic}/gu,"")
       .replace(/\s+/g," ");
   }
 
+  // === etiqueta visible -> rubro_code
   const LABEL_TO_CODE = {
     "mano de obra": "mano_obra",
     "uniforme": "uniforme",
@@ -23,8 +33,10 @@
     "consumibles de jardineria": "consumibles_jardineria",
     "capacitacion": "capacitacion",
   };
+  function LABEL_TOCODE_SAFE(){ return LABEL_TO_CODE; }
   const STATE_FIELD = (code) => `rubro_state_${code}`;
 
+  // === clases de color
   function clsFor(st){
     return st === 1 ? "ccn-status-filled"
          : st === 2 ? "ccn-status-ack"
@@ -47,9 +59,10 @@
     li && li.classList.add(c);
   }
 
+  // === leer valor int desde un <field> renderizado en el DOM
   function readIntField(root, fieldName){
-    const el = root.querySelector(`.o_ccn_rubro_states [name="${fieldName}"], .o_ccn_rubro_states [data-name="${fieldName}"]`)
-            || root.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
+    // probamos por [name] y por [data-name] (según widget)
+    const el = root.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
     if(!el) return null;
     const raw = el.getAttribute("data-value") ?? el.getAttribute("value") ?? el.textContent;
     if(raw == null) return null;
@@ -57,10 +70,12 @@
     return Number.isNaN(v) ? null : v;
   }
 
-  function getForm(){ return document.querySelector(".o_form_view.ccn-quote"); }
-  function getNotebook(){ return document.querySelector(".o_form_view.ccn-quote .o_notebook"); }
+  // === helpers DOM
+  function getForm(){ return document.querySelector(".o_form_view"); }
+  function getNotebook(){ return document.querySelector(".o_form_view .o_notebook"); }
   function getLinks(nb){ return nb ? [...nb.querySelectorAll(".nav-tabs .nav-link")] : []; }
 
+  // === índice code -> <a.nav-link>
   function indexByCode(nb){
     const byCode = {};
     if(!nb) return byCode;
@@ -71,32 +86,12 @@
     return byCode;
   }
 
-  // Fallback: si no hay rubro_state_ disponible todavía en la pestaña activa
-  function deduceStateFromActivePage(link){
-    try{
-      const paneId = link.getAttribute("data-bs-target") || link.getAttribute("href");
-      if(!paneId || !paneId.startsWith("#")) return null;
-      const pane = document.querySelector(paneId);
-      if(!pane) return null;
-      const rows = pane.querySelectorAll('.o_list_view table tbody tr');
-      for(const tr of rows){
-        if (!tr.classList.contains('o_empty_row')) return 1; // hay filas => filled
-      }
-      return 0; // vacío
-    }catch(_e){ return null; }
-  }
-
+  // === pintado desde estados
   function paintFromStates(formRoot, nb, byCode, last){
     let changed = false;
     for(const [code, link] of Object.entries(byCode)){
-      let st = readIntField(formRoot, STATE_FIELD(code));
-      if (st !== 1 && st !== 2 && st !== 0){
-        if (link.classList.contains('active')){
-          const d = deduceStateFromActivePage(link);
-          if (d !== null) st = d;
-        }
-      }
-      const sNorm = (st === 1 || st === 2) ? st : 0;
+      const st = readIntField(formRoot, STATE_FIELD(code));
+      const sNorm = (st === 1 || st === 2) ? st : 0; // 0/otros => rojo
       if (last[code] !== sNorm){
         applyTab(link, sNorm);
         last[code] = sNorm;
@@ -106,71 +101,84 @@
     return changed;
   }
 
-  function watch(formRoot, nb, byCode, last){
+  // === observadores/eventos que disparan repintado
+  function watchAndBind(formRoot, nb, byCode, last){
     let scheduled = false;
-    const schedule = () => {
+    const schedule = (delays=[0,40,160,360]) => {
       if (scheduled) return;
       scheduled = true;
-      setTimeout(()=>{ scheduled = false; try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 0);
-      setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 120);
+      const run = () => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} };
+      delays.forEach((ms,i)=> setTimeout(()=>{ if(i===delays.length-1) scheduled=false; run(); }, ms));
     };
 
-    // 1) Mutaciones en estados / listas
+    // 1) cambios en campos rubro_state_* (reaccionan a compute en servidor)
     const mo = new MutationObserver((muts) => {
-      for(const mut of muts){
-        const t = mut.target;
-        if (!(t instanceof Element)) continue;
-        const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
-        if (name.startsWith("rubro_state_")) { schedule(); return; }
-        if (t.closest?.('.o_list_view') || t.closest?.('.o_x2m_view')) { schedule(); return; }
-      }
+      try{
+        for(const mut of muts){
+          const t = mut.target;
+          if (!(t instanceof Element)) continue;
+          const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
+          if (name.startsWith("rubro_state_")){ schedule(); return; }
+          const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"]');
+          if (holder){ schedule(); return; }
+        }
+      }catch(_e){}
     });
-    mo.observe(formRoot, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:["data-value","value","class"] });
+    mo.observe(formRoot, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["data-value", "value", "class"],
+    });
 
-    // 2) Click en tabs => repinta
-    nb.addEventListener('click', (ev)=>{
-      const a = ev.target.closest?.('.nav-tabs .nav-link');
-      if (!a) return;
-      setTimeout(schedule, 60);
-      setTimeout(schedule, 180);
-    }, true);
+    // 2) clic/tecla en tabs
+    for(const a of getLinks(nb)){
+      a.addEventListener("click", () => schedule());
+      a.addEventListener("keydown", (ev) => {
+        if (ev.key === "Enter" || ev.key === " ") schedule();
+      });
+    }
 
-    // 3) Cambios de sitio / tipo servicio => repinta
-    const siteField = formRoot.querySelector('[name="current_site_id"], [data-name="current_site_id"]');
-    const svcField  = formRoot.querySelector('[name="current_service_type"], [data-name="current_service_type"]');
-    const moScope = new MutationObserver(()=> { schedule(); });
-    if (siteField) moScope.observe(siteField, {attributes:true, childList:true, subtree:true, characterData:true});
-    if (svcField)  moScope.observe(svcField,  {attributes:true, childList:true, subtree:true, characterData:true});
+    // 3) cambios visibles de Sitio / Tipo de servicio (selects en el header)
+    const siteEl = formRoot.querySelector('[name="current_site_id"], [data-name="current_site_id"]');
+    const svcEl  = formRoot.querySelector('[name="current_service_type"], [data-name="current_service_type"]');
+    if (siteEl) {
+      siteEl.addEventListener('change', ()=> schedule());
+      siteEl.addEventListener('input',  ()=> schedule());
+    }
+    if (svcEl) {
+      svcEl.addEventListener('change', ()=> schedule());
+      svcEl.addEventListener('input',  ()=> schedule());
+    }
 
-    // 4) Ediciones dentro de listas => repinta
-    formRoot.addEventListener('change', (ev)=>{ if (ev.target.closest('.o_list_view')) schedule(); }, true);
-    formRoot.addEventListener('input',  (ev)=>{ if (ev.target.closest('.o_list_view')) schedule(); }, true);
-
-    // debug opcional
+    // Debug
     window.__ccnTabsWatch = {
-      dump(){ console.log(JSON.parse(JSON.stringify(last))); },
-      repaint(){ paintFromStates(formRoot, nb, byCode, last); },
+      repaint(){ schedule([0]); },
+      dump(){ console.log(JSON.parse(JSON.stringify(last))); }
     };
   }
 
-  function waitFormAndNotebook(cb){
-    const tryStart = () =>{
-      const formRoot = getForm();
-      const nb = getNotebook();
-      if(formRoot && nb) return cb(formRoot, nb);
-    };
-    if (tryStart()) return;
-    const obs = new MutationObserver(()=>{ if (tryStart()) obs.disconnect(); });
-    obs.observe(document.documentElement, {childList:true,subtree:true});
+  // === boot
+  function start(){
+    const formRoot = getForm();
+    const nb = getNotebook();
+    if(!formRoot || !nb) return false;
+
+    const byCode = indexByCode(nb);
+    if (!Object.keys(byCode).length) return false;
+
+    const last = {};
+    try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+    watchAndBind(formRoot, nb, byCode, last);
+    return true;
   }
 
+  // espera a que exista el form/notebook
   try{
-    waitFormAndNotebook((formRoot, nb)=>{
-      const byCode = indexByCode(nb);
-      if (!Object.keys(byCode).length) return;
-      const last = {};
-      try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-      watch(formRoot, nb, byCode, last);
-    });
+    if(!start()){
+      const obs = new MutationObserver(()=>{ if(start()) obs.disconnect(); });
+      obs.observe(document.documentElement, {childList:true,subtree:true});
+    }
   }catch(_e){}
 })();
