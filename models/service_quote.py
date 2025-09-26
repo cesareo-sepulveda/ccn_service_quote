@@ -74,13 +74,6 @@ class ServiceQuote(models.Model):
         store=True,
     )
 
-    current_type = fields.Selection(
-        [('servicio', 'Servicio'), ('material', 'Material')],
-        string='Tipo actual',
-        default='servicio',
-        store=True,
-    )
-
     display_mode = fields.Selection(
         [
             ('by_rubro', 'Acumulado por rubro'),
@@ -91,7 +84,6 @@ class ServiceQuote(models.Model):
         default='itemized',
         required=True,
     )
-
     admin_percent = fields.Float(string='Administración (%)', default=0.0)
     utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
@@ -100,67 +92,73 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # Estados por rubro (filtrados por sitio/servicio/tipo actual)  ➜ ahora store=True
-    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states", store=True)
-    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states", store=True)
+    # ===== Estados por rubro (enteros simples; se actualizan en onchange/create/write) =====
+    rubro_state_mano_obra                 = fields.Integer(default=0)
+    rubro_state_uniforme                  = fields.Integer(default=0)
+    rubro_state_epp                       = fields.Integer(default=0)
+    rubro_state_epp_alturas               = fields.Integer(default=0)
+    rubro_state_equipo_especial_limpieza  = fields.Integer(default=0)
+    rubro_state_comunicacion_computo      = fields.Integer(default=0)
+    rubro_state_herramienta_menor_jardineria = fields.Integer(default=0)
+    rubro_state_material_limpieza         = fields.Integer(default=0)
+    rubro_state_perfil_medico             = fields.Integer(default=0)
+    rubro_state_maquinaria_limpieza       = fields.Integer(default=0)
+    rubro_state_maquinaria_jardineria     = fields.Integer(default=0)
+    rubro_state_fertilizantes_tierra_lama = fields.Integer(default=0)
+    rubro_state_consumibles_jardineria    = fields.Integer(default=0)
+    rubro_state_capacitacion              = fields.Integer(default=0)
 
-    @api.depends(
-        # líneas y sus campos que afectan presencia por rubro
-        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
-        'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
-        # alcance actual
-        'current_site_id', 'current_service_type', 'current_type'
-    )
-    def _compute_rubro_states(self):
-        def state_for(rec, code):
-            if not (rec.current_site_id and rec.current_service_type):
-                # sin alcance no pintamos verde/ámbar
-                return 0
-            lines = rec.line_ids.filtered(lambda l:
-                l.site_id.id == rec.current_site_id.id and
-                l.service_type == rec.current_service_type and
-                (l.rubro_code == code or getattr(l.rubro_id, 'code', False) == code) and
-                (not rec.current_type or l.type == rec.current_type)
-            )
-            cnt = len(lines)
-            ack = self.env['ccn.service.quote.ack'].search_count([
-                ('quote_id', '=', rec.id),
-                ('site_id', '=', rec.current_site_id.id),
-                ('service_type', '=', rec.current_service_type),
-                ('rubro_code', '=', code),
-                ('ack', '=', True),
-            ]) > 0
-            return 1 if cnt > 0 else (2 if ack else 0)
+    # ---------- Helpers de estado ----------
+    def _state_for_code(self, code):
+        self.ensure_one()
+        # si no hay alcance seleccionado, rojo
+        if not (self.current_site_id and self.current_service_type):
+            return 0
+        # ¿hay líneas para ESTE rubro en el alcance actual?
+        lines = self.line_ids.filtered(lambda l:
+            l.site_id.id == self.current_site_id.id and
+            l.service_type == self.current_service_type and
+            (l.rubro_code == code or getattr(l.rubro_id, 'code', False) == code)
+        )
+        if lines:
+            return 1
+        # ¿hay ACK "no aplica" en este alcance?
+        ack = self.env['ccn.service.quote.ack'].search_count([
+            ('quote_id', '=', self.id),
+            ('site_id', '=', self.current_site_id.id),
+            ('service_type', '=', self.current_service_type),
+            ('rubro_code', '=', code),
+            ('ack', '=', True),
+        ]) > 0
+        return 2 if ack else 0
 
+    def _compute_all_states_map(self):
+        self.ensure_one()
+        get = self._state_for_code
+        return {
+            'rubro_state_mano_obra':                 get('mano_obra'),
+            'rubro_state_uniforme':                  get('uniforme'),
+            'rubro_state_epp':                       get('epp'),
+            'rubro_state_epp_alturas':               get('epp_alturas'),
+            'rubro_state_equipo_especial_limpieza':  get('equipo_especial_limpieza'),
+            'rubro_state_comunicacion_computo':      get('comunicacion_computo'),
+            'rubro_state_herramienta_menor_jardineria': get('herramienta_menor_jardineria'),
+            'rubro_state_material_limpieza':         get('material_limpieza'),
+            'rubro_state_perfil_medico':             get('perfil_medico'),
+            'rubro_state_maquinaria_limpieza':       get('maquinaria_limpieza'),
+            'rubro_state_maquinaria_jardineria':     get('maquinaria_jardineria'),
+            'rubro_state_fertilizantes_tierra_lama': get('fertilizantes_tierra_lama'),
+            'rubro_state_consumibles_jardineria':    get('consumibles_jardineria'),
+            'rubro_state_capacitacion':              get('capacitacion'),
+        }
+
+    def _update_states_write(self):
+        """Recalcula y escribe los 14 estados (evita recursión)."""
         for rec in self:
-            rec.rubro_state_mano_obra                 = state_for(rec, 'mano_obra')
-            rec.rubro_state_uniforme                  = state_for(rec, 'uniforme')
-            rec.rubro_state_epp                       = state_for(rec, 'epp')
-            rec.rubro_state_epp_alturas               = state_for(rec, 'epp_alturas')
-            rec.rubro_state_equipo_especial_limpieza  = state_for(rec, 'equipo_especial_limpieza')
-            rec.rubro_state_comunicacion_computo      = state_for(rec, 'comunicacion_computo')
-            rec.rubro_state_herramienta_menor_jardineria = state_for(rec, 'herramienta_menor_jardineria')
-            rec.rubro_state_material_limpieza         = state_for(rec, 'material_limpieza')
-            rec.rubro_state_perfil_medico             = state_for(rec, 'perfil_medico')
-            rec.rubro_state_maquinaria_limpieza       = state_for(rec, 'maquinaria_limpieza')
-            rec.rubro_state_maquinaria_jardineria     = state_for(rec, 'maquinaria_jardineria')
-            rec.rubro_state_fertilizantes_tierra_lama = state_for(rec, 'fertilizantes_tierra_lama')
-            rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
-            rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
+            vals = rec._compute_all_states_map()
+            super(ServiceQuote, rec).write(vals)
 
-    # ACK granular
+    # ---------- ACK granular ----------
     def _ensure_ack(self, rubro_code, value):
         for rec in self:
             if not (rec.current_site_id and rec.current_service_type and rubro_code):
@@ -181,6 +179,9 @@ class ServiceQuote(models.Model):
                     'rubro_code': rubro_code,
                     'ack': True,
                 })
+        # tras cambiar ACK, refrescar estados
+        self._update_states_write()
+        return True
 
     def action_mark_rubro_empty(self):
         code = (self.env.context or {}).get('rubro_code')
@@ -194,7 +195,7 @@ class ServiceQuote(models.Model):
             self._ensure_ack(code, False)
         return True
 
-    # Botón para garantizar/crear Sitio "General"
+    # ---------- General ----------
     def action_ensure_general(self):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
         for quote in self:
@@ -212,9 +213,11 @@ class ServiceQuote(models.Model):
                     'sequence': -999,
                 })
             quote.current_site_id = general.id
+        # al cambiar sitio actual via botón, refrescar estados
+        self._update_states_write()
         return True
 
-    # Defaults
+    # ---------- Defaults / onchange / create / write ----------
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
@@ -230,21 +233,27 @@ class ServiceQuote(models.Model):
             else:
                 quote.current_site_id = False
 
-    @api.onchange('current_service_type')
-    def _onchange_current_service_type(self):
-        for quote in self:
-            quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
+    @api.onchange(
+        'line_ids', 'line_ids.rubro_id', 'line_ids.site_id', 'line_ids.service_type',
+        'current_site_id', 'current_service_type'
+    )
+    def _onchange_refresh_states(self):
+        # Recalcula en VIVO los 14 enteros (para que el JS pinte sin recargar)
+        for rec in self:
+            vals = rec._compute_all_states_map()
+            for k, v in vals.items():
+                setattr(rec, k, v)
 
     @api.model_create_multi
     def create(self, vals_list):
-        for vals in vals_list:
-            if not vals.get('site_ids'):
-                vals['site_ids'] = self._default_site_ids()
         quotes = super().create(vals_list)
-        for quote in quotes:
-            if not quote.current_site_id and quote.site_ids:
-                quote.current_site_id = quote.site_ids[0].id
+        quotes._update_states_write()
         return quotes
+
+    def write(self, vals):
+        res = super().write(vals)
+        self._update_states_write()
+        return res
 
     # ======= UTILIDADES =======
     @api.model
@@ -276,45 +285,28 @@ class ServiceQuote(models.Model):
         domain = ['|', ('rubro_id', '=', False), ('service_type', '=', False)]
         for line in Line.search(domain, limit=limit):
             vals = {}
+            # rubro_id desde el producto (si hay 1 rubro)
             if not line.rubro_id and line.product_id:
                 rubros = line.product_id.product_tmpl_id.ccn_rubro_ids
                 if len(rubros) == 1:
                     vals['rubro_id'] = rubros.id
-            if not line.service_type:
-                vals['service_type'] = 'materiales' if line.type == 'material' else 'jardineria'
+            # service_type según el rubro si falta
+            if not (line.service_type or vals.get('rubro_id')):
+                # fallback simple
+                vals['service_type'] = 'jardineria'
+            if not line.service_type and (line.rubro_id or vals.get('rubro_id')):
+                rubro = line.rubro_id or self.env['ccn.service.rubro'].browse(vals['rubro_id'])
+                st = False
+                if getattr(rubro, 'apply_clean', False) and not getattr(rubro, 'apply_garden', False):
+                    st = 'limpieza'
+                elif getattr(rubro, 'apply_garden', False) and not getattr(rubro, 'apply_clean', False):
+                    st = 'jardineria'
+                else:
+                    st = 'jardineria'
+                vals['service_type'] = st
             if vals:
                 line.write(vals)
         return True
-
-    # ========= X2M por RUBRO (filtro fijo por rubro) =========
-    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','mano_obra')]", string="Líneas Mano de Obra")
-    line_ids_uniforme = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','uniforme')]", string="Líneas Uniforme")
-    line_ids_epp = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','epp')]", string="Líneas EPP")
-    line_ids_epp_alturas = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','epp_alturas')]", string="Líneas EPP Alturas")
-    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','equipo_especial_limpieza')]", string="Líneas Equipo Especial Limpieza")
-    line_ids_comunicacion_computo = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','comunicacion_computo')]", string="Líneas Comunicación y Cómputo")
-    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','herramienta_menor_jardineria')]", string="Líneas Herr. Menor Jardinería")
-    line_ids_material_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','material_limpieza')]", string="Líneas Material de Limpieza")
-    line_ids_perfil_medico = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','perfil_medico')]", string="Líneas Perfil Médico")
-    line_ids_maquinaria_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','maquinaria_limpieza')]", string="Líneas Maquinaria Limpieza")
-    line_ids_maquinaria_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','maquinaria_jardineria')]", string="Líneas Maquinaria Jardinería")
-    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','fertilizantes_tierra_lama')]", string="Líneas Fertilizantes y Tierra Lama")
-    line_ids_consumibles_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','consumibles_jardineria')]", string="Líneas Consumibles Jardinería")
-    line_ids_capacitacion = fields.One2many('ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','capacitacion')]", string="Líneas Capacitación")
 
 
 # =====================================================================
@@ -325,9 +317,22 @@ class CCNServiceQuoteLine(models.Model):
     _description = 'CCN Service Quote Line'
     _order = 'id desc'
 
-    quote_id = fields.Many2one('ccn.service.quote', string='Cotización', required=True, ondelete='cascade', index=True)
-    site_id = fields.Many2one('ccn.service.quote.site', string='Sitio', ondelete='set null', index=True)
+    # Relaciones principales
+    quote_id = fields.Many2one(
+        'ccn.service.quote',
+        string='Cotización',
+        required=True,
+        ondelete='cascade',
+        index=True,
+    )
+    site_id = fields.Many2one(
+        'ccn.service.quote.site',
+        string='Sitio',
+        ondelete='set null',
+        index=True,
+    )
 
+    # Contexto de vista
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -338,40 +343,79 @@ class CCNServiceQuoteLine(models.Model):
         ('fletes', 'Fletes'),
     ], string='Tipo de Servicio', index=True)
 
-    type = fields.Selection([
-        ('servicio', 'Servicio'),
-        ('material', 'Material'),
-    ], string='Tipo', default='servicio', required=True, index=True)
-
+    # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True, index=True)
 
-    rubro_code = fields.Char(string='Código de Rubro', related='rubro_id.code', store=True, readonly=True, index=True)
+    # Código de Rubro almacenado (rápido para dominios)
+    rubro_code = fields.Char(
+        string='Código de Rubro',
+        related='rubro_id.code',
+        store=True,
+        readonly=True,
+        index=True,
+    )
 
+    # Producto (filtrado por rubro)
     product_id = fields.Many2one(
         'product.product',
         string='Producto/Servicio',
         required=True,
         index=True,
+        # Evitamos 'in' con lista vacía; usamos OR de igualdades
         domain="['&', ('product_tmpl_id.ccn_exclude_from_quote','=',False), "
                "'|', ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')), "
                      "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
     )
 
+    # Cantidad
     quantity = fields.Float(string='Cantidad', default=1.0)
 
-    currency_id = fields.Many2one('res.currency', string='Moneda',
-                                  related='quote_id.currency_id', store=True, readonly=True)
+    # Moneda
+    currency_id = fields.Many2one(
+        'res.currency',
+        string='Moneda',
+        related='quote_id.currency_id',
+        store=True,
+        readonly=True,
+    )
 
+    # Tabulador
     tabulator_percent = fields.Selection(
         [('0', '0%'), ('3', '3%'), ('5', '5%'), ('10', '10%')],
-        string='Tabulador', default='0', required=True)
+        string='Tabulador',
+        default='0',
+        required=True,
+    )
 
-    product_base_price = fields.Monetary(string='Precio base', compute='_compute_product_base_price', store=True)
-    price_unit_final = fields.Monetary(string='Precio Unitario', compute='_compute_price_unit_final', store=True)
-    taxes_display = fields.Char(string='Detalle de impuestos', compute='_compute_taxes_display', store=False)
-    amount_tax = fields.Monetary(string='IVA', compute='_compute_amount_tax', store=False, currency_field='currency_id')
-    total_price = fields.Monetary(string='Subtotal final', compute='_compute_total_price', store=False)
+    # Precios / impuestos / totales (simplificados)
+    product_base_price = fields.Monetary(
+        string='Precio base',
+        compute='_compute_product_base_price',
+        store=True,
+    )
+    price_unit_final = fields.Monetary(
+        string='Precio Unitario',
+        compute='_compute_price_unit_final',
+        store=True,
+    )
+    taxes_display = fields.Char(
+        string='Detalle de impuestos',
+        compute='_compute_taxes_display',
+        store=False,
+    )
+    amount_tax = fields.Monetary(
+        string='IVA',
+        compute='_compute_amount_tax',
+        store=False,
+        currency_field='currency_id',
+    )
+    total_price = fields.Monetary(
+        string='Subtotal final',
+        compute='_compute_total_price',
+        store=False,
+    )
 
+    # ===== Cómputos =====
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
@@ -421,6 +465,7 @@ class CCNServiceQuoteLine(models.Model):
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
 
+    # ===== Defaults desde contexto =====
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
@@ -428,13 +473,14 @@ class CCNServiceQuoteLine(models.Model):
 
         if 'default_quote_id' in ctx and 'quote_id' in self._fields:
             res.setdefault('quote_id', ctx.get('default_quote_id'))
+
         if 'default_site_id' in ctx and 'site_id' in self._fields:
             res.setdefault('site_id', ctx.get('default_site_id'))
-        if 'default_type' in ctx and 'type' in self._fields:
-            res.setdefault('type', ctx.get('default_type'))
+
         if 'default_service_type' in ctx and 'service_type' in self._fields:
             res.setdefault('service_type', ctx.get('default_service_type'))
 
+        # Fijar rubro por pestaña (ctx_rubro_code)
         code = ctx.get('ctx_rubro_code')
         if code and 'rubro_id' in self._fields and not res.get('rubro_id'):
             rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
@@ -443,6 +489,7 @@ class CCNServiceQuoteLine(models.Model):
 
         return res
 
+    # Onchange para reforzar el dominio de producto por rubro
     @api.onchange('rubro_id')
     def _onchange_rubro_id(self):
         code = self.rubro_id.code if self.rubro_id else False
