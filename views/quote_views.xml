@@ -58,7 +58,7 @@
         <form string="Cotizador Especial CCN" class="ccn-quote">
           <sheet>
 
-            <!-- ===== Cabecera ===== -->
+            <!-- Cabecera -->
             <group col="2">
               <field name="partner_id" required="1" string="Cliente"/>
               <field name="name" string="Nombre de la cotización"/>
@@ -67,7 +67,6 @@
                      domain="[('quote_id','in',[False, id])]"
                      context="{'default_quote_id': id}"
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-
               <div class="o_form_label"/>
               <button name="action_ensure_general"
                       type="object"
@@ -75,7 +74,6 @@
                       class="btn btn-secondary"/>
 
               <field name="current_service_type" string="Tipo de servicio"/>
-
               <field name="display_mode" string="Modo de presentación"/>
               <field name="admin_percent" string="Administración (%)"/>
               <field name="utility_percent" string="Utilidad (%)"/>
@@ -84,7 +82,7 @@
               <field name="bienestar_rate" string="Tarifa Bienestar P/P"/>
             </group>
 
-            <!-- Estados para JS (pueden estar invisibles o en d-none vía otra vista heredada) -->
+            <!-- Estados invisibles para el JS -->
             <field name="rubro_state_mano_obra" invisible="1"/>
             <field name="rubro_state_uniforme" invisible="1"/>
             <field name="rubro_state_epp" invisible="1"/>
@@ -100,22 +98,20 @@
             <field name="rubro_state_consumibles_jardineria" invisible="1"/>
             <field name="rubro_state_capacitacion" invisible="1"/>
 
-            <!-- Forzar re-render cuando cambian -->
+            <!-- Disparadores invisibles -->
             <field name="current_site_id" invisible="1"/>
             <field name="current_service_type" invisible="1"/>
 
-            <!-- ===== Notebook por rubro (visible solo si hay tipo de servicio) ===== -->
+            <!-- Tabs -->
             <notebook invisible="not current_service_type">
 
               <!-- Mano de Obra -->
-              <page string="Mano de Obra"
-                    name="page_mano_obra"
+              <page string="Mano de Obra" name="page_mano_obra"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -126,22 +122,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','mano_obra'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','mano_obra')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Uniforme -->
-              <page string="Uniforme"
-                    name="page_uniforme"
+              <page string="Uniforme" name="page_uniforme"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -152,22 +146,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','uniforme'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','uniforme')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- EPP -->
-              <page string="EPP"
-                    name="page_epp"
+              <page string="EPP" name="page_epp"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -178,22 +170,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','epp'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','epp')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- EPP Alturas (solo jardinería) -->
-              <page string="EPP Alturas"
-                    name="page_epp_alturas"
+              <page string="EPP Alturas" name="page_epp_alturas"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp_alturas'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp_alturas'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -204,22 +194,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','epp_alturas'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','epp_alturas')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Equipo Especial de Limpieza (solo limpieza) -->
-              <page string="Equipo Especial de Limpieza"
-                    name="page_equipo_especial_limpieza"
+              <page string="Equipo Especial de Limpieza" name="page_equipo_especial_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'equipo_especial_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'equipo_especial_limpieza'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -230,22 +218,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','equipo_especial_limpieza'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','equipo_especial_limpieza')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Comunicación y Cómputo -->
-              <page string="Comunicación y Cómputo"
-                    name="page_comunicacion_computo"
+              <page string="Comunicación y Cómputo" name="page_comunicacion_computo"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'comunicacion_computo'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'comunicacion_computo'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -256,22 +242,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','comunicacion_computo'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','comunicacion_computo')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Herr. Menor Jardinería (solo jardinería) -->
-              <page string="Herr. Menor Jardinería"
-                    name="page_herr_menor_jardineria"
+              <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -282,22 +266,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','herramienta_menor_jardineria'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','herramienta_menor_jardineria')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Material de Limpieza (solo limpieza) -->
-              <page string="Material de Limpieza"
-                    name="page_material_limpieza"
+              <page string="Material de Limpieza" name="page_material_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'material_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'material_limpieza'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -308,22 +290,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','material_limpieza'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','material_limpieza')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Perfil Médico -->
-              <page string="Perfil Médico"
-                    name="page_perfil_medico"
+              <page string="Perfil Médico" name="page_perfil_medico"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'perfil_medico'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'perfil_medico'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -334,22 +314,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','perfil_medico'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','perfil_medico')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Maquinaria de Limpieza (solo limpieza) -->
-              <page string="Maquinaria de Limpieza"
-                    name="page_maquinaria_limpieza"
+              <page string="Maquinaria de Limpieza" name="page_maquinaria_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_limpieza'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -360,22 +338,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','maquinaria_limpieza'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','maquinaria_limpieza')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Maquinaria de Jardinería (solo jardinería) -->
-              <page string="Maquinaria de Jardinería"
-                    name="page_maquinaria_jardineria"
+              <page string="Maquinaria de Jardinería" name="page_maquinaria_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_jardineria'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -386,22 +362,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','maquinaria_jardineria'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','maquinaria_jardineria')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Fertilizantes y Tierra Lama (solo jardinería) -->
-              <page string="Fertilizantes y Tierra Lama"
-                    name="page_fertilizantes_tierra_lama"
+              <page string="Fertilizantes y Tierra Lama" name="page_fertilizantes_tierra_lama"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -412,22 +386,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','fertilizantes_tierra_lama'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','fertilizantes_tierra_lama')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Consumibles de Jardinería (solo jardinería) -->
-              <page string="Consumibles de Jardinería"
-                    name="page_consumibles_jardineria"
+              <page string="Consumibles de Jardinería" name="page_consumibles_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'consumibles_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'consumibles_jardineria'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -438,22 +410,20 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','consumibles_jardineria'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','consumibles_jardineria')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
               <!-- Capacitación -->
-              <page string="Capacitación"
-                    name="page_capacitacion"
+              <page string="Capacitación" name="page_capacitacion"
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'capacitacion'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'capacitacion'}"/>
-
                 <field name="line_ids" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -464,10 +434,10 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('quote_id','=', id),
+                         ('quote_id','=', parent.id),
+                         ('rubro_code','=','capacitacion'),
                          ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type),
-                         ('rubro_id.code','=','capacitacion')
+                         ('service_type','=', current_service_type)
                        ]"/>
               </page>
 
