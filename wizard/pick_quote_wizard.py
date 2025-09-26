@@ -36,7 +36,7 @@ class CCNServiceQuotePickWizard(models.TransientModel):
             res["order_id"] = ctx["active_id"]
         return res
 
-    def action_apply(self):
+    def action_confirm(self):
         self.ensure_one()
         if not self.order_id:
             raise UserError(_("Este asistente debe abrirse desde una Orden de Venta."))

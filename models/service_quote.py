@@ -174,7 +174,7 @@ class ServiceQuote(models.Model):
             ], limit=1)
             if ack:
                 ack.write({'ack': bool(value)})
-            else:
+            elif bool(value):
                 self.env['ccn.service.quote.ack'].create({
                     'quote_id': rec.id,
                     'site_id': rec.current_site_id.id,

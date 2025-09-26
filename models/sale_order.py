@@ -12,7 +12,7 @@ class SaleOrder(models.Model):
         self.ensure_one()
 
         # Lee la acción del wizard/selector
-        action = self.env.ref('ccn_service_quote.action_ccn_pick_quote').read()[0]
+        action = self.env.ref('ccn_service_quote.action_pick_quote_wizard').read()[0]
 
         # Normalizar context (en 18.0 puede venir como string)
         ctx_raw = action.get('context') or {}
