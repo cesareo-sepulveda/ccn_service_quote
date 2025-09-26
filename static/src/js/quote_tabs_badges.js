@@ -191,6 +191,18 @@
       svcEl.addEventListener('input',  ()=> schedule());
     }
 
+    // 4) cambios en los x2many de cada rubro (altas/bajas/ediciones inline)
+    for (const code of Object.keys(byCode)){
+      const fieldName = CODE_TO_FIELD[code];
+      if(!fieldName) continue;
+      const container = nb.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
+      if(!container) continue;
+      const target = container.querySelector('.o_x2m, .o_list_view');
+      if(!target) continue;
+      const moList = new MutationObserver(() => schedule());
+      moList.observe(target, {childList: true, subtree: true});
+    }
+
     // Debug
     window.__ccnTabsWatch = {
       repaint(){ schedule([0]); },
