@@ -2,7 +2,7 @@
 <odoo>
   <data>
 
-    <!-- LIST -->
+    <!-- LISTA -->
     <record id="ccn_view_quote_list" model="ir.ui.view">
       <field name="name">ccn.quote.list</field>
       <field name="model">ccn.service.quote</field>
@@ -49,8 +49,6 @@
       <field name="arch" type="xml">
         <form string="Cotizador Especial CCN" class="ccn-quote">
           <sheet>
-
-            <!-- Cabecera -->
             <group col="2">
               <field name="partner_id" required="1" string="Cliente"/>
               <field name="name" string="Nombre de la cotización"/>
@@ -60,7 +58,10 @@
                      context="{'default_quote_id': id}"
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
               <div class="o_form_label"/>
-              <button name="action_ensure_general" type="object" string="Sitio General" class="btn btn-secondary"/>
+              <button name="action_ensure_general"
+                      type="object"
+                      string="Sitio General"
+                      class="btn btn-secondary"/>
 
               <field name="current_service_type" string="Tipo de servicio"/>
               <field name="display_mode" string="Modo de presentación"/>
@@ -71,31 +72,12 @@
               <field name="bienestar_rate" string="Tarifa Bienestar P/P"/>
             </group>
 
-            <!-- Estados (ocultos visualmente, presentes en DOM) -->
-            <field name="rubro_state_mano_obra" invisible="1"/>
-            <field name="rubro_state_uniforme" invisible="1"/>
-            <field name="rubro_state_epp" invisible="1"/>
-            <field name="rubro_state_epp_alturas" invisible="1"/>
-            <field name="rubro_state_equipo_especial_limpieza" invisible="1"/>
-            <field name="rubro_state_comunicacion_computo" invisible="1"/>
-            <field name="rubro_state_herramienta_menor_jardineria" invisible="1"/>
-            <field name="rubro_state_material_limpieza" invisible="1"/>
-            <field name="rubro_state_perfil_medico" invisible="1"/>
-            <field name="rubro_state_maquinaria_limpieza" invisible="1"/>
-            <field name="rubro_state_maquinaria_jardineria" invisible="1"/>
-            <field name="rubro_state_fertilizantes_tierra_lama" invisible="1"/>
-            <field name="rubro_state_consumibles_jardineria" invisible="1"/>
-            <field name="rubro_state_capacitacion" invisible="1"/>
-
-            <!-- Forzar re-render cuando cambian -->
+            <!-- Forzamos recomputo gráfico al cambiar sitio/servicio -->
             <field name="current_site_id" invisible="1"/>
             <field name="current_service_type" invisible="1"/>
 
             <!-- Tabs -->
             <notebook invisible="not current_service_type">
-
-              <!-- Helper macro de dominio -->
-              <!-- (no es macro real; repetimos el patrón consistentemente en cada page) -->
 
               <!-- Mano de Obra -->
               <page string="Mano de Obra" name="page_mano_obra"
@@ -115,7 +97,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','mano_obra'),
+                         ('rubro_id.code','=','mano_obra'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -139,7 +121,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','uniforme'),
+                         ('rubro_id.code','=','uniforme'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -163,7 +145,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','epp'),
+                         ('rubro_id.code','=','epp'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -187,7 +169,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','epp_alturas'),
+                         ('rubro_id.code','=','epp_alturas'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -211,7 +193,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','equipo_especial_limpieza'),
+                         ('rubro_id.code','=','equipo_especial_limpieza'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -235,7 +217,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','comunicacion_computo'),
+                         ('rubro_id.code','=','comunicacion_computo'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -259,7 +241,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','herramienta_menor_jardineria'),
+                         ('rubro_id.code','=','herramienta_menor_jardineria'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -283,7 +265,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','material_limpieza'),
+                         ('rubro_id.code','=','material_limpieza'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -307,7 +289,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','perfil_medico'),
+                         ('rubro_id.code','=','perfil_medico'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -331,7 +313,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','maquinaria_limpieza'),
+                         ('rubro_id.code','=','maquinaria_limpieza'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -355,7 +337,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','maquinaria_jardineria'),
+                         ('rubro_id.code','=','maquinaria_jardineria'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -379,7 +361,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','fertilizantes_tierra_lama'),
+                         ('rubro_id.code','=','fertilizantes_tierra_lama'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -403,7 +385,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','consumibles_jardineria'),
+                         ('rubro_id.code','=','consumibles_jardineria'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -427,7 +409,7 @@
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
-                         ('rubro_code','=','capacitacion'),
+                         ('rubro_id.code','=','capacitacion'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>

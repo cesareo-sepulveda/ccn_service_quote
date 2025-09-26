@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
-from odoo import api, fields, models
+from odoo import fields, models
 
-# Mantén los mismos códigos que usas en el resto del módulo
 RUBRO_CODES = [
     ("mano_obra","Mano de Obra"),
     ("uniforme","Uniforme"),
@@ -25,12 +24,8 @@ class ServiceQuoteAck(models.Model):
     _rec_name = "rubro_code"
     _order = "id desc"
 
-    quote_id = fields.Many2one(
-        "ccn.service.quote", required=True, ondelete="cascade", index=True, string="Cotización"
-    )
-    site_id = fields.Many2one(
-        "ccn.service.quote.site", required=True, ondelete="cascade", index=True, string="Sitio"
-    )
+    quote_id = fields.Many2one("ccn.service.quote", required=True, ondelete="cascade", index=True)
+    site_id = fields.Many2one("ccn.service.quote.site", required=True, ondelete="cascade", index=True)
     service_type = fields.Selection(
         selection=[
             ('jardineria', 'Jardinería'),
@@ -43,12 +38,9 @@ class ServiceQuoteAck(models.Model):
         ],
         required=True,
         index=True,
-        string="Tipo de Servicio",
     )
-    rubro_code = fields.Selection(RUBRO_CODES, required=True, index=True, string="Rubro")
-
-    # Nuevo nombre de campo: 'ack' (conserva datos si antes se llamaba is_empty)
-    ack = fields.Boolean(string="No aplica", default=True, oldname="is_empty")
+    rubro_code = fields.Selection(RUBRO_CODES, required=True, index=True)
+    ack = fields.Boolean(string="No aplica", default=True)
 
     _sql_constraints = [
         ("uniq_ack_scope", "unique(quote_id, site_id, service_type, rubro_code)",
