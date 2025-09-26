@@ -1,14 +1,13 @@
 <odoo>
   <data>
-    <!-- Hereda la vista inline y SOLO ajusta el dominio del product_id.
-         (Sin el campo 'type', que ya no existe en el modelo) -->
+    <!-- Mantén el dominio coherente y sin 'type' -->
     <record id="view_ccn_quote_line_inline_product_domain" model="ir.ui.view">
       <field name="name">ccn.service.quote.line.inline.product.domain</field>
       <field name="model">ccn.service.quote.line</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_line_list_inline"/>
       <field name="arch" type="xml">
         <xpath expr="//field[@name='product_id']" position="attributes">
-          <attribute name="domain">[('product_tmpl_id.ccn_rubro_ids','in',[rubro_id]), ('sale_ok','=',True), ('product_tmpl_id.ccn_exclude_from_quote','=',False)]</attribute>
+          <attribute name="domain">[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]</attribute>
           <attribute name="context">{'active_test': False}</attribute>
         </xpath>
       </field>
