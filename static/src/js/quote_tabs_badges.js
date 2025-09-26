@@ -6,11 +6,13 @@
       .normalize("NFD").replace(/\p{Diacritic}/gu,"")
       .replace(/\s+/g," ");
   }
+
   const LABEL_TO_CODE = {
     "mano de obra": "mano_obra",
     "uniforme": "uniforme",
     "epp": "epp",
     "epp alturas": "epp_alturas",
+    "equipo especial de limpieza": "equipo_especial_limpieza",
     "comunicacion y computo": "comunicacion_computo",
     "herr. menor jardineria": "herramienta_menor_jardineria",
     "material de limpieza": "material_limpieza",
@@ -22,6 +24,7 @@
     "capacitacion": "capacitacion",
   };
 
+  function LABEL_TOCODE_SAFE(){ return LABEL_TO_CODE; }
   const STATE_FIELD = (code) => `rubro_state_${code}`;
 
   function clsFor(st){
@@ -47,7 +50,6 @@
   }
 
   function readIntField(root, fieldName){
-    // busca presencia tanto visible como oculto (d-none)
     const el = root.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
     if(!el) return null;
     const raw = el.getAttribute("data-value") ?? el.getAttribute("value") ?? el.textContent;
@@ -89,23 +91,36 @@
       if (scheduled) return;
       scheduled = true;
       setTimeout(() => { scheduled = false; try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 0);
-      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 80);
-      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 240);
+      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 30);
+      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 120);
+      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 360);
     };
+
     const mo = new MutationObserver((muts) => {
       try{
         for(const mut of muts){
           const t = mut.target;
           if (!(t instanceof Element)) continue;
           const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
-          if (name.startsWith("rubro_state_")) { schedule(); return; }
+          if (name.startsWith("rubro_state_")){ schedule(); return; }
           const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"]');
           if (holder){ schedule(); return; }
         }
       }catch(_e){}
     });
-    mo.observe(formRoot, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ["data-value", "value", "class"] });
-    window.__ccnTabsWatch = { repaint(){ paintFromStates(formRoot, nb, byCode, last); } };
+
+    mo.observe(formRoot, {
+      childList: true,
+      subtree: true,
+      characterData: true,
+      attributes: true,
+      attributeFilter: ["data-value", "value", "class"],
+    });
+
+    window.__ccnTabsWatch = {
+      dump(){ console.log(JSON.parse(JSON.stringify(last))); },
+      repaint(){ paintFromStates(formRoot, nb, byCode, last); }
+    };
   }
 
   function waitFormAndNotebook(cb){
@@ -115,7 +130,9 @@
       if(formRoot && nb) return cb(formRoot, nb);
     };
     if (tryStart()) return;
-    const obs = new MutationObserver(()=>{ if (tryStart()){ obs.disconnect(); } });
+    const obs = new MutationObserver(()=>{
+      if (tryStart()){ obs.disconnect(); }
+    });
     obs.observe(document.documentElement, {childList:true,subtree:true});
   }
 

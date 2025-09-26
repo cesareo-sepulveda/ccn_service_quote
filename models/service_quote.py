@@ -57,7 +57,6 @@ class ServiceQuote(models.Model):
         'ccn.service.quote.site',
         string='Sitio actual',
         domain="[('quote_id','=', id)]",
-        store=True,
     )
 
     current_service_type = fields.Selection(
@@ -71,7 +70,6 @@ class ServiceQuote(models.Model):
             ('fletes', 'Fletes'),
         ],
         string='Tipo de servicio',
-        store=True,
     )
 
     display_mode = fields.Selection(
@@ -92,7 +90,7 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # ===== Estados por rubro (COMPUTADOS; 1=verde, 2=ámbar (ACK), 0=rojo) =====
+    # Estados por rubro (filtrados por sitio/servicio actual)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
@@ -109,14 +107,13 @@ class ServiceQuote(models.Model):
     rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
 
     @api.depends(
-        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
-        'line_ids.site_id', 'line_ids.service_type',
+        'line_ids', 'line_ids.rubro_id', 'line_ids.site_id', 'line_ids.service_type',
         'current_site_id', 'current_service_type'
     )
     def _compute_rubro_states(self):
         Ack = self.env['ccn.service.quote.ack']
         def state_for(rec, code):
-            if not (rec.current_site_id and rec.current_service_type):
+            if not rec.current_site_id or not rec.current_service_type:
                 return 0
             lines = rec.line_ids.filtered(lambda l:
                 l.site_id.id == rec.current_site_id.id and
@@ -124,7 +121,7 @@ class ServiceQuote(models.Model):
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
             if lines:
-                return 1
+                return 1  # verde
             ack = Ack.search_count([
                 ('quote_id', '=', rec.id),
                 ('site_id', '=', rec.current_site_id.id),
@@ -150,7 +147,7 @@ class ServiceQuote(models.Model):
             rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
             rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
 
-    # ---------- ACK granular ----------
+    # ACK granular
     def _ensure_ack(self, rubro_code, value):
         for rec in self:
             if not (rec.current_site_id and rec.current_service_type and rubro_code):
@@ -171,7 +168,6 @@ class ServiceQuote(models.Model):
                     'rubro_code': rubro_code,
                     'ack': True,
                 })
-        return True
 
     def action_mark_rubro_empty(self):
         code = (self.env.context or {}).get('rubro_code')
@@ -185,7 +181,7 @@ class ServiceQuote(models.Model):
             self._ensure_ack(code, False)
         return True
 
-    # ---------- General ----------
+    # Botón para garantizar/crear Sitio "General"
     def action_ensure_general(self):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
         for quote in self:
@@ -205,7 +201,7 @@ class ServiceQuote(models.Model):
             quote.current_site_id = general.id
         return True
 
-    # ---------- Defaults / onchange / create ----------
+    # Defaults para que "General" aparezca de inmediato
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
@@ -232,7 +228,7 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    # ======= UTILIDADES =======
+    # Usado por data/migrate_fix_general.xml
     @api.model
     def _fix_general_sites(self, limit=100000):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
@@ -253,22 +249,6 @@ class ServiceQuote(models.Model):
                 })
             if not q.current_site_id:
                 q.write({'current_site_id': general.id})
-        return True
-
-    @api.model
-    def _deactivate_old_quote_views(self):
-        """Desactiva vistas heredadas antiguas si existen (idempotente)."""
-        xmlids = [
-            'ccn_service_quote.ccn_view_quote_form_tabs',  # viejo heredado que metía tabs de sitio/rubro
-        ]
-        View = self.env['ir.ui.view'].sudo()
-        for xid in xmlids:
-            try:
-                view = self.env.ref(xid, raise_if_not_found=False)
-            except Exception:
-                view = False
-            if view and view.active:
-                view.active = False
         return True
 
 
@@ -295,7 +275,7 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
-    # Alcance
+    # Contexto de vista
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -307,12 +287,13 @@ class CCNServiceQuoteLine(models.Model):
     ], string='Tipo de Servicio', index=True)
 
     # Rubro
-    rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True, index=True)
+    rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
+    # Char compute (NO related) para evitar choque con Selection de rubro_id.code
     rubro_code = fields.Char(
         string='Código de Rubro',
-        related='rubro_id.code',
-        store=True,
+        compute='_compute_rubro_code',
+        store=False,
         readonly=True,
         index=True,
     )
@@ -376,6 +357,12 @@ class CCNServiceQuoteLine(models.Model):
         store=False,
     )
 
+    # ===== Cómputos =====
+    @api.depends('rubro_id', 'rubro_id.code')
+    def _compute_rubro_code(self):
+        for rec in self:
+            rec.rubro_code = rec.rubro_id.code or False
+
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
@@ -425,19 +412,41 @@ class CCNServiceQuoteLine(models.Model):
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
 
+    # ===== Defaults desde contexto =====
     @api.model
     def default_get(self, fields_list):
         res = super().default_get(fields_list)
         ctx = self.env.context or {}
+
         if 'default_quote_id' in ctx and 'quote_id' in self._fields:
             res.setdefault('quote_id', ctx.get('default_quote_id'))
+
         if 'default_site_id' in ctx and 'site_id' in self._fields:
             res.setdefault('site_id', ctx.get('default_site_id'))
+
         if 'default_service_type' in ctx and 'service_type' in self._fields:
             res.setdefault('service_type', ctx.get('default_service_type'))
+
+        # Fijar rubro por pestaña (ctx_rubro_code)
         code = ctx.get('ctx_rubro_code')
         if code and 'rubro_id' in self._fields and not res.get('rubro_id'):
             rubro = self.env['ccn.service.rubro'].search([('code', '=', code)], limit=1)
             if rubro:
                 res['rubro_id'] = rubro.id
+
         return res
+
+    # Onchange para reforzar el dominio de producto por rubro
+    @api.onchange('rubro_id')
+    def _onchange_rubro_id(self):
+        code = self.rubro_id.code if self.rubro_id else False
+        return {
+            'domain': {
+                'product_id': [
+                    ('product_tmpl_id.ccn_exclude_from_quote','=', False),
+                    '|',
+                        ('product_tmpl_id.ccn_rubro_ids.code','=', code),
+                        ('product_tmpl_id.ccn_rubro_ids.code','=', False),
+                ]
+            }
+        }
