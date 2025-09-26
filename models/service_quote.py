@@ -19,6 +19,9 @@ RUBRO_CODES = [
     ("capacitacion","Capacitación"),
 ]
 
+# =========================================================
+#    QUOTE
+# =========================================================
 class ServiceQuote(models.Model):
     _name = 'ccn.service.quote'
     _description = 'CCN Service Quote'
@@ -82,9 +85,29 @@ class ServiceQuote(models.Model):
     transporte_rate = fields.Float(string='Tarifa Transporte P/P', default=0.0)
     bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
 
-    line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
+    # Relación completa de líneas (todas)
+    line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas (todas)')
 
-    # Estados por rubro (filtrados por sitio/servicio actuales)
+    # ===== One2many *por rubro* (campos distintos para cada pestaña)
+    # Notas:
+    #  - Son “proxies” al mismo comodel/inversa, pero con distinto nombre de campo.
+    #  - El filtrado por sitio/servicio se hace en la VISTA (XML) con domain, no aquí.
+    line_ids_mano_obra                = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra')
+    line_ids_uniforme                 = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme')
+    line_ids_epp                      = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP')
+    line_ids_epp_alturas              = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas')
+    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial Limpieza')
+    line_ids_comunicacion_computo     = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación/Computo')
+    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Herr. Menor Jardinería')
+    line_ids_material_limpieza        = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Material Limpieza')
+    line_ids_perfil_medico            = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Perfil Médico')
+    line_ids_maquinaria_limpieza      = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Limpieza')
+    line_ids_maquinaria_jardineria    = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Jardinería')
+    line_ids_fertilizantes_tierra_lama= fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Fertilizantes/Tierra Lama')
+    line_ids_consumibles_jardineria   = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles Jardinería')
+    line_ids_capacitacion             = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación')
+
+    # ===== Estados por rubro (1 lleno, 2 ack, 0 vacío)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
@@ -138,7 +161,7 @@ class ServiceQuote(models.Model):
             rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
             rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
 
-    # ACK granular
+    # ACK granular (No aplica)
     def _ensure_ack(self, rubro_code, value):
         for rec in self:
             if not (rec.current_site_id and rec.current_service_type and rubro_code):
@@ -217,7 +240,7 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    # Usado por data/migrate_fix_general.xml
+    # Usado por data/migrate_fix_general.xml (si lo sigues cargando)
     @api.model
     def _fix_general_sites(self, limit=100000):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
@@ -241,6 +264,9 @@ class ServiceQuote(models.Model):
         return True
 
 
+# =========================================================
+#    QUOTE LINE
+# =========================================================
 class CCNServiceQuoteLine(models.Model):
     _name = 'ccn.service.quote.line'
     _description = 'CCN Service Quote Line'
@@ -265,10 +291,9 @@ class CCNServiceQuoteLine(models.Model):
         ('fletes', 'Fletes'),
     ], string='Tipo de Servicio', index=True)
 
-    # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # Char compute (relacionado) y ALMACENADO para poder filtrar por dominio en BD
+    # Char relacionado y ALMACENADO para filtrar en SQL
     rubro_code = fields.Char(
         string='Código de Rubro',
         compute='_compute_rubro_code',
