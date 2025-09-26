@@ -5,8 +5,9 @@ from . import (
     site,
     # Bucket por Rubro (Sitio × Tipo × Rubro)
     scope_rubro,
-    # Migración para rellenar bucket_id en líneas existentes
-    migrate_fill_buckets,
+    # Modelo base de líneas (incluye migrate_fill_buckets)
+    quote_line,
+    # Resto de componentes existentes
     ack,
     add_package_wizard,
     patch_rubro_code,
@@ -21,5 +22,5 @@ from . import (
     rubro_flag,
     sale_order,
     service_package,
-    pick_quote_wizard
+    pick_quote_wizard,
 )
