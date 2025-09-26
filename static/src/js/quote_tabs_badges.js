@@ -1,14 +1,18 @@
+/** CCN Quote Tabs — pinta leyendo rubro_state_* desde el DOM (sin RPC/URL/res_id)
+ *  - No hace clics ni “barridos”.
+ *  - Pinta al inicio y re-pinta cuando cambian rubro_state_* o el alcance (sitio/servicio).
+ *  - Estados: 1 => verde (ccn-status-filled), 2 => ámbar (ccn-status-ack), 0/otros => rojo (ccn-status-empty).
+ *  - Odoo 18 CE, sin imports. Respeta tu geometría/chevrons; solo añade clases.
+ */
 (function () {
   "use strict";
 
-  // Normaliza etiquetas visibles de pestañas -> minúsculas sin acentos/espacios dobles
   function norm(s){
     return String(s||"").trim().toLowerCase()
       .normalize("NFD").replace(/\p{Diacritic}/gu,"")
       .replace(/\s+/g," ");
   }
 
-  // Mapeo etiqueta -> código de rubro (todas las pestañas del form)
   const LABEL_TO_CODE = {
     "mano de obra": "mano_obra",
     "uniforme": "uniforme",
@@ -26,10 +30,8 @@
     "capacitacion": "capacitacion",
   };
 
-  function LABEL_TOCODE_SAFE(){ return LABEL_TO_CODE; }
   const STATE_FIELD = (code) => `rubro_state_${code}`;
 
-  // Clases de color
   function clsFor(st){
     return st === 1 ? "ccn-status-filled"
          : st === 2 ? "ccn-status-ack"
@@ -52,9 +54,7 @@
     li && li.classList.add(c);
   }
 
-  // Lee el valor entero del campo (renderizado en el DOM, aunque esté oculto por CSS)
   function readIntField(root, fieldName){
-    // Campos renderizados con name= o data-name=
     const el = root.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
     if(!el) return null;
     const raw = el.getAttribute("data-value") ?? el.getAttribute("value") ?? el.textContent;
@@ -63,11 +63,9 @@
     return Number.isNaN(v) ? null : v;
   }
 
-  // Notebook y tabs
   function getNotebook(){ return document.querySelector(".o_form_view .o_notebook"); }
   function getLinks(nb){ return nb ? [...nb.querySelectorAll(".nav-tabs .nav-link")] : []; }
 
-  // Índice code -> <a.nav-link>
   function indexByCode(nb){
     const byCode = {};
     if(!nb) return byCode;
@@ -78,12 +76,11 @@
     return byCode;
   }
 
-  // Pinta usando únicamente rubro_state_* presentes en el DOM
   function paintFromStates(formRoot, nb, byCode, last){
     let changed = false;
     for(const [code, link] of Object.entries(byCode)){
       const st = readIntField(formRoot, STATE_FIELD(code));
-      const sNorm = (st === 1 || st === 2) ? st : 0; // desconocido/otros -> rojo
+      const sNorm = (st === 1 || st === 2) ? st : 0;
       if (last[code] !== sNorm){
         applyTab(link, sNorm);
         last[code] = sNorm;
@@ -93,13 +90,11 @@
     return changed;
   }
 
-  // Observa cambios para re-pintar cuando se actualicen los rubro_state_*
   function watchStates(formRoot, nb, byCode, last){
     let scheduled = false;
     const schedule = () => {
       if (scheduled) return;
       scheduled = true;
-      // pequeños reintentos para cubrir latencia de re-render
       setTimeout(() => { scheduled = false; try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 0);
       setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 30);
       setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 120);
@@ -112,8 +107,11 @@
           const t = mut.target;
           if (!(t instanceof Element)) continue;
           const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
+          // repintar si cambian los rubro_state_*
           if (name.startsWith("rubro_state_")){ schedule(); return; }
-          const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"]');
+          // repintar si cambia el alcance (sitio/servicio)
+          if (name === "current_site_id" || name === "current_service_type"){ schedule(); return; }
+          const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"], [name="current_site_id"], [data-name="current_site_id"], [name="current_service_type"], [data-name="current_service_type"]');
           if (holder){ schedule(); return; }
         }
       }catch(_e){}
@@ -127,14 +125,12 @@
       attributeFilter: ["data-value", "value", "class"],
     });
 
-    // Utilidades de depuración opcional en consola
     window.__ccnTabsWatch = {
       dump(){ console.log(JSON.parse(JSON.stringify(last))); },
       repaint(){ paintFromStates(formRoot, nb, byCode, last); }
     };
   }
 
-  // Espera a que esté la vista form + notebook
   function waitFormAndNotebook(cb){
     const tryStart = () =>{
       const formRoot = document.querySelector('.o_form_view');
@@ -148,15 +144,12 @@
     obs.observe(document.documentElement, {childList:true,subtree:true});
   }
 
-  // Boot
   try{
     waitFormAndNotebook((formRoot, nb)=>{
       const byCode = indexByCode(nb);
-      if (!Object.keys(byCode).length) return; // no tabs mapeadas
+      if (!Object.keys(byCode).length) return;
       const last = {};
-      // Pintado inicial
       try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-      // Observa y repinta ante cambios en rubro_state_*
       watchStates(formRoot, nb, byCode, last);
     });
   }catch(_e){}
