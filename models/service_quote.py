@@ -6,20 +6,20 @@ from odoo.exceptions import ValidationError
 # Catálogo de rubros (códigos)
 # -------------------------
 RUBRO_CODES = [
-    ("mano_obra","Mano de Obra"),
-    ("uniforme","Uniforme"),
-    ("epp","EPP"),
-    ("epp_alturas","EPP Alturas"),
-    ("equipo_especial_limpieza","Equipo Especial de Limpieza"),
-    ("comunicacion_computo","Comunicación y Cómputo"),
-    ("herramienta_menor_jardineria","Herramienta Menor de Jardinería"),
-    ("material_limpieza","Material de Limpieza"),
-    ("perfil_medico","Perfil Médico"),
-    ("maquinaria_limpieza","Maquinaria de Limpieza"),
-    ("maquinaria_jardineria","Maquinaria de Jardinería"),
-    ("fertilizantes_tierra_lama","Fertilizantes y Tierra Lama"),
-    ("consumibles_jardineria","Consumibles de Jardinería"),
-    ("capacitacion","Capacitación"),
+    ("mano_obra", "Mano de Obra"),
+    ("uniforme", "Uniforme"),
+    ("epp", "EPP"),
+    ("epp_alturas", "EPP Alturas"),
+    ("equipo_especial_limpieza", "Equipo Especial de Limpieza"),
+    ("comunicacion_computo", "Comunicación y Cómputo"),
+    ("herramienta_menor_jardineria", "Herramienta Menor de Jardinería"),
+    ("material_limpieza", "Material de Limpieza"),
+    ("perfil_medico", "Perfil Médico"),
+    ("maquinaria_limpieza", "Maquinaria de Limpieza"),
+    ("maquinaria_jardineria", "Maquinaria de Jardinería"),
+    ("fertilizantes_tierra_lama", "Fertilizantes y Tierra Lama"),
+    ("consumibles_jardineria", "Consumibles de Jardinería"),
+    ("capacitacion", "Capacitación"),
 ]
 
 # =====================================================================
@@ -72,7 +72,7 @@ class ServiceQuote(models.Model):
         string='Tipo de servicio',
     )
 
-    # (Puedes conservar current_type si lo usas en otros lados; aquí no lo usamos para estados)
+    # (Dejamos este flag por compatibilidad, pero NO se usa para aislar datos)
     current_type = fields.Selection(
         [('servicio', 'Servicio'), ('material', 'Material')],
         string='Tipo actual',
@@ -89,6 +89,7 @@ class ServiceQuote(models.Model):
         default='itemized',
         required=True,
     )
+
     admin_percent = fields.Float(string='Administración (%)', default=0.0)
     utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
@@ -97,7 +98,7 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # Estados por rubro (filtrados por sitio/servicio ACTUAL)
+    # Estados por rubro (aislados por sitio/servicio ACTUALES)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
@@ -114,26 +115,30 @@ class ServiceQuote(models.Model):
     rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
 
     @api.depends(
-        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_id.code',
         'line_ids.site_id', 'line_ids.service_type',
         'current_site_id', 'current_service_type'
     )
     def _compute_rubro_states(self):
+        """1 = con líneas, 2 = marcado 'No aplica' (ACK), 0 = vacío.
+        Aisla por sitio + tipo de servicio actuales. NO mezcla entre rubros.
+        """
         def state_for(rec, code):
             if not (rec.current_site_id and rec.current_service_type):
                 return 0
             lines = rec.line_ids.filtered(lambda l:
-                l.site_id.id == rec.current_site_id.id and
-                l.service_type == rec.current_service_type and
-                ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
+                (l.site_id.id == rec.current_site_id.id) and
+                (l.service_type == rec.current_service_type) and
+                (getattr(l.rubro_id, 'code', False) == code)
             )
             cnt = len(lines)
+            # ACK en el modelo ccn.service.quote.ack -> campo booleano 'ack'
             ack = self.env['ccn.service.quote.ack'].search_count([
                 ('quote_id', '=', rec.id),
                 ('site_id', '=', rec.current_site_id.id),
                 ('service_type', '=', rec.current_service_type),
                 ('rubro_code', '=', code),
-                ('is_empty', '=', True),
+                ('ack', '=', True),
             ]) > 0
             return 1 if cnt > 0 else (2 if ack else 0)
 
@@ -165,14 +170,14 @@ class ServiceQuote(models.Model):
                 ('rubro_code', '=', rubro_code),
             ], limit=1)
             if ack:
-                ack.write({'is_empty': bool(value)})
+                ack.write({'ack': bool(value)})
             else:
                 self.env['ccn.service.quote.ack'].create({
                     'quote_id': rec.id,
                     'site_id': rec.current_site_id.id,
                     'service_type': rec.current_service_type,
                     'rubro_code': rubro_code,
-                    'is_empty': True,
+                    'ack': True,
                 })
 
     def action_mark_rubro_empty(self):
@@ -225,6 +230,7 @@ class ServiceQuote(models.Model):
 
     @api.onchange('current_service_type')
     def _onchange_current_service_type(self):
+        # Mantenemos compatibilidad pero ya no lo usamos para filtrar
         for quote in self:
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
@@ -239,7 +245,7 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    # Usado por data/migrate_fix_general.xml
+    # Utilizado por data/migrate_fix_general.xml
     @api.model
     def _fix_general_sites(self, limit=100000):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
@@ -260,6 +266,11 @@ class ServiceQuote(models.Model):
                 })
             if not q.current_site_id:
                 q.write({'current_site_id': general.id})
+        return True
+
+    # Llamado por data/cleanup_views.xml (no-op segura)
+    @api.model
+    def _deactivate_old_quote_views(self):
         return True
 
 
@@ -297,22 +308,22 @@ class CCNServiceQuoteLine(models.Model):
         ('fletes', 'Fletes'),
     ], string='Tipo de Servicio', index=True)
 
+    # Compatibilidad; ya no se usa para aislar
     type = fields.Selection([
         ('servicio', 'Servicio'),
         ('material', 'Material'),
-    ], string='Tipo', default='servicio', required=True, index=True)
+    ], string='Tipo', default='servicio', index=True)
 
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # Char compute (NO related selection) pero almacenado y con search
+    # Char compute (no related) para evitar choques en dominios de producto
     rubro_code = fields.Char(
         string='Código de Rubro',
         compute='_compute_rubro_code',
-        store=True,            # <<<< IMPORTANTE: almacenado para dominios SQL
+        store=False,
         readonly=True,
         index=True,
-        search='_search_rubro_code',
     )
 
     # Producto (filtrado por rubro)
@@ -374,15 +385,11 @@ class CCNServiceQuoteLine(models.Model):
         store=False,
     )
 
-    # ===== Cómputos / search helpers =====
+    # ===== Cómputos =====
     @api.depends('rubro_id', 'rubro_id.code')
     def _compute_rubro_code(self):
         for rec in self:
             rec.rubro_code = rec.rubro_id.code or False
-
-    def _search_rubro_code(self, operator, value):
-        # Redirige busquedas en rubro_code a rubro_id.code
-        return [('rubro_id.code', operator, value)]
 
     @api.depends('product_id')
     def _compute_product_base_price(self):
@@ -441,13 +448,8 @@ class CCNServiceQuoteLine(models.Model):
 
         if 'default_quote_id' in ctx and 'quote_id' in self._fields:
             res.setdefault('quote_id', ctx.get('default_quote_id'))
-
         if 'default_site_id' in ctx and 'site_id' in self._fields:
             res.setdefault('site_id', ctx.get('default_site_id'))
-
-        if 'default_type' in ctx and 'type' in self._fields:
-            res.setdefault('type', ctx.get('default_type'))
-
         if 'default_service_type' in ctx and 'service_type' in self._fields:
             res.setdefault('service_type', ctx.get('default_service_type'))
 
@@ -467,10 +469,10 @@ class CCNServiceQuoteLine(models.Model):
         return {
             'domain': {
                 'product_id': [
-                    ('product_tmpl_id.ccn_exclude_from_quote','=', False),
+                    ('product_tmpl_id.ccn_exclude_from_quote', '=', False),
                     '|',
-                        ('product_tmpl_id.ccn_rubro_ids.code','=', code),
-                        ('product_tmpl_id.ccn_rubro_ids.code','=', False),
+                        ('product_tmpl_id.ccn_rubro_ids.code', '=', code),
+                        ('product_tmpl_id.ccn_rubro_ids.code', '=', False),
                 ]
             }
         }

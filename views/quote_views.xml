@@ -2,7 +2,9 @@
 <odoo>
   <data>
 
-    <!-- LISTA -->
+    <!-- ================================
+         LISTA (vista inicial)
+       ================================ -->
     <record id="ccn_view_quote_list" model="ir.ui.view">
       <field name="name">ccn.quote.list</field>
       <field name="model">ccn.service.quote</field>
@@ -21,7 +23,9 @@
       </field>
     </record>
 
-    <!-- SEARCH -->
+    <!-- ================================
+         SEARCH (filtros/búsqueda)
+       ================================ -->
     <record id="ccn_view_quote_search" model="ir.ui.view">
       <field name="name">ccn.quote.search</field>
       <field name="model">ccn.service.quote</field>
@@ -43,7 +47,9 @@
       </field>
     </record>
 
-    <!-- FORM -->
+    <!-- ================================
+         FORM (con etiquetas explícitas)
+       ================================ -->
     <record id="ccn_view_quote_form" model="ir.ui.view">
       <field name="name">ccn.quote.form</field>
       <field name="model">ccn.service.quote</field>
@@ -52,32 +58,40 @@
         <form string="Cotizador Especial CCN" class="ccn-quote">
           <sheet>
 
-            <!-- Cabecera -->
+            <!-- ===== Cabecera con etiquetas a la izquierda (2 columnas) ===== -->
             <group col="2">
+
+              <!-- Cliente -->
               <field name="partner_id" required="1" string="Cliente"/>
+
+              <!-- Nombre de la cotización -->
               <field name="name" string="Nombre de la cotización"/>
 
+              <!-- Sitio + botón -->
               <field name="current_site_id" string="Sitio"
                      domain="[('quote_id','in',[False, id])]"
                      context="{'default_quote_id': id}"
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-
               <div class="o_form_label"/>
               <button name="action_ensure_general"
                       type="object"
                       string="Sitio General"
                       class="btn btn-secondary"/>
 
+              <!-- Tipo de servicio -->
               <field name="current_service_type" string="Tipo de servicio"/>
+
+              <!-- Parámetros -->
               <field name="display_mode" string="Modo de presentación"/>
               <field name="admin_percent" string="Administración (%)"/>
               <field name="utility_percent" string="Utilidad (%)"/>
               <field name="financial_percent" string="Costo Financiero (%)"/>
               <field name="transporte_rate" string="Tarifa Transporte P/P"/>
               <field name="bienestar_rate" string="Tarifa Bienestar P/P"/>
+
             </group>
 
-            <!-- Estados invisibles para el JS -->
+            <!-- Campos de estado invisibles para el JS de coloreado -->
             <field name="rubro_state_mano_obra" invisible="1"/>
             <field name="rubro_state_uniforme" invisible="1"/>
             <field name="rubro_state_epp" invisible="1"/>
@@ -97,7 +111,7 @@
             <field name="current_site_id" invisible="1"/>
             <field name="current_service_type" invisible="1"/>
 
-            <!-- Tabs -->
+            <!-- ===== Tabs por rubro (aislados por sitio + tipo de servicio) ===== -->
             <notebook invisible="not current_service_type">
 
               <!-- Mano de Obra -->
