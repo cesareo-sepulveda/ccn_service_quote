@@ -2,7 +2,7 @@
 {
     "name": "Cotizador Especial CCN",
     "summary": "Wizard para cotizar servicios CCN",
-    "version": "18.0.9.3.179",
+    "version": "18.0.9.3.180",
     "author": "Witann Technologies",
     "license": "LGPL-3",
     "category": "Sales/Sales",
