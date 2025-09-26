@@ -31,8 +31,10 @@
           <field name="name" string="Cotización"/>
           <field name="partner_id" string="Cliente"/>
           <field name="current_service_type" string="Tipo de servicio"/>
-          <filter string="Jardinería" name="f_jardineria" domain="[('current_service_type','=','jardineria')]"/>
-          <filter string="Limpieza" name="f_limpieza" domain="[('current_service_type','=','limpieza')]"/>
+          <filter string="Jardinería" name="f_jardineria"
+                  domain="[('current_service_type','=','jardineria')]"/>
+          <filter string="Limpieza" name="f_limpieza"
+                  domain="[('current_service_type','=','limpieza')]"/>
           <group expand="0" string="Agrupar por">
             <filter string="Cliente" name="g_partner" context="{'group_by':'partner_id'}"/>
             <filter string="Tipo de servicio" name="g_service_type" context="{'group_by':'current_service_type'}"/>
@@ -49,6 +51,8 @@
       <field name="arch" type="xml">
         <form string="Cotizador Especial CCN" class="ccn-quote">
           <sheet>
+
+            <!-- Cabecera -->
             <group col="2">
               <field name="partner_id" required="1" string="Cliente"/>
               <field name="name" string="Nombre de la cotización"/>
@@ -57,6 +61,7 @@
                      domain="[('quote_id','in',[False, id])]"
                      context="{'default_quote_id': id}"
                      options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+
               <div class="o_form_label"/>
               <button name="action_ensure_general"
                       type="object"
@@ -72,7 +77,23 @@
               <field name="bienestar_rate" string="Tarifa Bienestar P/P"/>
             </group>
 
-            <!-- Forzamos recomputo gráfico al cambiar sitio/servicio -->
+            <!-- Estados invisibles para el JS -->
+            <field name="rubro_state_mano_obra" invisible="1"/>
+            <field name="rubro_state_uniforme" invisible="1"/>
+            <field name="rubro_state_epp" invisible="1"/>
+            <field name="rubro_state_epp_alturas" invisible="1"/>
+            <field name="rubro_state_equipo_especial_limpieza" invisible="1"/>
+            <field name="rubro_state_comunicacion_computo" invisible="1"/>
+            <field name="rubro_state_herramienta_menor_jardineria" invisible="1"/>
+            <field name="rubro_state_material_limpieza" invisible="1"/>
+            <field name="rubro_state_perfil_medico" invisible="1"/>
+            <field name="rubro_state_maquinaria_limpieza" invisible="1"/>
+            <field name="rubro_state_maquinaria_jardineria" invisible="1"/>
+            <field name="rubro_state_fertilizantes_tierra_lama" invisible="1"/>
+            <field name="rubro_state_consumibles_jardineria" invisible="1"/>
+            <field name="rubro_state_capacitacion" invisible="1"/>
+
+            <!-- Forzar re-render cuando cambian -->
             <field name="current_site_id" invisible="1"/>
             <field name="current_service_type" invisible="1"/>
 

@@ -72,6 +72,13 @@ class ServiceQuote(models.Model):
         string='Tipo de servicio',
     )
 
+    # (Puedes conservar current_type si lo usas en otros lados; aquí no lo usamos para estados)
+    current_type = fields.Selection(
+        [('servicio', 'Servicio'), ('material', 'Material')],
+        string='Tipo actual',
+        default='servicio',
+    )
+
     display_mode = fields.Selection(
         [
             ('by_rubro', 'Acumulado por rubro'),
@@ -90,7 +97,7 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # Estados por rubro (filtrados por sitio/servicio actual)
+    # Estados por rubro (filtrados por sitio/servicio ACTUAL)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
@@ -107,29 +114,28 @@ class ServiceQuote(models.Model):
     rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
 
     @api.depends(
-        'line_ids', 'line_ids.rubro_id', 'line_ids.site_id', 'line_ids.service_type',
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
+        'line_ids.site_id', 'line_ids.service_type',
         'current_site_id', 'current_service_type'
     )
     def _compute_rubro_states(self):
-        Ack = self.env['ccn.service.quote.ack']
         def state_for(rec, code):
-            if not rec.current_site_id or not rec.current_service_type:
+            if not (rec.current_site_id and rec.current_service_type):
                 return 0
             lines = rec.line_ids.filtered(lambda l:
                 l.site_id.id == rec.current_site_id.id and
                 l.service_type == rec.current_service_type and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
-            if lines:
-                return 1  # verde
-            ack = Ack.search_count([
+            cnt = len(lines)
+            ack = self.env['ccn.service.quote.ack'].search_count([
                 ('quote_id', '=', rec.id),
                 ('site_id', '=', rec.current_site_id.id),
                 ('service_type', '=', rec.current_service_type),
                 ('rubro_code', '=', code),
-                ('ack', '=', True),
+                ('is_empty', '=', True),
             ]) > 0
-            return 2 if ack else 0
+            return 1 if cnt > 0 else (2 if ack else 0)
 
         for rec in self:
             rec.rubro_state_mano_obra                 = state_for(rec, 'mano_obra')
@@ -159,14 +165,14 @@ class ServiceQuote(models.Model):
                 ('rubro_code', '=', rubro_code),
             ], limit=1)
             if ack:
-                ack.write({'ack': bool(value)})
+                ack.write({'is_empty': bool(value)})
             else:
                 self.env['ccn.service.quote.ack'].create({
                     'quote_id': rec.id,
                     'site_id': rec.current_site_id.id,
                     'service_type': rec.current_service_type,
                     'rubro_code': rubro_code,
-                    'ack': True,
+                    'is_empty': True,
                 })
 
     def action_mark_rubro_empty(self):
@@ -216,6 +222,11 @@ class ServiceQuote(models.Model):
                     quote.current_site_id = quote.site_ids[0]
             else:
                 quote.current_site_id = False
+
+    @api.onchange('current_service_type')
+    def _onchange_current_service_type(self):
+        for quote in self:
+            quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -286,16 +297,22 @@ class CCNServiceQuoteLine(models.Model):
         ('fletes', 'Fletes'),
     ], string='Tipo de Servicio', index=True)
 
+    type = fields.Selection([
+        ('servicio', 'Servicio'),
+        ('material', 'Material'),
+    ], string='Tipo', default='servicio', required=True, index=True)
+
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # Char compute (NO related) para evitar choque con Selection de rubro_id.code
+    # Char compute (NO related selection) pero almacenado y con search
     rubro_code = fields.Char(
         string='Código de Rubro',
         compute='_compute_rubro_code',
-        store=False,
+        store=True,            # <<<< IMPORTANTE: almacenado para dominios SQL
         readonly=True,
         index=True,
+        search='_search_rubro_code',
     )
 
     # Producto (filtrado por rubro)
@@ -357,11 +374,15 @@ class CCNServiceQuoteLine(models.Model):
         store=False,
     )
 
-    # ===== Cómputos =====
+    # ===== Cómputos / search helpers =====
     @api.depends('rubro_id', 'rubro_id.code')
     def _compute_rubro_code(self):
         for rec in self:
             rec.rubro_code = rec.rubro_id.code or False
+
+    def _search_rubro_code(self, operator, value):
+        # Redirige busquedas en rubro_code a rubro_id.code
+        return [('rubro_id.code', operator, value)]
 
     @api.depends('product_id')
     def _compute_product_base_price(self):
@@ -423,6 +444,9 @@ class CCNServiceQuoteLine(models.Model):
 
         if 'default_site_id' in ctx and 'site_id' in self._fields:
             res.setdefault('site_id', ctx.get('default_site_id'))
+
+        if 'default_type' in ctx and 'type' in self._fields:
+            res.setdefault('type', ctx.get('default_type'))
 
         if 'default_service_type' in ctx and 'service_type' in self._fields:
             res.setdefault('service_type', ctx.get('default_service_type'))
