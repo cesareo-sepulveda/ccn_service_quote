@@ -74,9 +74,9 @@
     <record id="ccn_view_quote_line_tree" model="ir.ui.view">
       <field name="name">ccn.quote.line.tree</field>
       <field name="model">ccn.service.quote.line</field>
-      <field name="type">tree</field>
+      <field name="type">list</field>
       <field name="arch" type="xml">
-        <tree editable="bottom">
+        <list editable="bottom">
           <field name="product_id" required="1"
                  domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
                           ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
@@ -92,7 +92,7 @@
           <field name="service_type" invisible="1"/>
           <field name="type" invisible="1"/>
           <field name="rubro_code" invisible="1"/>
-        </tree>
+        </list>
       </field>
     </record>
 
