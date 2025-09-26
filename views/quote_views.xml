@@ -99,7 +99,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'mano_obra'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'mano_obra'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_mano_obra" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -107,10 +107,7 @@
                          'ctx_rubro_code': 'mano_obra',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','mano_obra'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Uniforme -->
@@ -120,7 +117,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'uniforme'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'uniforme'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_uniforme" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -128,10 +125,7 @@
                          'ctx_rubro_code': 'uniforme',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','uniforme'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- EPP -->
@@ -141,7 +135,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'epp'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'epp'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_epp" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -149,10 +143,7 @@
                          'ctx_rubro_code': 'epp',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','epp'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- EPP Alturas -->
@@ -162,7 +153,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'epp_alturas'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'epp_alturas'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_epp_alturas" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -170,10 +161,7 @@
                          'ctx_rubro_code': 'epp_alturas',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','epp_alturas'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Equipo Especial de Limpieza -->
@@ -183,7 +171,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'equipo_especial_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'equipo_especial_limpieza'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_equipo_especial_limpieza" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -191,10 +179,7 @@
                          'ctx_rubro_code': 'equipo_especial_limpieza',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','equipo_especial_limpieza'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Comunicación y Cómputo -->
@@ -204,7 +189,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'comunicacion_computo'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'comunicacion_computo'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_comunicacion_computo" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -212,10 +197,7 @@
                          'ctx_rubro_code': 'comunicacion_computo',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','comunicacion_computo'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Herr. Menor Jardinería -->
@@ -225,7 +207,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_herramienta_menor_jardineria" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -233,10 +215,7 @@
                          'ctx_rubro_code': 'herramienta_menor_jardineria',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','herramienta_menor_jardineria'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Material de Limpieza -->
@@ -246,7 +225,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'material_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'material_limpieza'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_material_limpieza" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -254,10 +233,7 @@
                          'ctx_rubro_code': 'material_limpieza',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','material_limpieza'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Perfil Médico -->
@@ -267,7 +243,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'perfil_medico'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'perfil_medico'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_perfil_medico" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -275,10 +251,7 @@
                          'ctx_rubro_code': 'perfil_medico',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','perfil_medico'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Maquinaria de Limpieza -->
@@ -288,7 +261,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'maquinaria_limpieza'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'maquinaria_limpieza'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_maquinaria_limpieza" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -296,10 +269,7 @@
                          'ctx_rubro_code': 'maquinaria_limpieza',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','maquinaria_limpieza'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Maquinaria de Jardinería -->
@@ -309,7 +279,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'maquinaria_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'maquinaria_jardineria'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_maquinaria_jardineria" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -317,10 +287,7 @@
                          'ctx_rubro_code': 'maquinaria_jardineria',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','maquinaria_jardineria'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Fertilizantes y Tierra Lama -->
@@ -330,7 +297,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_fertilizantes_tierra_lama" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -338,10 +305,7 @@
                          'ctx_rubro_code': 'fertilizantes_tierra_lama',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','fertilizantes_tierra_lama'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Consumibles de Jardinería -->
@@ -351,7 +315,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'consumibles_jardineria'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'consumibles_jardineria'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_consumibles_jardineria" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -359,10 +323,7 @@
                          'ctx_rubro_code': 'consumibles_jardineria',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','consumibles_jardineria'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
               <!-- Capacitación -->
@@ -372,7 +333,7 @@
                         class="btn btn-secondary" context="{'rubro_code': 'capacitacion'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty"
                         class="btn btn-secondary" context="{'rubro_code': 'capacitacion'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_capacitacion" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -380,10 +341,7 @@
                          'ctx_rubro_code': 'capacitacion',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[('rubro_id.code','=','capacitacion'),
-                                ('site_id','=', current_site_id),
-                                ('service_type','=', current_service_type)]"/>
+                       }"/>
               </page>
 
             </notebook>
