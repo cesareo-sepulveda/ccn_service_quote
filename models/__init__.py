@@ -1,14 +1,9 @@
 """Load all models for the CCN service quote module."""
 
 from . import (
-    service_quote,
+    service_quote,   # ← ÚNICO que define ccn.service.quote y ccn.service.quote.line
     site,
-    # Bucket por Rubro (Sitio × Tipo × Rubro)
-    scope_rubro,
-    # Modelo base de líneas (incluye migrate_fill_buckets)
-    quote_line,
-    # Resto de componentes existentes
-    ack,
+    ack,                 # si tienes el modelo ACK separado, déjalo
     add_package_wizard,
     patch_rubro_code,
     product,
@@ -22,5 +17,5 @@ from . import (
     rubro_flag,
     sale_order,
     service_package,
-    pick_quote_wizard,
+    pick_quote_wizard
 )

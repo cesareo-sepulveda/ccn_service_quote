@@ -92,71 +92,66 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # ===== Estados por rubro (enteros simples; se actualizan en onchange/create/write) =====
-    rubro_state_mano_obra                 = fields.Integer(default=0)
-    rubro_state_uniforme                  = fields.Integer(default=0)
-    rubro_state_epp                       = fields.Integer(default=0)
-    rubro_state_epp_alturas               = fields.Integer(default=0)
-    rubro_state_equipo_especial_limpieza  = fields.Integer(default=0)
-    rubro_state_comunicacion_computo      = fields.Integer(default=0)
-    rubro_state_herramienta_menor_jardineria = fields.Integer(default=0)
-    rubro_state_material_limpieza         = fields.Integer(default=0)
-    rubro_state_perfil_medico             = fields.Integer(default=0)
-    rubro_state_maquinaria_limpieza       = fields.Integer(default=0)
-    rubro_state_maquinaria_jardineria     = fields.Integer(default=0)
-    rubro_state_fertilizantes_tierra_lama = fields.Integer(default=0)
-    rubro_state_consumibles_jardineria    = fields.Integer(default=0)
-    rubro_state_capacitacion              = fields.Integer(default=0)
+    # ===== Estados por rubro (COMPUTADOS; 1=verde, 2=ámbar (ACK), 0=rojo) =====
+    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
 
-    # ---------- Helpers de estado ----------
-    def _state_for_code(self, code):
-        self.ensure_one()
-        # si no hay alcance seleccionado, rojo
-        if not (self.current_site_id and self.current_service_type):
-            return 0
-        # ¿hay líneas para ESTE rubro en el alcance actual?
-        lines = self.line_ids.filtered(lambda l:
-            l.site_id.id == self.current_site_id.id and
-            l.service_type == self.current_service_type and
-            (l.rubro_code == code or getattr(l.rubro_id, 'code', False) == code)
-        )
-        if lines:
-            return 1
-        # ¿hay ACK "no aplica" en este alcance?
-        ack = self.env['ccn.service.quote.ack'].search_count([
-            ('quote_id', '=', self.id),
-            ('site_id', '=', self.current_site_id.id),
-            ('service_type', '=', self.current_service_type),
-            ('rubro_code', '=', code),
-            ('ack', '=', True),
-        ]) > 0
-        return 2 if ack else 0
+    @api.depends(
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
+        'line_ids.site_id', 'line_ids.service_type',
+        'current_site_id', 'current_service_type'
+    )
+    def _compute_rubro_states(self):
+        Ack = self.env['ccn.service.quote.ack']
+        def state_for(rec, code):
+            # Requiere alcance completo
+            if not (rec.current_site_id and rec.current_service_type):
+                return 0
+            # ¿Hay líneas en ESTE alcance y rubro?
+            lines = rec.line_ids.filtered(lambda l:
+                l.site_id.id == rec.current_site_id.id and
+                l.service_type == rec.current_service_type and
+                ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
+            )
+            if lines:
+                return 1
+            # ¿Hay ACK "no aplica"?
+            ack = Ack.search_count([
+                ('quote_id', '=', rec.id),
+                ('site_id', '=', rec.current_site_id.id),
+                ('service_type', '=', rec.current_service_type),
+                ('rubro_code', '=', code),
+                ('ack', '=', True),
+            ]) > 0
+            return 2 if ack else 0
 
-    def _compute_all_states_map(self):
-        self.ensure_one()
-        get = self._state_for_code
-        return {
-            'rubro_state_mano_obra':                 get('mano_obra'),
-            'rubro_state_uniforme':                  get('uniforme'),
-            'rubro_state_epp':                       get('epp'),
-            'rubro_state_epp_alturas':               get('epp_alturas'),
-            'rubro_state_equipo_especial_limpieza':  get('equipo_especial_limpieza'),
-            'rubro_state_comunicacion_computo':      get('comunicacion_computo'),
-            'rubro_state_herramienta_menor_jardineria': get('herramienta_menor_jardineria'),
-            'rubro_state_material_limpieza':         get('material_limpieza'),
-            'rubro_state_perfil_medico':             get('perfil_medico'),
-            'rubro_state_maquinaria_limpieza':       get('maquinaria_limpieza'),
-            'rubro_state_maquinaria_jardineria':     get('maquinaria_jardineria'),
-            'rubro_state_fertilizantes_tierra_lama': get('fertilizantes_tierra_lama'),
-            'rubro_state_consumibles_jardineria':    get('consumibles_jardineria'),
-            'rubro_state_capacitacion':              get('capacitacion'),
-        }
-
-    def _update_states_write(self):
-        """Recalcula y escribe los 14 estados (evita recursión)."""
         for rec in self:
-            vals = rec._compute_all_states_map()
-            super(ServiceQuote, rec).write(vals)
+            rec.rubro_state_mano_obra                 = state_for(rec, 'mano_obra')
+            rec.rubro_state_uniforme                  = state_for(rec, 'uniforme')
+            rec.rubro_state_epp                       = state_for(rec, 'epp')
+            rec.rubro_state_epp_alturas               = state_for(rec, 'epp_alturas')
+            rec.rubro_state_equipo_especial_limpieza  = state_for(rec, 'equipo_especial_limpieza')
+            rec.rubro_state_comunicacion_computo      = state_for(rec, 'comunicacion_computo')
+            rec.rubro_state_herramienta_menor_jardineria = state_for(rec, 'herramienta_menor_jardineria')
+            rec.rubro_state_material_limpieza         = state_for(rec, 'material_limpieza')
+            rec.rubro_state_perfil_medico             = state_for(rec, 'perfil_medico')
+            rec.rubro_state_maquinaria_limpieza       = state_for(rec, 'maquinaria_limpieza')
+            rec.rubro_state_maquinaria_jardineria     = state_for(rec, 'maquinaria_jardineria')
+            rec.rubro_state_fertilizantes_tierra_lama = state_for(rec, 'fertilizantes_tierra_lama')
+            rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
+            rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
 
     # ---------- ACK granular ----------
     def _ensure_ack(self, rubro_code, value):
@@ -179,8 +174,6 @@ class ServiceQuote(models.Model):
                     'rubro_code': rubro_code,
                     'ack': True,
                 })
-        # tras cambiar ACK, refrescar estados
-        self._update_states_write()
         return True
 
     def action_mark_rubro_empty(self):
@@ -213,11 +206,9 @@ class ServiceQuote(models.Model):
                     'sequence': -999,
                 })
             quote.current_site_id = general.id
-        # al cambiar sitio actual via botón, refrescar estados
-        self._update_states_write()
         return True
 
-    # ---------- Defaults / onchange / create / write ----------
+    # ---------- Defaults / onchange / create ----------
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
@@ -233,27 +224,16 @@ class ServiceQuote(models.Model):
             else:
                 quote.current_site_id = False
 
-    @api.onchange(
-        'line_ids', 'line_ids.rubro_id', 'line_ids.site_id', 'line_ids.service_type',
-        'current_site_id', 'current_service_type'
-    )
-    def _onchange_refresh_states(self):
-        # Recalcula en VIVO los 14 enteros (para que el JS pinte sin recargar)
-        for rec in self:
-            vals = rec._compute_all_states_map()
-            for k, v in vals.items():
-                setattr(rec, k, v)
-
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if not vals.get('site_ids'):
+                vals['site_ids'] = self._default_site_ids()
         quotes = super().create(vals_list)
-        quotes._update_states_write()
+        for quote in quotes:
+            if not quote.current_site_id and quote.site_ids:
+                quote.current_site_id = quote.site_ids[0].id
         return quotes
-
-    def write(self, vals):
-        res = super().write(vals)
-        self._update_states_write()
-        return res
 
     # ======= UTILIDADES =======
     @api.model
@@ -276,36 +256,6 @@ class ServiceQuote(models.Model):
                 })
             if not q.current_site_id:
                 q.write({'current_site_id': general.id})
-        return True
-
-    @api.model
-    def migrate_fill_rubro_and_scope(self, limit=200000):
-        """Repara líneas antiguas sin service_type/rubro_id (idempotente)."""
-        Line = self.env['ccn.service.quote.line'].sudo()
-        domain = ['|', ('rubro_id', '=', False), ('service_type', '=', False)]
-        for line in Line.search(domain, limit=limit):
-            vals = {}
-            # rubro_id desde el producto (si hay 1 rubro)
-            if not line.rubro_id and line.product_id:
-                rubros = line.product_id.product_tmpl_id.ccn_rubro_ids
-                if len(rubros) == 1:
-                    vals['rubro_id'] = rubros.id
-            # service_type según el rubro si falta
-            if not (line.service_type or vals.get('rubro_id')):
-                # fallback simple
-                vals['service_type'] = 'jardineria'
-            if not line.service_type and (line.rubro_id or vals.get('rubro_id')):
-                rubro = line.rubro_id or self.env['ccn.service.rubro'].browse(vals['rubro_id'])
-                st = False
-                if getattr(rubro, 'apply_clean', False) and not getattr(rubro, 'apply_garden', False):
-                    st = 'limpieza'
-                elif getattr(rubro, 'apply_garden', False) and not getattr(rubro, 'apply_clean', False):
-                    st = 'jardineria'
-                else:
-                    st = 'jardineria'
-                vals['service_type'] = st
-            if vals:
-                line.write(vals)
         return True
 
 
@@ -332,7 +282,7 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
-    # Contexto de vista
+    # Alcance
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -346,7 +296,6 @@ class CCNServiceQuoteLine(models.Model):
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', required=True, index=True)
 
-    # Código de Rubro almacenado (rápido para dominios)
     rubro_code = fields.Char(
         string='Código de Rubro',
         related='rubro_id.code',
@@ -361,7 +310,6 @@ class CCNServiceQuoteLine(models.Model):
         string='Producto/Servicio',
         required=True,
         index=True,
-        # Evitamos 'in' con lista vacía; usamos OR de igualdades
         domain="['&', ('product_tmpl_id.ccn_exclude_from_quote','=',False), "
                "'|', ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')), "
                      "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
