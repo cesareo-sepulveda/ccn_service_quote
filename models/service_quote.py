@@ -120,10 +120,11 @@ class ServiceQuote(models.Model):
     def _compute_rubro_states(self):
         def state_for(rec, code):
             lines = rec.line_ids.filtered(lambda l:
-                (rec.current_site_id and l.site_id.id == rec.current_site_id.id) and
-                (rec.current_service_type and l.service_type == rec.current_service_type) and
-                (not rec.current_type or l.type == rec.current_type) and
-                (getattr(l.rubro_id, 'code', False) == code)
+                rec.current_site_id and rec.current_service_type and
+                l.site_id.id == rec.current_site_id.id and
+                l.service_type == rec.current_service_type and
+                (l.rubro_code == code or getattr(l.rubro_id, 'code', False) == code) and
+                (not rec.current_type or l.type == rec.current_type)
             )
             cnt = len(lines)
             ack = self.env['ccn.service.quote.ack'].search_count([
@@ -263,121 +264,52 @@ class ServiceQuote(models.Model):
 
     @api.model
     def migrate_fill_rubro_and_scope(self, limit=200000):
+        """Opcional: repara líneas antiguas sin service_type/rubro_id."""
         Line = self.env['ccn.service.quote.line'].sudo()
-        domain = ['|', ('rubro_id', '=', False), ('rubro_code', '=', False)]
+        domain = ['|', ('rubro_id', '=', False), ('service_type', '=', False)]
         for line in Line.search(domain, limit=limit):
             vals = {}
             if not line.rubro_id and line.product_id:
                 rubros = line.product_id.product_tmpl_id.ccn_rubro_ids
                 if len(rubros) == 1:
                     vals['rubro_id'] = rubros.id
-            if line.service_type == 'materiales' and line.type != 'material':
-                vals['type'] = 'material'
+            if not line.service_type:
+                # Si el tipo de línea es 'material' y no hay service_type, asumimos 'materiales'
+                vals['service_type'] = 'materiales' if line.type == 'material' else line.service_type
             if vals:
                 line.write(vals)
         return True
 
-    # ========= X2M por RUBRO (con sitio y tipo) =========
-    # Nota: filtramos siempre por la cotización actual vía el inverse (quote_id),
-    # y aquí reforzamos por rubro + sitio + tipo de servicio.
-    line_ids_mano_obra = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','mano_obra'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Mano de Obra",
-    )
-    line_ids_uniforme = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','uniforme'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Uniforme",
-    )
-    line_ids_epp = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','epp'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas EPP",
-    )
-    line_ids_epp_alturas = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','epp_alturas'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas EPP Alturas",
-    )
-    line_ids_equipo_especial_limpieza = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','equipo_especial_limpieza'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Equipo Especial Limpieza",
-    )
-    line_ids_comunicacion_computo = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','comunicacion_computo'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Comunicación y Cómputo",
-    )
-    line_ids_herramienta_menor_jardineria = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','herramienta_menor_jardineria'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Herr. Menor Jardinería",
-    )
-    line_ids_material_limpieza = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','material_limpieza'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Material de Limpieza",
-    )
-    line_ids_perfil_medico = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','perfil_medico'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Perfil Médico",
-    )
-    line_ids_maquinaria_limpieza = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','maquinaria_limpieza'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Maquinaria Limpieza",
-    )
-    line_ids_maquinaria_jardineria = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','maquinaria_jardineria'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Maquinaria Jardinería",
-    )
-    line_ids_fertilizantes_tierra_lama = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','fertilizantes_tierra_lama'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Fertilizantes y Tierra Lama",
-    )
-    line_ids_consumibles_jardineria = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','consumibles_jardineria'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Consumibles Jardinería",
-    )
-    line_ids_capacitacion = fields.One2many(
-        'ccn.service.quote.line', 'quote_id',
-        domain="[('rubro_id.code','=','capacitacion'),"
-               " ('site_id','=', current_site_id),"
-               " ('service_type','=', current_service_type)]",
-        string="Líneas Capacitación",
-    )
+    # ========= X2M por RUBRO (sólo filtro fijo por rubro) =========
+    # Los filtros dinámicos por sitio/servicio van en la VISTA.
+    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','mano_obra')]", string="Líneas Mano de Obra")
+    line_ids_uniforme = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','uniforme')]", string="Líneas Uniforme")
+    line_ids_epp = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','epp')]", string="Líneas EPP")
+    line_ids_epp_alturas = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','epp_alturas')]", string="Líneas EPP Alturas")
+    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','equipo_especial_limpieza')]", string="Líneas Equipo Especial Limpieza")
+    line_ids_comunicacion_computo = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','comunicacion_computo')]", string="Líneas Comunicación y Cómputo")
+    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','herramienta_menor_jardineria')]", string="Líneas Herr. Menor Jardinería")
+    line_ids_material_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','material_limpieza')]", string="Líneas Material de Limpieza")
+    line_ids_perfil_medico = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','perfil_medico')]", string="Líneas Perfil Médico")
+    line_ids_maquinaria_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','maquinaria_limpieza')]", string="Líneas Maquinaria Limpieza")
+    line_ids_maquinaria_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','maquinaria_jardineria')]", string="Líneas Maquinaria Jardinería")
+    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','fertilizantes_tierra_lama')]", string="Líneas Fertilizantes y Tierra Lama")
+    line_ids_consumibles_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','consumibles_jardineria')]", string="Líneas Consumibles Jardinería")
+    line_ids_capacitacion = fields.One2many('ccn.service.quote.line', 'quote_id',
+        domain="[('rubro_id.code','=','capacitacion')]", string="Líneas Capacitación")
 
 
 # =====================================================================
@@ -403,6 +335,7 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
+    # Contexto de vista
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
