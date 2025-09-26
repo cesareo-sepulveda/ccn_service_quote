@@ -35,6 +35,22 @@
   };
   function LABEL_TOCODE_SAFE(){ return LABEL_TO_CODE; }
   const STATE_FIELD = (code) => `rubro_state_${code}`;
+  const CODE_TO_FIELD = {
+    "mano_obra": "line_ids_mano_obra",
+    "uniforme": "line_ids_uniforme",
+    "epp": "line_ids_epp",
+    "epp_alturas": "line_ids_epp_alturas",
+    "equipo_especial_limpieza": "line_ids_equipo_especial_limpieza",
+    "comunicacion_computo": "line_ids_comunicacion_computo",
+    "herramienta_menor_jardineria": "line_ids_herramienta_menor_jardineria",
+    "material_limpieza": "line_ids_material_limpieza",
+    "perfil_medico": "line_ids_perfil_medico",
+    "maquinaria_limpieza": "line_ids_maquinaria_limpieza",
+    "maquinaria_jardineria": "line_ids_maquinaria_jardineria",
+    "fertilizantes_tierra_lama": "line_ids_fertilizantes_tierra_lama",
+    "consumibles_jardineria": "line_ids_consumibles_jardineria",
+    "capacitacion": "line_ids_capacitacion",
+  };
 
   // === clases de color
   function clsFor(st){
@@ -75,6 +91,23 @@
   function getNotebook(){ return document.querySelector(".o_form_view .o_notebook"); }
   function getLinks(nb){ return nb ? [...nb.querySelectorAll(".nav-tabs .nav-link")] : []; }
 
+  function countLines(nb, code){
+    const fieldName = CODE_TO_FIELD[code];
+    if(!fieldName || !nb) return 0;
+    const container = nb.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
+    if(!container) return 0;
+    const list = container.querySelector('.o_list_view');
+    if(!list) return 0;
+    const dataRows = list.querySelectorAll('tbody tr.o_data_row');
+    let count = dataRows ? dataRows.length : 0;
+    if(count === 0){
+      // inline edición -> considerar el editor como 1 fila
+      const inlineForm = list.querySelector('.o_form_view');
+      if(inlineForm) count = 1;
+    }
+    return count;
+  }
+
   // === índice code -> <a.nav-link>
   function indexByCode(nb){
     const byCode = {};
@@ -91,7 +124,13 @@
     let changed = false;
     for(const [code, link] of Object.entries(byCode)){
       const st = readIntField(formRoot, STATE_FIELD(code));
-      const sNorm = (st === 1 || st === 2) ? st : 0; // 0/otros => rojo
+      let sNorm = (st === 1 || st === 2) ? st : 0; // 0/otros => rojo
+      const rows = countLines(nb, code);
+      if(rows > 0){
+        sNorm = 1;
+      } else if(sNorm === 1){
+        sNorm = 0;
+      }
       if (last[code] !== sNorm){
         applyTab(link, sNorm);
         last[code] = sNorm;
