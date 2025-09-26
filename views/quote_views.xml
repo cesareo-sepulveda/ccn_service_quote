@@ -115,6 +115,10 @@
             <field name="rubro_state_consumibles_jardineria" invisible="1"/>
             <field name="rubro_state_capacitacion" invisible="1"/>
 
+            <!-- Campos invisibles para forzar re-renderizado cuando cambian -->
+            <field name="current_site_id" invisible="1"/>
+            <field name="current_service_type" invisible="1"/>
+
             <!-- ===== Tabs por rubro (solo visibles con tipo de servicio) ===== -->
             <notebook invisible="not current_service_type">
 
