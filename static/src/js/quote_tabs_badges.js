@@ -90,28 +90,20 @@
       if (scheduled) return;
       scheduled = true;
       setTimeout(() => { scheduled = false; try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 0);
-      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 30);
-      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 120);
-      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 360);
+      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 50);
+      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 150);
+      setTimeout(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 350);
     };
 
     const mo = new MutationObserver((muts) => {
       try{
         for(const mut of muts){
-          // si OWL reemplaza bloques enteros, el tipo será childList
           if (mut.type === 'childList'){ schedule(); return; }
-
           const t = mut.target;
           if (!(t instanceof Element)) continue;
           const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
-
-          // rubro_state_* cambian => repintar
           if (name.startsWith("rubro_state_")){ schedule(); return; }
-
-          // alcance (sitio / servicio) cambia => repintar
           if (name === "current_site_id" || name === "current_service_type"){ schedule(); return; }
-
-          // buscar un contenedor relevante
           const holder = t.closest?.(
             '[name^="rubro_state_"], [data-name^="rubro_state_"], ' +
             '[name="current_site_id"], [data-name="current_site_id"], ' +
@@ -121,7 +113,6 @@
         }
       }catch(_e){}
     });
-
     mo.observe(formRoot, {
       childList: true,
       subtree: true,
@@ -130,16 +121,20 @@
       attributeFilter: ["data-value", "value", "class"],
     });
 
-    // listeners directos por si el widget no muta atributos visibles
+    // detectar clic manual en tabs
+    nb?.querySelectorAll('.nav-tabs .nav-link').forEach(a => {
+      a.addEventListener('click', () => schedule(), {passive:true});
+    });
+
+    // listeners por si los selects no mutan atributos
     const svc = formRoot.querySelector('[name="current_service_type"], [data-name="current_service_type"]');
     const site = formRoot.querySelector('[name="current_site_id"], [data-name="current_site_id"]');
     svc && svc.addEventListener('change', schedule, {passive:true});
     site && site.addEventListener('change', schedule, {passive:true});
 
-    // fallback: polling muy ligero (700ms)
+    // fallback suave
     setInterval(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 700);
 
-    // utilidades debug
     window.__ccnTabsWatch = {
       dump(){ console.log(JSON.parse(JSON.stringify(last))); },
       repaint(){ paintFromStates(formRoot, nb, byCode, last); }
