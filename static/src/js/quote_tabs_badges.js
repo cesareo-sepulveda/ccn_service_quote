@@ -1,9 +1,3 @@
-/** CCN Quote Tabs — pinta leyendo rubro_state_* desde el DOM (sin RPC/URL/res_id)
- *  - No hace clics ni “barridos”.
- *  - Pinta al inicio y re-pinta cuando cambian rubro_state_* o el alcance (sitio/servicio).
- *  - Estados: 1 => verde (ccn-status-filled), 2 => ámbar (ccn-status-ack), 0/otros => rojo (ccn-status-empty).
- *  - Odoo 18 CE, sin imports. Respeta tu geometría/chevrons; solo añade clases.
- */
 (function () {
   "use strict";
 
@@ -104,14 +98,25 @@
     const mo = new MutationObserver((muts) => {
       try{
         for(const mut of muts){
+          // si OWL reemplaza bloques enteros, el tipo será childList
+          if (mut.type === 'childList'){ schedule(); return; }
+
           const t = mut.target;
           if (!(t instanceof Element)) continue;
           const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
-          // repintar si cambian los rubro_state_*
+
+          // rubro_state_* cambian => repintar
           if (name.startsWith("rubro_state_")){ schedule(); return; }
-          // repintar si cambia el alcance (sitio/servicio)
+
+          // alcance (sitio / servicio) cambia => repintar
           if (name === "current_site_id" || name === "current_service_type"){ schedule(); return; }
-          const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"], [name="current_site_id"], [data-name="current_site_id"], [name="current_service_type"], [data-name="current_service_type"]');
+
+          // buscar un contenedor relevante
+          const holder = t.closest?.(
+            '[name^="rubro_state_"], [data-name^="rubro_state_"], ' +
+            '[name="current_site_id"], [data-name="current_site_id"], ' +
+            '[name="current_service_type"], [data-name="current_service_type"]'
+          );
           if (holder){ schedule(); return; }
         }
       }catch(_e){}
@@ -125,6 +130,16 @@
       attributeFilter: ["data-value", "value", "class"],
     });
 
+    // listeners directos por si el widget no muta atributos visibles
+    const svc = formRoot.querySelector('[name="current_service_type"], [data-name="current_service_type"]');
+    const site = formRoot.querySelector('[name="current_site_id"], [data-name="current_site_id"]');
+    svc && svc.addEventListener('change', schedule, {passive:true});
+    site && site.addEventListener('change', schedule, {passive:true});
+
+    // fallback: polling muy ligero (700ms)
+    setInterval(() => { try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 700);
+
+    // utilidades debug
     window.__ccnTabsWatch = {
       dump(){ console.log(JSON.parse(JSON.stringify(last))); },
       repaint(){ paintFromStates(formRoot, nb, byCode, last); }
