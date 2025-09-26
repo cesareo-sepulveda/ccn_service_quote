@@ -1,15 +1,25 @@
 # -*- coding: utf-8 -*-
-from . import (
-    service_quote,      # única fuente de ServiceQuote y Line
-    site,               # sitios con indicadores
-    ack,                # modelo de ACK por rubro (usa campo 'ack')
-    product,            # extensión product.template/product.product (ccn_rubro_ids, ccn_exclude_from_quote)
-    res_partner,        # si tienes extensiones al partner
-    rubro,              # catálogo de rubros
-    rubro_flag,         # si lo usas
-    sale_order,         # si lo usas
-    service_package,    # si lo usas
-    add_package_wizard, # si lo usas
-    patch_rubro_code,   # si lo usas
-    pick_quote_wizard   # si lo usas
-)
+"""Carga de modelos del módulo CCN Service Quote.
+
+IMPORTANTE:
+- Mantén aquí únicamente los módulos que EXISTEN en tu carpeta models/.
+- Si más adelante agregas/quitas archivos .py, actualiza esta lista.
+"""
+
+from . import service_quote          # cotización + líneas (tu implementación actual)
+from . import site                   # sitios de cotización
+from . import ack                    # ACK "no aplica" por sitio/servicio/rubro
+
+# Extensiones que normalmente sí existen en tu repo:
+from . import product                # campos CCN en product/product.template
+from . import res_partner            # extensiones en partner
+from . import rubro                  # catálogo de rubros
+from . import rubro_flag             # flags/marcadores de rubro
+from . import sale_order             # integración con pedidos de venta
+from . import service_package        # paquetes de servicio
+from . import add_package_wizard     # wizard para añadir paquetes
+from . import pick_quote_wizard      # wizard para seleccionar cotización
+
+# ⚠️ No importes módulos que no tengas (ej.: quote_line_enhancements, quote_line_extend,
+# quote_line_related, quote_line_tax, patch_rubro_code, line_defaults, etc.)
+# Si alguno de los de arriba no existe en tu repo actual, elimínalo también de esta lista.
