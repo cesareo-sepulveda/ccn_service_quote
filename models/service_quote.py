@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+from collections import defaultdict
+
 from odoo import Command, api, fields, models, _
 from odoo.exceptions import ValidationError
 
@@ -18,6 +20,23 @@ RUBRO_CODES = [
     ("consumibles_jardineria","Consumibles de Jardinería"),
     ("capacitacion","Capacitación"),
 ]
+
+RUBRO_STATE_FIELDS = {
+    "mano_obra": "rubro_state_mano_obra",
+    "uniforme": "rubro_state_uniforme",
+    "epp": "rubro_state_epp",
+    "epp_alturas": "rubro_state_epp_alturas",
+    "equipo_especial_limpieza": "rubro_state_equipo_especial_limpieza",
+    "comunicacion_computo": "rubro_state_comunicacion_computo",
+    "herramienta_menor_jardineria": "rubro_state_herramienta_menor_jardineria",
+    "material_limpieza": "rubro_state_material_limpieza",
+    "perfil_medico": "rubro_state_perfil_medico",
+    "maquinaria_limpieza": "rubro_state_maquinaria_limpieza",
+    "maquinaria_jardineria": "rubro_state_maquinaria_jardineria",
+    "fertilizantes_tierra_lama": "rubro_state_fertilizantes_tierra_lama",
+    "consumibles_jardineria": "rubro_state_consumibles_jardineria",
+    "capacitacion": "rubro_state_capacitacion",
+}
 
 # =========================================================
 #    QUOTE
@@ -88,24 +107,30 @@ class ServiceQuote(models.Model):
     # Relación completa de líneas (todas)
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas (todas)')
 
+    ack_ids = fields.One2many(
+        'ccn.service.quote.ack',
+        'quote_id',
+        string='Reconocimientos por Rubro',
+    )
+
     # ===== One2many *por rubro* (campos distintos para cada pestaña)
     # Notas:
     #  - Son “proxies” al mismo comodel/inversa, pero con distinto nombre de campo.
-    #  - El filtrado por sitio/servicio se hace en la VISTA (XML) con domain, no aquí.
-    line_ids_mano_obra                = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra')
-    line_ids_uniforme                 = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme')
-    line_ids_epp                      = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP')
-    line_ids_epp_alturas              = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas')
-    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial Limpieza')
-    line_ids_comunicacion_computo     = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación/Computo')
-    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Herr. Menor Jardinería')
-    line_ids_material_limpieza        = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Material Limpieza')
-    line_ids_perfil_medico            = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Perfil Médico')
-    line_ids_maquinaria_limpieza      = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Limpieza')
-    line_ids_maquinaria_jardineria    = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Jardinería')
-    line_ids_fertilizantes_tierra_lama= fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Fertilizantes/Tierra Lama')
-    line_ids_consumibles_jardineria   = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles Jardinería')
-    line_ids_capacitacion             = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación')
+    #  - El dominio fija el rubro para que cada dataset permanezca aislado y evite mezclas.
+    line_ids_mano_obra                = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra', domain="[('rubro_code', '=', 'mano_obra')]")
+    line_ids_uniforme                 = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme', domain="[('rubro_code', '=', 'uniforme')]")
+    line_ids_epp                      = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP', domain="[('rubro_code', '=', 'epp')]")
+    line_ids_epp_alturas              = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas', domain="[('rubro_code', '=', 'epp_alturas')]")
+    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial Limpieza', domain="[('rubro_code', '=', 'equipo_especial_limpieza')]")
+    line_ids_comunicacion_computo     = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación/Computo', domain="[('rubro_code', '=', 'comunicacion_computo')]")
+    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Herr. Menor Jardinería', domain="[('rubro_code', '=', 'herramienta_menor_jardineria')]")
+    line_ids_material_limpieza        = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Material Limpieza', domain="[('rubro_code', '=', 'material_limpieza')]")
+    line_ids_perfil_medico            = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Perfil Médico', domain="[('rubro_code', '=', 'perfil_medico')]")
+    line_ids_maquinaria_limpieza      = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Limpieza', domain="[('rubro_code', '=', 'maquinaria_limpieza')]")
+    line_ids_maquinaria_jardineria    = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Jardinería', domain="[('rubro_code', '=', 'maquinaria_jardineria')]")
+    line_ids_fertilizantes_tierra_lama= fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Fertilizantes/Tierra Lama', domain="[('rubro_code', '=', 'fertilizantes_tierra_lama')]")
+    line_ids_consumibles_jardineria   = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles Jardinería', domain="[('rubro_code', '=', 'consumibles_jardineria')]")
+    line_ids_capacitacion             = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación', domain="[('rubro_code', '=', 'capacitacion')]")
 
     # ===== Estados por rubro (1 lleno, 2 ack, 0 vacío)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
@@ -126,40 +151,70 @@ class ServiceQuote(models.Model):
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
         'line_ids.site_id', 'line_ids.service_type',
+        'ack_ids', 'ack_ids.rubro_code', 'ack_ids.site_id', 'ack_ids.service_type', 'ack_ids.ack',
         'current_site_id', 'current_service_type'
     )
     def _compute_rubro_states(self):
-        def state_for(rec, code):
-            lines = rec.line_ids.filtered(lambda l:
-                (rec.current_site_id and l.site_id.id == rec.current_site_id.id) and
-                (rec.current_service_type and l.service_type == rec.current_service_type) and
-                ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
-            )
-            cnt = len(lines)
-            ack = self.env['ccn.service.quote.ack'].search_count([
-                ('quote_id', '=', rec.id),
-                ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
-                ('service_type', '=', rec.current_service_type or False),
-                ('rubro_code', '=', code),
-                ('ack', '=', True),
-            ]) > 0
-            return 1 if cnt > 0 else (2 if ack else 0)
-
         for rec in self:
-            rec.rubro_state_mano_obra                 = state_for(rec, 'mano_obra')
-            rec.rubro_state_uniforme                  = state_for(rec, 'uniforme')
-            rec.rubro_state_epp                       = state_for(rec, 'epp')
-            rec.rubro_state_epp_alturas               = state_for(rec, 'epp_alturas')
-            rec.rubro_state_equipo_especial_limpieza  = state_for(rec, 'equipo_especial_limpieza')
-            rec.rubro_state_comunicacion_computo      = state_for(rec, 'comunicacion_computo')
-            rec.rubro_state_herramienta_menor_jardineria = state_for(rec, 'herramienta_menor_jardineria')
-            rec.rubro_state_material_limpieza         = state_for(rec, 'material_limpieza')
-            rec.rubro_state_perfil_medico             = state_for(rec, 'perfil_medico')
-            rec.rubro_state_maquinaria_limpieza       = state_for(rec, 'maquinaria_limpieza')
-            rec.rubro_state_maquinaria_jardineria     = state_for(rec, 'maquinaria_jardineria')
-            rec.rubro_state_fertilizantes_tierra_lama = state_for(rec, 'fertilizantes_tierra_lama')
-            rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
-            rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
+            states = rec._get_rubro_state_map()
+            for code, field_name in RUBRO_STATE_FIELDS.items():
+                setattr(rec, field_name, states.get(code, 0))
+
+    @api.onchange(
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
+        'line_ids.site_id', 'line_ids.service_type',
+        'current_site_id', 'current_service_type'
+    )
+    def _onchange_recompute_rubro_states(self):
+        self._compute_rubro_states()
+
+    def _get_rubro_state_map(self):
+        self.ensure_one()
+        state_map = {code: 0 for code in RUBRO_STATE_FIELDS}
+
+        site = self.current_site_id
+        service = self.current_service_type
+        current_site_id = site.id if site else False
+        current_service_type = service or False
+
+        if not (current_site_id and current_service_type):
+            return state_map
+
+        line_counts = defaultdict(int)
+        is_general_site = bool(getattr(site, 'is_general', False))
+        for line in self.line_ids:
+            if line.site_id:
+                if line.site_id.id != current_site_id:
+                    continue
+            else:
+                # Solo consideramos líneas sin sitio cuando el sitio actual es General.
+                if not is_general_site:
+                    continue
+            if line.service_type != current_service_type:
+                continue
+            code = line.rubro_code or line.rubro_id.code
+            if code:
+                line_counts[code] += 1
+
+        ack_map = {}
+        if self.id:
+            matching_acks = self.ack_ids.filtered(
+                lambda a: a.ack
+                and a.service_type == current_service_type
+                and (
+                    (a.site_id and a.site_id.id == current_site_id)
+                    or (not a.site_id and is_general_site)
+                )
+            )
+            ack_map = {ack.rubro_code: True for ack in matching_acks}
+
+        for code in state_map:
+            if line_counts.get(code):
+                state_map[code] = 1
+            elif ack_map.get(code):
+                state_map[code] = 2
+
+        return state_map
 
     # ACK granular (No aplica)
     def _ensure_ack(self, rubro_code, value):
@@ -182,6 +237,8 @@ class ServiceQuote(models.Model):
                     'rubro_code': rubro_code,
                     'ack': True,
                 })
+        self.invalidate_cache(fnames=['ack_ids'])
+        self._compute_rubro_states()
 
     def action_mark_rubro_empty(self):
         code = (self.env.context or {}).get('rubro_code')
