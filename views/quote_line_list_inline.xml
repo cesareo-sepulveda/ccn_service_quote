@@ -14,9 +14,9 @@
           <field name="rubro_code" invisible="1" column_invisible="1"/>
 
           <!-- Producto/Servicio del rubro -->
-          <!-- El dominio lo inyecta la vista heredada view_ccn_quote_line_inline_product_domain
-               y/o el propio field en el modelo; aquí mantenemos limpio -->
           <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                          ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
           <!-- Cantidad -->
@@ -52,6 +52,8 @@
             <field name="rubro_code" invisible="1"/>
 
             <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                            ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
                    options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
             <field name="quantity"/>
@@ -68,7 +70,7 @@
       </field>
     </record>
 
-    <!-- (Opcional) Árbol general, si lo usas en alguna acción separada -->
+    <!-- Vista árbol “completa” alternativa (no usada en notebook) -->
     <record id="ccn_view_quote_line_tree" model="ir.ui.view">
       <field name="name">ccn.quote.line.tree</field>
       <field name="model">ccn.service.quote.line</field>
@@ -76,6 +78,8 @@
       <field name="arch" type="xml">
         <list editable="bottom">
           <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                          ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
           <field name="quantity"/>
           <field name="tabulator_percent" string="Tabulador"/>

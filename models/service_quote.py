@@ -2,9 +2,9 @@
 from odoo import Command, api, fields, models, _
 from odoo.exceptions import ValidationError
 
-# ==========================================
-# Catálogo de rubros (códigos y etiquetas)
-# ==========================================
+# -------------------------
+# Catálogo de rubros (códigos)
+# -------------------------
 RUBRO_CODES = [
     ("mano_obra","Mano de Obra"),
     ("uniforme","Uniforme"),
@@ -22,42 +22,9 @@ RUBRO_CODES = [
     ("capacitacion","Capacitación"),
 ]
 
-# ==========================================
-# ACK "No aplica" por Sitio / Servicio / Rubro
-# ==========================================
-class ServiceQuoteAck(models.Model):
-    _name = "ccn.service.quote.ack"
-    _description = "ACK de 'No aplica' por Sitio/Servicio/Rubro"
-    _rec_name = "rubro_code"
-    _order = "id desc"
-
-    quote_id = fields.Many2one("ccn.service.quote", required=True, ondelete="cascade", index=True)
-    site_id = fields.Many2one("ccn.service.quote.site", required=True, ondelete="cascade", index=True)
-    service_type = fields.Selection(
-        selection=[
-            ('jardineria', 'Jardinería'),
-            ('limpieza', 'Limpieza'),
-            ('mantenimiento', 'Mantenimiento'),
-            ('materiales', 'Materiales'),
-            ('servicios_especiales', 'Servicios Especiales'),
-            ('almacenaje', 'Almacenaje'),
-            ('fletes', 'Fletes'),
-        ],
-        required=True,
-        index=True,
-    )
-    rubro_code = fields.Selection(RUBRO_CODES, required=True, index=True)
-    ack = fields.Boolean(default=True)
-
-    _sql_constraints = [
-        ("uniq_ack_scope", "unique(quote_id, site_id, service_type, rubro_code)",
-         "Solo puede existir un ACK por sitio, tipo de servicio y rubro."),
-    ]
-
-
-# ==========================================
-# Cotización (encabezado)
-# ==========================================
+# =====================================================================
+# QUOTE (encabezado)
+# =====================================================================
 class ServiceQuote(models.Model):
     _name = 'ccn.service.quote'
     _description = 'CCN Service Quote'
@@ -115,6 +82,7 @@ class ServiceQuote(models.Model):
         default='itemized',
         required=True,
     )
+
     admin_percent = fields.Float(string='Administración (%)', default=0.0)
     utility_percent = fields.Float(string='Utilidad (%)', default=0.0)
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
@@ -123,7 +91,7 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
-    # ---------- Estados por rubro (filtrados por sitio/servicio) ----------
+    # Estados por rubro (filtrados por sitio/servicio actual)
     rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
     rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
     rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
@@ -140,22 +108,24 @@ class ServiceQuote(models.Model):
     rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
 
     @api.depends(
-        'line_ids', 'line_ids.rubro_id',
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
         'line_ids.site_id', 'line_ids.service_type',
         'current_site_id', 'current_service_type'
     )
     def _compute_rubro_states(self):
         def state_for(rec, code):
+            if not (rec.current_site_id and rec.current_service_type):
+                return 0
             lines = rec.line_ids.filtered(lambda l:
-                (rec.current_site_id and l.site_id.id == rec.current_site_id.id) and
-                (rec.current_service_type and l.service_type == rec.current_service_type) and
-                (l.rubro_id and l.rubro_id.code == code)
+                l.site_id.id == rec.current_site_id.id
+                and l.service_type == rec.current_service_type
+                and (l.rubro_code == code or (l.rubro_id and l.rubro_id.code == code))
             )
             cnt = len(lines)
             ack = self.env['ccn.service.quote.ack'].search_count([
                 ('quote_id', '=', rec.id),
-                ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
-                ('service_type', '=', rec.current_service_type or False),
+                ('site_id', '=', rec.current_site_id.id),
+                ('service_type', '=', rec.current_service_type),
                 ('rubro_code', '=', code),
                 ('ack', '=', True),
             ]) > 0
@@ -177,7 +147,7 @@ class ServiceQuote(models.Model):
             rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
             rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
 
-    # ---------- ACK helpers ----------
+    # ACK granular
     def _ensure_ack(self, rubro_code, value):
         for rec in self:
             if not (rec.current_site_id and rec.current_service_type and rubro_code):
@@ -211,7 +181,7 @@ class ServiceQuote(models.Model):
             self._ensure_ack(code, False)
         return True
 
-    # ---------- Utilidades de sitio ----------
+    # Botón para garantizar/crear Sitio "General"
     def action_ensure_general(self):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
         for quote in self:
@@ -231,7 +201,7 @@ class ServiceQuote(models.Model):
             quote.current_site_id = general.id
         return True
 
-    # ---------- Defaults / onchange ----------
+    # Defaults para que "General" aparezca de inmediato
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
@@ -247,11 +217,6 @@ class ServiceQuote(models.Model):
             else:
                 quote.current_site_id = False
 
-    @api.onchange('current_service_type')
-    def _onchange_current_service_type(self):
-        # No más campo 'type' en líneas
-        return
-
     @api.model_create_multi
     def create(self, vals_list):
         for vals in vals_list:
@@ -263,58 +228,33 @@ class ServiceQuote(models.Model):
                 quote.current_site_id = quote.site_ids[0].id
         return quotes
 
-    # ---------- Hooks utilitarios llamados por XML ----------
+    # Usado por data/migrate_fix_general.xml
     @api.model
     def _fix_general_sites(self, limit=100000):
-        """Garantiza un único sitio 'General' activo por cotización y lo pone al frente."""
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
-        Line = self.env['ccn.service.quote.line'].sudo()
         quotes = self.search([], limit=limit)
         for q in quotes:
-            generals = Site.search([
+            general = Site.search([
                 ('quote_id', '=', q.id),
                 ('name', '=ilike', 'general'),
-            ])
-            if not generals:
-                canonical = Site.create({
+            ], limit=1)
+            if general:
+                general.write({'active': True, 'sequence': -999})
+            else:
+                general = Site.create({
                     'quote_id': q.id,
                     'name': 'General',
                     'active': True,
                     'sequence': -999,
                 })
-            else:
-                canonical = generals.sorted(key=lambda s: ((s.sequence or 0), s.id))[0]
-                dups = (generals - canonical)
-                if dups:
-                    Line.search([('site_id', 'in', dups.ids)]).write({'site_id': canonical.id})
-                    dups.write({'active': False})
-                canonical.write({'active': True, 'sequence': -999})
-            if not q.current_site_id or q.current_site_id not in q.site_ids:
-                q.write({'current_site_id': canonical.id})
-        return True
-
-    @api.model
-    def _deactivate_old_quote_views(self):
-        """Desactiva vistas heredadas antiguas si existen (idempotente)."""
-        IrView = self.env['ir.ui.view'].sudo()
-        # Lista de xmlids “antiguos” conocidos (si no existen, no pasa nada)
-        xmlids = [
-            'ccn_service_quote.ccn_view_quote_form_tabs',  # ejemplo legacy
-        ]
-        for xmlid in xmlids:
-            try:
-                view = self.env.ref(xmlid)
-                if view and view.active:
-                    view.write({'active': False, 'name': f"{view.name} (DISABLED)"})
-            except Exception:
-                # si no existe, continuar
-                continue
+            if not q.current_site_id:
+                q.write({'current_site_id': general.id})
         return True
 
 
-# ==========================================
-# Línea de cotización (detalle)
-# ==========================================
+# =====================================================================
+# LÍNEA (detalle)
+# =====================================================================
 class CCNServiceQuoteLine(models.Model):
     _name = 'ccn.service.quote.line'
     _description = 'CCN Service Quote Line'
@@ -335,6 +275,7 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
     )
 
+    # Contexto de vista
     service_type = fields.Selection([
         ('jardineria', 'Jardinería'),
         ('limpieza', 'Limpieza'),
@@ -348,22 +289,25 @@ class CCNServiceQuoteLine(models.Model):
     # Rubro
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
-    # Código de rubro (compute no almacenado; usar rubro_id.code en dominios de BD)
-    rubro_code = fields.Char(
+    # rubro_code stored (Selection) para que el dominio funcione a nivel SQL
+    rubro_code = fields.Selection(
+        selection=RUBRO_CODES,
         string='Código de Rubro',
-        compute='_compute_rubro_code',
-        store=False,
+        related='rubro_id.code',
+        store=True,
         readonly=True,
         index=True,
     )
 
-    # Producto/Servicio
+    # Producto (filtrado por rubro)
     product_id = fields.Many2one(
         'product.product',
         string='Producto/Servicio',
         required=True,
         index=True,
-        options="{'no_open': True, 'no_create': True, 'no_create_edit': True}",
+        domain="['&', ('product_tmpl_id.ccn_exclude_from_quote','=',False), "
+               "'|', ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')), "
+                     "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
     )
 
     # Cantidad
@@ -386,7 +330,7 @@ class CCNServiceQuoteLine(models.Model):
         required=True,
     )
 
-    # Precios / impuestos / totales
+    # Precios / impuestos / totales (simplificados)
     product_base_price = fields.Monetary(
         string='Precio base',
         compute='_compute_product_base_price',
@@ -415,17 +359,12 @@ class CCNServiceQuoteLine(models.Model):
     )
 
     # ===== Cómputos =====
-    @api.depends('rubro_id', 'rubro_id.code')
-    def _compute_rubro_code(self):
-        for rec in self:
-            rec.rubro_code = rec.rubro_id.code or False
-
     @api.depends('product_id')
     def _compute_product_base_price(self):
         for line in self:
             val = line.product_id.list_price if line.product_id else 0.0
-            if line.quote_id.currency_id:
-                val = line.quote_id.currency_id.round(val)
+            if line.currency_id:
+                val = line.currency_id.round(val)
             line.product_base_price = val
 
     @api.depends('product_base_price', 'tabulator_percent')
@@ -434,8 +373,8 @@ class CCNServiceQuoteLine(models.Model):
             base = line.product_base_price or 0.0
             tab = float(line.tabulator_percent or '0') / 100.0
             val = base * (1.0 + tab)
-            if line.quote_id.currency_id:
-                val = line.quote_id.currency_id.round(val)
+            if line.currency_id:
+                val = line.currency_id.round(val)
             line.price_unit_final = val
 
     @api.depends('product_id')
@@ -457,16 +396,16 @@ class CCNServiceQuoteLine(models.Model):
             if taxes:
                 rate = sum(t.amount for t in taxes if getattr(t, 'amount_type', 'percent') == 'percent') / 100.0
             amt = total * rate
-            if line.quote_id.currency_id:
-                amt = line.quote_id.currency_id.round(amt)
+            if line.currency_id:
+                amt = line.currency_id.round(amt)
             line.amount_tax = amt
 
     @api.depends('quantity', 'price_unit_final')
     def _compute_total_price(self):
         for line in self:
             val = (line.price_unit_final or 0.0) * (line.quantity or 0.0)
-            if line.quote_id.currency_id:
-                val = line.quote_id.currency_id.round(val)
+            if line.currency_id:
+                val = line.currency_id.round(val)
             line.total_price = val
 
     # ===== Defaults desde contexto =====
@@ -493,7 +432,7 @@ class CCNServiceQuoteLine(models.Model):
 
         return res
 
-    # Onchange para reforzar dominio de producto por rubro
+    # Onchange para reforzar el dominio de producto por rubro
     @api.onchange('rubro_id')
     def _onchange_rubro_id(self):
         code = self.rubro_id.code if self.rubro_id else False
