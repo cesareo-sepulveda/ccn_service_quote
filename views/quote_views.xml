@@ -129,7 +129,7 @@
                         context="{'rubro_code': 'mano_obra'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_mano_obra" mode="list"
                         context="{
                           'default_quote_id': id,
                           'default_site_id': current_site_id,
@@ -137,13 +137,7 @@
                           'ctx_rubro_code': 'mano_obra',
                           'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                           'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                        }"
-                        domain="[
-                          ('quote_id','=', parent.id),
-                          ('site_id','=', current_site_id),
-                          
-                          ('rubro_code','=','mano_obra')
-                        ]"/>
+                        }"/>
               </page>
 
               <!-- Uniforme -->
@@ -153,7 +147,7 @@
                         context="{'rubro_code': 'uniforme'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_uniforme" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -162,13 +156,7 @@
                          'ctx_rubro_code': 'uniforme',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[
-                         ('quote_id','=', parent.id),
-                         ('site_id','=', current_site_id),
-                         
-                         ('rubro_code','=','uniforme')
-                       ]"/>
+                       }"/>
               </page>
 
               <!-- EPP -->
@@ -178,7 +166,7 @@
                         context="{'rubro_code': 'epp'}"/>
                 <button string="Quitar No Aplica" type="object" name="action_unmark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}"/>
-                <field name="line_ids" mode="list"
+                <field name="line_ids_epp" mode="list"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
@@ -187,13 +175,7 @@
                          'ctx_rubro_code': 'epp',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
-                       }"
-                       domain="[
-                         ('quote_id','=', parent.id),
-                         ('rubro_code','=','epp'),
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
-                       ]"/>
+                       }"/>
               </page>
 
               <!-- EPP Alturas (solo jardinería) -->

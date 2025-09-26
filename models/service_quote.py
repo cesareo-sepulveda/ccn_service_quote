@@ -469,3 +469,19 @@ class CCNServiceQuoteLine(models.Model):
                 ]
             }
         }
+
+    # Fields separados por rubro para evitar mezcla en las pestañas
+    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','mano_obra')])
+    line_ids_uniforme = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','uniforme')])
+    line_ids_epp = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','epp')])
+    line_ids_epp_alturas = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','epp_alturas')])
+    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','equipo_especial_limpieza')])
+    line_ids_comunicacion_computo = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','comunicacion_computo')])
+    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','herramienta_menor_jardineria')])
+    line_ids_material_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','material_limpieza')])
+    line_ids_perfil_medico = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','perfil_medico')])
+    line_ids_maquinaria_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','maquinaria_limpieza')])
+    line_ids_maquinaria_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','maquinaria_jardineria')])
+    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','fertilizantes_tierra_lama')])
+    line_ids_consumibles_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','consumibles_jardineria')])
+    line_ids_capacitacion = fields.One2many('ccn.service.quote.line', 'quote_id', domain=[('rubro_code','=','capacitacion')])
