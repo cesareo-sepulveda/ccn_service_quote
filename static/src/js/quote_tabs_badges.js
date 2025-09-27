@@ -150,6 +150,20 @@
       delays.forEach((ms,i)=> setTimeout(()=>{ if(i===delays.length-1) scheduled=false; run(); }, ms));
     };
 
+    const listObservers = {};
+    function attachListObserver(code){
+      if (listObservers[code]) return;
+      const fieldName = CODE_TO_FIELD[code];
+      if(!fieldName || !nb) return;
+      const container = nb.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
+      if(!container) return;
+      const target = container.querySelector('.o_list_view, .o_x2m');
+      if(!target) return;
+      const moList = new MutationObserver(() => schedule());
+      moList.observe(target, {childList: true, subtree: true, attributes: true});
+      listObservers[code] = moList;
+    }
+
     // 1) cambios en campos rubro_state_* (reaccionan a compute en servidor)
     const mo = new MutationObserver((muts) => {
       try{
@@ -193,15 +207,17 @@
 
     // 4) cambios en los x2many de cada rubro (altas/bajas/ediciones inline)
     for (const code of Object.keys(byCode)){
-      const fieldName = CODE_TO_FIELD[code];
-      if(!fieldName) continue;
-      const container = nb.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
-      if(!container) continue;
-      const target = container.querySelector('.o_x2m, .o_list_view');
-      if(!target) continue;
-      const moList = new MutationObserver(() => schedule());
-      moList.observe(target, {childList: true, subtree: true});
+      attachListObserver(code);
     }
+
+    // 5) tabs que se cargan de forma diferida
+    const nbObserver = new MutationObserver(() => {
+      for (const code of Object.keys(byCode)){
+        attachListObserver(code);
+      }
+      schedule();
+    });
+    nbObserver.observe(nb, {childList: true, subtree: true});
 
     // Debug
     window.__ccnTabsWatch = {
