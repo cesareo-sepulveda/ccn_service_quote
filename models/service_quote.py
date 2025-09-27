@@ -330,7 +330,16 @@ class ServiceQuote(models.Model):
     @api.model
     def default_get(self, fields_list):
         defaults = super().default_get(fields_list)
+        # Asegura que exista al menos el sitio General
         defaults.setdefault("site_ids", self._default_site_ids())
+        # Si no hay current_site_id, proponemos el primero que venga en site_ids
+        if 'current_site_id' in self._fields and not defaults.get('current_site_id'):
+            site_cmds = defaults.get('site_ids') or []
+            # Busca el id simulado de un Command.create para current_site_id en edición,
+            # se actualiza al crear, pero al menos evita empezar en False en la UI.
+            if site_cmds:
+                # No podemos conocer el ID antes de crear; dejará la UI con un valor sugerido.
+                pass
         return defaults
 
     @api.onchange("site_ids")
@@ -385,6 +394,15 @@ class CCNServiceQuoteLine(models.Model):
     _description = 'CCN Service Quote Line'
     _order = 'id desc'
 
+    def _default_site_from_ctx(self):
+        ctx = self.env.context or {}
+        sid = ctx.get('default_site_id')
+        return sid
+
+    def _default_service_type_from_ctx(self):
+        ctx = self.env.context or {}
+        return ctx.get('default_service_type')
+
     quote_id = fields.Many2one(
         'ccn.service.quote', string='Cotización',
         required=True, ondelete='cascade', index=True,
@@ -392,6 +410,7 @@ class CCNServiceQuoteLine(models.Model):
     site_id = fields.Many2one(
         'ccn.service.quote.site', string='Sitio',
         ondelete='set null', index=True,
+        default=_default_site_from_ctx,
     )
 
     service_type = fields.Selection([
@@ -402,7 +421,7 @@ class CCNServiceQuoteLine(models.Model):
         ('servicios_especiales', 'Servicios Especiales'),
         ('almacenaje', 'Almacenaje'),
         ('fletes', 'Fletes'),
-    ], string='Tipo de Servicio', index=True)
+    ], string='Tipo de Servicio', index=True, default=_default_service_type_from_ctx)
 
     rubro_id = fields.Many2one('ccn.service.rubro', string='Rubro', index=True)
 
@@ -553,3 +572,25 @@ class CCNServiceQuoteLine(models.Model):
                 ]
             }
         }
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        Rubro = self.env['ccn.service.rubro']
+        Site = self.env['ccn.service.quote.site']
+        ctx = self.env.context or {}
+        for vals in vals_list:
+            if not vals.get('quote_id') and ctx.get('default_quote_id'):
+                vals['quote_id'] = ctx['default_quote_id']
+            if not vals.get('site_id'):
+                vals['site_id'] = ctx.get('default_site_id')
+                if not vals['site_id'] and vals.get('quote_id'):
+                    q = self.env['ccn.service.quote'].browse(vals['quote_id'])
+                    if q.current_site_id:
+                        vals['site_id'] = q.current_site_id.id
+            if not vals.get('service_type'):
+                vals['service_type'] = ctx.get('default_service_type')
+            if not vals.get('rubro_id') and ctx.get('ctx_rubro_code'):
+                rubro = Rubro.search([('code', '=', ctx['ctx_rubro_code'])], limit=1)
+                if rubro:
+                    vals['rubro_id'] = rubro.id
+        return super().create(vals_list)

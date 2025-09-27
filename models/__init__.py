@@ -20,6 +20,10 @@ from . import service_package        # paquetes de servicio
 from . import add_package_wizard     # wizard para añadir paquetes
 from . import pick_quote_wizard      # wizard para seleccionar cotización
 
+# Defaults/seguridad al crear líneas: completa quote/site/tipo/rubro desde el contexto.
+# Mantén este import porque el archivo existe en tu repo.
+from . import line_defaults
+
 # ⚠️ No importes módulos que no tengas (ej.: quote_line_enhancements, quote_line_extend,
-# quote_line_related, quote_line_tax, patch_rubro_code, line_defaults, etc.)
+# quote_line_related, quote_line_tax, patch_rubro_code, etc.)
 # Si alguno de los de arriba no existe en tu repo actual, elimínalo también de esta lista.
