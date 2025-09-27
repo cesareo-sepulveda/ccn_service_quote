@@ -89,7 +89,39 @@
   // === helpers DOM
   function getForm(){ return document.querySelector(".o_form_view"); }
   function getNotebook(){ return document.querySelector(".o_form_view .o_notebook"); }
-  function getLinks(nb){ return nb ? [...nb.querySelectorAll(".nav-tabs .nav-link")] : []; }
+  // Solo los tabs de primer nivel del notebook que representan páginas (page_*)
+  function getLinks(nb){
+    if (!nb) return [];
+    return [
+      ...nb.querySelectorAll(
+        ".nav-tabs .nav-link[name^=\"page_\"],\
+         .nav-tabs .nav-link[aria-controls^=\"page_\"],\
+         .nav-tabs .nav-link[data-bs-target^=\"#page_\"],\
+         .nav-tabs .nav-link[href^=\"#page_\"]"
+      ),
+    ];
+  }
+
+  // Deducir code del <a> por atributos de destino (más robusto que leer el texto)
+  function linkToCode(a){
+    const nameAttr = a.getAttribute("name") || a.dataset?.name || "";
+    let m = nameAttr.match(/^page_(.+)$/);
+    if (m) return m[1];
+    const target = (
+      a.getAttribute("aria-controls") ||
+      a.getAttribute("data-bs-target") ||
+      a.getAttribute("data-target") ||
+      a.getAttribute("href") ||
+      ""
+    ).replace(/^#/, "");
+    m = target.match(/^page_(.+)$/);
+    if (m) return m[1];
+    return null;
+  }
+
+  function normalizeCode(code){
+    return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
+  }
 
   function countLines(nb, code){
     const fieldName = CODE_TO_FIELD[code];
@@ -113,8 +145,16 @@
     const byCode = {};
     if(!nb) return byCode;
     for(const a of getLinks(nb)){
-      const code = LABEL_TO_CODE[norm(a.textContent)];
-      if(code) byCode[code] = a;
+      // 1) Intentar por page_CODE
+      let code = linkToCode(a);
+      if (code) {
+        code = normalizeCode(code);
+        byCode[code] = a;
+        continue;
+      }
+      // 2) Fallback por etiqueta visible (más frágil)
+      const codeByLabel = LABEL_TO_CODE[norm(a.textContent)];
+      if(codeByLabel) byCode[codeByLabel] = a;
     }
     return byCode;
   }
