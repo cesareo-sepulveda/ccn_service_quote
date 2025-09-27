@@ -593,4 +593,19 @@ class CCNServiceQuoteLine(models.Model):
                 rubro = Rubro.search([('code', '=', ctx['ctx_rubro_code'])], limit=1)
                 if rubro:
                     vals['rubro_id'] = rubro.id
-        return super().create(vals_list)
+        lines = super().create(vals_list)
+        # Al agregar una línea a un rubro, si existía un ACK "No Aplica" para ese
+        # rubro en el sitio/servicio actual, lo quitamos para que el estado vuelva a depender
+        # únicamente de la presencia de líneas.
+        try:
+            for line in lines:
+                quote = line.quote_id
+                code = (line.rubro_id and line.rubro_id.code) or line.rubro_code
+                if quote and code:
+                    # _ensure_ack usa current_site_id/current_service_type del quote.
+                    # Las vistas garantizan que la línea se cree para ese contexto.
+                    quote._ensure_ack(code, False)
+        except Exception:
+            # No bloquea creación de líneas si algo sale mal con el ACK
+            pass
+        return lines

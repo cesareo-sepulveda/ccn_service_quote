@@ -164,12 +164,7 @@
     let changed = false;
     for(const [code, link] of Object.entries(byCode)){
       const st = readIntField(formRoot, STATE_FIELD(code));
-      let sNorm = (st === 1 || st === 2) ? st : 0; // 0/otros => rojo
-      const rows = countLines(nb, code);
-      if(rows > 0){
-        // Si el usuario está editando filas en esta pestaña, forzamos verde.
-        sNorm = 1;
-      }
+      const sNorm = (st === 1 || st === 2) ? st : 0; // 0/otros => rojo
       if (last[code] !== sNorm){
         applyTab(link, sNorm);
         last[code] = sNorm;
