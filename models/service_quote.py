@@ -293,7 +293,6 @@ class ServiceQuote(models.Model):
                     'rubro_code': rubro_code,
                     'ack': True,
                 })
-        self.invalidate_cache(fnames=['ack_ids'])
         self._compute_rubro_states()
 
     def action_mark_rubro_empty(self):
@@ -609,3 +608,14 @@ class CCNServiceQuoteLine(models.Model):
             # No bloquea creación de líneas si algo sale mal con el ACK
             pass
         return lines
+
+    def unlink(self):
+        # Recalcula estados tras eliminar líneas para reflejar rojo cuando un rubro queda vacío
+        quotes = self.mapped('quote_id')
+        res = super().unlink()
+        try:
+            for q in quotes:
+                q._compute_rubro_states()
+        except Exception:
+            pass
+        return res
