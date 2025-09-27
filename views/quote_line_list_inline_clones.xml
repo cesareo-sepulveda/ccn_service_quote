@@ -1,0 +1,700 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <!-- Clones de vistas inline por rubro para evitar reutilización de widget entre pestañas -->
+    <!-- Lista de códigos -->
+    <!-- mano_obra, uniforme, epp, epp_alturas, equipo_especial_limpieza, comunicacion_computo,
+         herramienta_menor_jardineria, material_limpieza, perfil_medico, maquinaria_limpieza,
+         maquinaria_jardineria, fertilizantes_tierra_lama, consumibles_jardineria, capacitacion -->
+
+    <!-- Helper macro: no existe en Odoo XML, así que repetimos explícitamente -->
+
+    <!-- Mano de Obra -->
+    <record id="ccn_view_quote_line_list_inline_mano_obra" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.mano_obra</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_mano_obra" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.mano_obra</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Uniforme -->
+    <record id="ccn_view_quote_line_list_inline_uniforme" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.uniforme</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_uniforme" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.uniforme</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- EPP -->
+    <record id="ccn_view_quote_line_list_inline_epp" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.epp</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_epp" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.epp</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- EPP Alturas -->
+    <record id="ccn_view_quote_line_list_inline_epp_alturas" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.epp_alturas</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_epp_alturas" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.epp_alturas</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Equipo Especial de Limpieza -->
+    <record id="ccn_view_quote_line_list_inline_equipo_especial_limpieza" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.equipo_especial_limpieza</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_equipo_especial_limpieza" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.equipo_especial_limpieza</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Comunicación y Cómputo -->
+    <record id="ccn_view_quote_line_list_inline_comunicacion_computo" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.comunicacion_computo</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_comunicacion_computo" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.comunicacion_computo</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Herramienta Menor Jardinería -->
+    <record id="ccn_view_quote_line_list_inline_herramienta_menor_jardineria" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.herramienta_menor_jardineria</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_herramienta_menor_jardineria" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.herramienta_menor_jardineria</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Material de Limpieza -->
+    <record id="ccn_view_quote_line_list_inline_material_limpieza" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.material_limpieza</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_material_limpieza" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.material_limpieza</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Perfil Médico -->
+    <record id="ccn_view_quote_line_list_inline_perfil_medico" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.perfil_medico</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_perfil_medico" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.perfil_medico</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Maquinaria de Limpieza -->
+    <record id="ccn_view_quote_line_list_inline_maquinaria_limpieza" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.maquinaria_limpieza</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_maquinaria_limpieza" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.maquinaria_limpieza</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Maquinaria de Jardinería -->
+    <record id="ccn_view_quote_line_list_inline_maquinaria_jardineria" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.maquinaria_jardineria</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_maquinaria_jardineria" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.maquinaria_jardineria</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Fertilizantes y Tierra Lama -->
+    <record id="ccn_view_quote_line_list_inline_fertilizantes_tierra_lama" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.fertilizantes_tierra_lama</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_fertilizantes_tierra_lama" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.fertilizantes_tierra_lama</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Consumibles de Jardinería -->
+    <record id="ccn_view_quote_line_list_inline_consumibles_jardineria" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.consumibles_jardineria</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_consumibles_jardineria" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.consumibles_jardineria</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+    <!-- Capacitación -->
+    <record id="ccn_view_quote_line_list_inline_capacitacion" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.capacitacion</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list editable="bottom" string="Líneas del rubro">
+          <field name="rubro_id" invisible="1" column_invisible="1"/>
+          <field name="rubro_code" invisible="1" column_invisible="1"/>
+          <field name="product_id" required="1"
+                 domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+          <field name="quantity"/>
+          <field name="tabulator_percent" string="Tabulador"/>
+          <field name="price_unit_final" string="Precio Unitario" readonly="1"/>
+          <field name="amount_tax" string="IVA" readonly="1"/>
+          <field name="total_price" string="Subtotal" readonly="1"/>
+          <field name="currency_id" invisible="1" column_invisible="1"/>
+          <field name="quote_id" invisible="1" column_invisible="1"/>
+          <field name="site_id" invisible="1" column_invisible="1"/>
+          <field name="service_type" invisible="1" column_invisible="1"/>
+        </list>
+      </field>
+    </record>
+    <record id="ccn_view_quote_line_form_inline_capacitacion" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.capacitacion</field>
+      <field name="model">ccn.service.quote.line</field>
+      <field name="type">form</field>
+      <field name="arch" type="xml">
+        <form string="Línea">
+          <group>
+            <field name="rubro_id" invisible="1"/>
+            <field name="rubro_code" invisible="1"/>
+            <field name="product_id" required="1"
+                   domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False), ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                   options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+            <field name="quantity"/>
+            <field name="tabulator_percent"/>
+            <field name="price_unit_final" readonly="1"/>
+            <field name="total_price" readonly="1"/>
+            <field name="quote_id" invisible="1"/>
+            <field name="site_id" invisible="1"/>
+            <field name="service_type" invisible="1"/>
+            <field name="currency_id" invisible="1"/>
+          </group>
+        </form>
+      </field>
+    </record>
+
+  </data>
+</odoo>
+

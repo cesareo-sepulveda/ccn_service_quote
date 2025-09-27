@@ -2,7 +2,7 @@
 {
     "name": "Cotizador Especial CCN",
     "summary": "Wizard para cotizar servicios CCN",
-    "version": "18.0.9.4.37",
+    "version": "18.0.9.4.38",
     "author": "Witann Technologies",
     "license": "LGPL-3",
     "category": "Sales/Sales",
@@ -16,6 +16,8 @@
 
         # 🔴 IMPORTANTE: cargar PRIMERO la vista base de líneas inline
         "views/quote_line_list_inline.xml",
+        # Clones por rubro para evitar reuso de widgets
+        "views/quote_line_list_inline_clones.xml",
 
         # Luego cualquier vista que herede/ajuste esa base
         "views/ccn_quote_line_inline_product_domain.xml",
@@ -47,6 +49,9 @@
     "assets": {
         "web.assets_backend": [
             "ccn_service_quote/static/src/js/quote_tabs_badges.js",
+            # Publica estados desde el controlador + mapeo de colores por code
+            "ccn_service_quote/static/src/js/quote_notebook.js",
+            "ccn_service_quote/static/src/js/quote_tabs_color_map.js",
             "ccn_service_quote/static/src/scss/quote_tabs.scss",
         ]
     },

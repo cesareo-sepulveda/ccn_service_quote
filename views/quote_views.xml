@@ -106,8 +106,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'mano_obra',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_mano_obra',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_mano_obra'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -129,8 +129,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'uniforme',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_uniforme',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_uniforme'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -152,8 +152,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'epp',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_epp',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_epp'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -175,8 +175,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'epp_alturas',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_epp_alturas',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_epp_alturas'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -198,8 +198,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'equipo_especial_limpieza',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_equipo_especial_limpieza',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_equipo_especial_limpieza'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -221,8 +221,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'comunicacion_computo',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_comunicacion_computo',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_comunicacion_computo'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -244,8 +244,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'herramienta_menor_jardineria',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_herramienta_menor_jardineria',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_herramienta_menor_jardineria'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -267,8 +267,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'material_limpieza',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_material_limpieza',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_material_limpieza'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -290,8 +290,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'perfil_medico',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_perfil_medico',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_perfil_medico'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -313,8 +313,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'maquinaria_limpieza',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_maquinaria_limpieza',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_maquinaria_limpieza'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -336,8 +336,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'maquinaria_jardineria',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_maquinaria_jardineria',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_maquinaria_jardineria'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -359,8 +359,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'fertilizantes_tierra_lama',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_fertilizantes_tierra_lama',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_fertilizantes_tierra_lama'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -382,8 +382,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'consumibles_jardineria',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_consumibles_jardineria',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_consumibles_jardineria'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
@@ -405,8 +405,8 @@
                          'default_site_id': current_site_id,
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'capacitacion',
-                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_capacitacion',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_capacitacion'
                        }"
                        domain="[
                          ('quote_id','=', parent.id),
