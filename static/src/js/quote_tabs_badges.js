@@ -19,6 +19,10 @@
     "epp": "epp",
     "epp alturas": "epp_alturas",
     "comunicacion y computo": "comunicacion_computo",
+    // Limpieza — completar etiquetas faltantes
+    "material de limpieza": "material_limpieza",
+    "maquinaria de limpieza": "maquinaria_limpieza",
+    "equipo especial de limpieza": "equipo_especial_limpieza",
     "herr. menor jardineria": "herramienta_menor_jardineria",
     "perfil medico": "perfil_medico",
     "maquinaria de jardineria": "maquinaria_jardineria",
@@ -79,12 +83,72 @@
     return nb ? [...nb.querySelectorAll(".nav-tabs .nav-link")] : [];
   }
 
+  // === Extraer code desde atributos del link (name="page_CODE" o aria-controls="#page_CODE") ===
+  function linkCodeByAttrs(link){
+    try{
+      const nameAttr = link.getAttribute("name") || link.dataset?.name || "";
+      let m = nameAttr.match(/^page_(.+)$/);
+      if (m) return m[1];
+      const target = (
+        link.getAttribute("aria-controls") ||
+        link.getAttribute("data-bs-target") ||
+        link.getAttribute("data-target") ||
+        link.getAttribute("href") ||
+        ""
+      ).replace(/^#/, "");
+      m = target.match(/^page_(.+)$/);
+      if (m) return m[1];
+    }catch(_e){}
+    return null;
+  }
+
+  // === Del <a> obtener el id de la página destino y el nodo raíz de page ===
+  function linkTargetId(a){
+    try{
+      const target = (a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/,"");
+      return target || null;
+    }catch(_e){ return null; }
+  }
+  function pageRootForLink(nb, a){
+    const id = linkTargetId(a);
+    if (!id) return null;
+    try{ return nb.querySelector('#' + id) || null; }catch(_e){ return null; }
+  }
+  function countPageRows(page){
+    if (!page) return 0;
+    // Soporta distintos renderers/temas
+    const rows = page.querySelectorAll('.o_list_renderer .o_data_row, .o_list_view .o_data_row, .o_list_table .o_data_row, table tbody tr');
+    return rows ? rows.length : 0;
+  }
+  function hasListContainer(page){
+    if (!page) return false;
+    return !!page.querySelector('.o_list_renderer, .o_list_view, .o_list_table, table tbody');
+  }
+
+  // === Búsqueda alternativa por nombre de campo de la lista
+  function listFieldNameForCode(code){
+    return `line_ids_${code}`;
+  }
+  function fieldRoot(formRoot, fieldName){
+    try{ return formRoot.querySelector(`[name="${fieldName}"]`) || formRoot.querySelector(`[data-name="${fieldName}"]`); }catch(_e){ return null; }
+  }
+  function countRowsInField(formRoot, code){
+    const fname = listFieldNameForCode(code);
+    const root = fieldRoot(formRoot, fname);
+    if (!root) return null; // desconocido/no renderizado
+    const rows = root.querySelectorAll('.o_list_renderer .o_data_row, .o_list_view .o_data_row, .o_list_table .o_data_row, table tbody tr');
+    return rows ? rows.length : 0;
+  }
+
   // === Construye índice tab→code y code→link por etiqueta visible ===
   function indexByCode(nb){
     const byCode = {};
     if(!nb) return byCode;
     for(const a of getLinks(nb)){
-      const code = LABEL_TO_CODE[norm(a.textContent)];
+      // 1) Preferir code por atributos del link (no depende del texto visible)
+      let code = linkCodeByAttrs(a);
+      // 2) Si no hay atributos, intenta por etiqueta visible
+      if (!code){ code = LABEL_TO_CODE[norm(a.textContent)]; }
       if(code) byCode[code] = a;
     }
     return byCode;
@@ -94,8 +158,28 @@
   function paintFromStates(formRoot, nb, byCode, last){
     let changed = false;
     for(const [code, link] of Object.entries(byCode)){
-      const st = readIntField(formRoot, STATE_FIELD(code));
-      const sNorm = (st === 1 || st === 2) ? st : 0; // 0/otros → rojo
+      const page = pageRootForLink(nb, link);
+      let listPresent = hasListContainer(page);
+      let rowCount = listPresent ? countPageRows(page) : 0;
+      if (!listPresent){
+        const c = countRowsInField(formRoot, code);
+        if (c != null){ listPresent = true; rowCount = c; }
+      }
+      let sNorm;
+      if (listPresent) {
+        // La pestaña ya está renderizada: aplica estado por conteo inmediato
+        if (rowCount > 0) {
+          sNorm = 1; // filled (verde)
+        } else {
+          // Sin filas visibles: rojo salvo que el DOM ya indique ACK (ámbar)
+          const st = readIntField(formRoot, STATE_FIELD(code));
+          sNorm = (st === 2) ? 2 : 0;
+        }
+      } else {
+        // Aún no se ha renderizado la lista: confiar en rubro_state_* del DOM
+        const st = readIntField(formRoot, STATE_FIELD(code));
+        sNorm = (st === 1 || st === 2) ? st : 0;
+      }
       if (last[code] !== sNorm){
         applyTab(link, sNorm);
         last[code] = sNorm;
@@ -135,6 +219,13 @@
             // Busca ancestro con name=data-name de interés
             const holder = t.closest?.('[name^="rubro_state_"], [data-name^="rubro_state_"]');
             if (holder){ schedule(); return; }
+          }
+          // 3) Cambios en listas dentro del notebook (agregar/quitar filas)
+          if (t.closest?.('.o_notebook')){
+            if (t.matches?.('.o_data_row, .o_list_renderer, .o_list_view, .o_list_table') ||
+                t.closest?.('.o_list_renderer, .o_list_view, .o_list_table')){
+              schedule(); return;
+            }
           }
         }
       }catch(_e){}
@@ -178,6 +269,14 @@
       try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       // Observa cambios de los campos de estado
       watchStates(formRoot, nb, byCode, last);
+      // Reforzar en interacciones típicas de tabs/listas
+      const onClick = (ev)=>{ if (ev.target.closest && ev.target.closest('.o_notebook .nav-tabs .nav-link')){ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} } };
+      document.body.addEventListener('click', onClick, true);
+      document.body.addEventListener('change', (ev)=>{ if (ev.target.closest && ev.target.closest('.o_form_view')){ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} } }, true);
+      document.body.addEventListener('input', (ev)=>{ if (ev.target.closest && ev.target.closest('.o_form_view')){ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} } }, true);
+      // Eventos de Bootstrap para tabs (si están presentes)
+      document.body.addEventListener('shown.bs.tab', ()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, true);
+      document.body.addEventListener('hidden.bs.tab', ()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, true);
     });
   }catch(_e){}
 })();

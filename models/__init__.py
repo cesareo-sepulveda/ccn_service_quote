@@ -2,10 +2,12 @@
 
 from . import (
     service_quote,
+    quote_tab_trigger,
     site,
     ack,
     add_package_wizard,
     patch_rubro_code,
+    quote_rubro_counts,
     product,
     quote_line_enhancements,
     quote_line_extend,

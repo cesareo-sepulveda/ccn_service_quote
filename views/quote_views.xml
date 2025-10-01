@@ -136,7 +136,7 @@
                           'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                         }"
                         domain="[
-                          ('rubro_id.code','=','mano_obra'),
+                          ('rubro_code','=','mano_obra'),
                           ('site_id','=', current_site_id),
                           ('service_type','=', current_service_type)
                         ]"/>
@@ -160,7 +160,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','uniforme'),
+                         ('rubro_code','=','uniforme'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -184,7 +184,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','epp'),
+                         ('rubro_code','=','epp'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -208,7 +208,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','epp_alturas'),
+                         ('rubro_code','=','epp_alturas'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -232,7 +232,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','equipo_especial_limpieza'),
+                         ('rubro_code','=','equipo_especial_limpieza'),
                          ('site_id','=', current_site_id),
                          ('service_type','=', current_service_type)
                        ]"/>
@@ -256,7 +256,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','comunicacion_computo'),
+                         ('rubro_code','=','comunicacion_computo'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
@@ -281,7 +281,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','herramienta_menor_jardineria'),
+                         ('rubro_code','=','herramienta_menor_jardineria'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
@@ -306,7 +306,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','material_limpieza'),
+                         ('rubro_code','=','material_limpieza'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
@@ -331,7 +331,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','perfil_medico'),
+                         ('rubro_code','=','perfil_medico'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
@@ -356,7 +356,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','maquinaria_limpieza'),
+                         ('rubro_code','=','maquinaria_limpieza'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
@@ -381,7 +381,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','maquinaria_jardineria'),
+                         ('rubro_code','=','maquinaria_jardineria'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
@@ -406,7 +406,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','fertilizantes_tierra_lama'),
+                         ('rubro_code','=','fertilizantes_tierra_lama'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
@@ -431,7 +431,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','consumibles_jardineria'),
+                         ('rubro_code','=','consumibles_jardineria'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
@@ -456,7 +456,7 @@
                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
                        }"
                        domain="[
-                         ('rubro_id.code','=','capacitacion'),
+                         ('rubro_code','=','capacitacion'),
                          ('site_id','=', current_site_id),
 
                          ('service_type','=', current_service_type)
