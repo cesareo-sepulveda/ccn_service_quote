@@ -97,20 +97,62 @@ class ServiceQuote(models.Model):
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
     # Campos separados por rubro para evitar duplicación en tabs
-    line_ids_mano_obra = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Mano de Obra')
-    line_ids_uniforme = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Uniforme')
-    line_ids_epp = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP')
-    line_ids_epp_alturas = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas EPP Alturas')
-    line_ids_equipo_especial_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Equipo Especial Limpieza')
-    line_ids_comunicacion_computo = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Comunicación y Cómputo')
-    line_ids_herramienta_menor_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Herramienta Menor Jardinería')
-    line_ids_material_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Material Limpieza')
-    line_ids_perfil_medico = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Perfil Médico')
-    line_ids_maquinaria_limpieza = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Limpieza')
-    line_ids_maquinaria_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Maquinaria Jardinería')
-    line_ids_fertilizantes_tierra_lama = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Fertilizantes y Tierra Lama')
-    line_ids_consumibles_jardineria = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Consumibles Jardinería')
-    line_ids_capacitacion = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas Capacitación')
+    line_ids_mano_obra = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'mano_obra')],
+        string='Líneas Mano de Obra')
+    line_ids_uniforme = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'uniforme')],
+        string='Líneas Uniforme')
+    line_ids_epp = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'epp')],
+        string='Líneas EPP')
+    line_ids_epp_alturas = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'epp_alturas')],
+        string='Líneas EPP Alturas')
+    line_ids_equipo_especial_limpieza = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'equipo_especial_limpieza')],
+        string='Líneas Equipo Especial Limpieza')
+    line_ids_comunicacion_computo = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'comunicacion_computo')],
+        string='Líneas Comunicación y Cómputo')
+    line_ids_herramienta_menor_jardineria = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'herramienta_menor_jardineria')],
+        string='Líneas Herramienta Menor Jardinería')
+    line_ids_material_limpieza = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'material_limpieza')],
+        string='Líneas Material Limpieza')
+    line_ids_perfil_medico = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'perfil_medico')],
+        string='Líneas Perfil Médico')
+    line_ids_maquinaria_limpieza = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'maquinaria_limpieza')],
+        string='Líneas Maquinaria Limpieza')
+    line_ids_maquinaria_jardineria = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'maquinaria_jardineria')],
+        string='Líneas Maquinaria Jardinería')
+    line_ids_fertilizantes_tierra_lama = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'fertilizantes_tierra_lama')],
+        string='Líneas Fertilizantes y Tierra Lama')
+    line_ids_consumibles_jardineria = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'consumibles_jardineria')],
+        string='Líneas Consumibles Jardinería')
+    line_ids_capacitacion = fields.One2many(
+        'ccn.service.quote.line', 'quote_id',
+        domain=[('rubro_id.code', '=', 'capacitacion')],
+        string='Líneas Capacitación')
 
 
     # Estados por rubro (filtrados por sitio/servicio/tipo actual)
@@ -202,6 +244,26 @@ class ServiceQuote(models.Model):
             self._ensure_ack(code, False)
         return True
 
+    # Abrir asistente de catálogo (por rubro)
+    def action_open_catalog_wizard(self):
+        self.ensure_one()
+        ctx = dict(self.env.context or {})
+        # Contexto base para defaults del wizard
+        ctx.update({
+            'default_quote_id': self.id,
+            'default_site_id': self.current_site_id.id if self.current_site_id else False,
+            'default_service_type': self.current_service_type or False,
+            'default_rubro_code': ctx.get('rubro_code') or ctx.get('ctx_rubro_code') or False,
+        })
+        return {
+            'type': 'ir.actions.act_window',
+            'name': 'Agregar desde catálogo',
+            'res_model': 'ccn.quote.catalog.wizard',
+            'view_mode': 'form',
+            'target': 'current',
+            'context': ctx,
+        }
+
     # Botón para garantizar/crear Sitio "General"
     def action_ensure_general(self):
         Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
@@ -221,6 +283,25 @@ class ServiceQuote(models.Model):
                 })
             quote.current_site_id = general.id
         return True
+
+    # Dispara client action JS que abre el selector de productos (sin wizard puente)
+    def action_open_catalog_wizard(self):
+        self.ensure_one()
+        ctx = dict(self.env.context or {})
+        ctx.update({
+            'active_model': self._name,
+            'active_id': self.id,
+            'quote_id': self.id,
+            'site_id': self.current_site_id.id if self.current_site_id else False,
+            'service_type': self.current_service_type or False,
+            # rubro proviene del contexto del botón en la pestaña
+            'rubro_code': ctx.get('rubro_code') or ctx.get('ctx_rubro_code') or False,
+        })
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'ccn_catalog_direct_select',
+            'context': ctx,
+        }
 
     # Defaults para que "General" aparezca de inmediato
     @api.model
@@ -337,6 +418,7 @@ class CCNServiceQuoteLine(models.Model):
         index=True,
         # Evitamos 'in' con lista vacía; usamos OR de igualdades
         domain="['&', ('product_tmpl_id.ccn_exclude_from_quote','=',False), "
+               "'&', ('product_tmpl_id.sale_ok','=', True), "
                "'|', ('product_tmpl_id.ccn_rubro_ids.code','=', context.get('ctx_rubro_code')), "
                      "('product_tmpl_id.ccn_rubro_ids.code','=', rubro_code)]",
     )

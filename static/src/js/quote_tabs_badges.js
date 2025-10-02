@@ -74,6 +74,13 @@
     const v = parseInt(String(raw).trim(), 10);
     return Number.isNaN(v) ? null : v;
   }
+  function readStrField(root, fieldName){
+    const el = root.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
+    if(!el) return null;
+    const raw = el.getAttribute("data-value") ?? el.getAttribute("value") ?? el.textContent;
+    if(raw == null) return null;
+    return String(raw).trim();
+  }
 
   // === Encuentra notebook y tabs ===
   function getNotebook(){
@@ -116,13 +123,13 @@
   }
   function countPageRows(page){
     if (!page) return 0;
-    // Soporta distintos renderers/temas
-    const rows = page.querySelectorAll('.o_list_renderer .o_data_row, .o_list_view .o_data_row, .o_list_table .o_data_row, table tbody tr');
+    const rows = page.querySelectorAll('.o_list_renderer .o_data_row, .o_list_view .o_data_row, .o_list_table .o_data_row');
     return rows ? rows.length : 0;
   }
   function hasListContainer(page){
     if (!page) return false;
-    return !!page.querySelector('.o_list_renderer, .o_list_view, .o_list_table, table tbody');
+    // Detectar contenedores de lista OWL; no considerar table/tbody genéricos
+    return !!page.querySelector('.o_list_renderer, .o_list_view, .o_list_table');
   }
 
   // === Búsqueda alternativa por nombre de campo de la lista
@@ -136,7 +143,7 @@
     const fname = listFieldNameForCode(code);
     const root = fieldRoot(formRoot, fname);
     if (!root) return null; // desconocido/no renderizado
-    const rows = root.querySelectorAll('.o_list_renderer .o_data_row, .o_list_view .o_data_row, .o_list_table .o_data_row, table tbody tr');
+    const rows = root.querySelectorAll('.o_list_renderer .o_data_row, .o_list_view .o_data_row, .o_list_table .o_data_row');
     return rows ? rows.length : 0;
   }
 
@@ -154,8 +161,25 @@
     return byCode;
   }
 
+  // === Memoria por contexto (sitio/servicio) para conservar "verde" si ya se detectó información ===
+  let __ctxKey = null;
+  let __filledMemo = {};
+  function currentCtxKey(formRoot){
+    const site = readIntField(formRoot, 'current_site_id');
+    const stype = readStrField(formRoot, 'current_service_type');
+    return `${site||''}|${stype||''}`;
+  }
+  function ensureCtx(formRoot){
+    const key = currentCtxKey(formRoot);
+    if (key !== __ctxKey){
+      __ctxKey = key;
+      __filledMemo = {};
+    }
+  }
+
   // === Pintado (usa únicamente rubro_state_* del DOM) ===
   function paintFromStates(formRoot, nb, byCode, last){
+    ensureCtx(formRoot);
     let changed = false;
     for(const [code, link] of Object.entries(byCode)){
       const page = pageRootForLink(nb, link);
@@ -170,16 +194,33 @@
         // La pestaña ya está renderizada: aplica estado por conteo inmediato
         if (rowCount > 0) {
           sNorm = 1; // filled (verde)
+          __filledMemo[code] = true;
         } else {
           // Sin filas visibles: rojo salvo que el DOM ya indique ACK (ámbar)
           const st = readIntField(formRoot, STATE_FIELD(code));
           sNorm = (st === 2) ? 2 : 0;
+          __filledMemo[code] = false;
         }
       } else {
         // Aún no se ha renderizado la lista: confiar en rubro_state_* del DOM
         const st = readIntField(formRoot, STATE_FIELD(code));
-        sNorm = (st === 1 || st === 2) ? st : 0;
+        if (__filledMemo[code]) {
+          // Mantener verde si ya sabemos que hay información para este rubro en este contexto
+          sNorm = 1;
+        } else {
+          sNorm = (st === 1 || st === 2) ? st : 0;
+        }
       }
+      // Visibilidad del botón "No Aplica": solo en rojo y sin filas
+      try{
+        const showNoAplica = (sNorm === 0) && (rowCount === 0);
+        if (page){
+          page.querySelectorAll('button[name="action_mark_rubro_empty"]').forEach((btn)=>{
+            if (showNoAplica) btn.classList.remove('d-none');
+            else btn.classList.add('d-none');
+          });
+        }
+      }catch(_e){}
       if (last[code] !== sNorm){
         applyTab(link, sNorm);
         last[code] = sNorm;
@@ -273,7 +314,6 @@
       const onClick = (ev)=>{ if (ev.target.closest && ev.target.closest('.o_notebook .nav-tabs .nav-link')){ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} } };
       document.body.addEventListener('click', onClick, true);
       document.body.addEventListener('change', (ev)=>{ if (ev.target.closest && ev.target.closest('.o_form_view')){ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} } }, true);
-      document.body.addEventListener('input', (ev)=>{ if (ev.target.closest && ev.target.closest('.o_form_view')){ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} } }, true);
       // Eventos de Bootstrap para tabs (si están presentes)
       document.body.addEventListener('shown.bs.tab', ()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, true);
       document.body.addEventListener('hidden.bs.tab', ()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, true);

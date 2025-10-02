@@ -16,7 +16,9 @@
           <!-- Producto/Servicio del rubro -->
           <field name="product_id" required="1"
                  domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                          ('product_tmpl_id.sale_ok','=', True),
                           ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
+                 context="{'search_default_sale_ok': 1}"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
           <!-- Cantidad -->
@@ -53,7 +55,9 @@
 
             <field name="product_id" required="1"
                    domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
+                            ('product_tmpl_id.sale_ok','=', True),
                             ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])] "
+                   context="{'search_default_sale_ok': 1}"
                    options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
             <field name="quantity"/>
