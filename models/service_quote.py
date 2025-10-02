@@ -333,6 +333,9 @@ class ServiceQuote(models.Model):
         for quote in quotes:
             if not quote.current_site_id and quote.site_ids:
                 quote.current_site_id = quote.site_ids[0].id
+            # Si el current_site_id existe pero está huérfano (sin quote_id), enlazarlo a esta cotización
+            if quote.current_site_id and not quote.current_site_id.quote_id:
+                quote.current_site_id.write({'quote_id': quote.id})
         return quotes
 
     # Usado por data/migrate_fix_general.xml
@@ -357,6 +360,16 @@ class ServiceQuote(models.Model):
             if not q.current_site_id:
                 q.write({'current_site_id': general.id})
         return True
+
+    def write(self, vals):
+        res = super().write(vals)
+        # Si se cambió current_site_id y el sitio no tiene quote_id, enlazarlo
+        if 'current_site_id' in vals:
+            for rec in self:
+                site = rec.current_site_id
+                if site and not site.quote_id:
+                    site.write({'quote_id': rec.id})
+        return res
 
 
 # =====================================================================

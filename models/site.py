@@ -15,7 +15,7 @@ class CCNServiceQuoteSite(models.Model):
     quote_id = fields.Many2one(
         'ccn.service.quote',
         string='Cotización',
-        required=True,
+        required=False,
         index=True,
         ondelete='cascade'
     )
