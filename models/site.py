@@ -144,7 +144,11 @@ class CCNServiceQuoteSite(models.Model):
     # Creación / Escritura: normaliza y prioriza 'General'
     @api.model_create_multi
     def create(self, vals_list):
+        ctx = self.env.context or {}
+        ctx_qid = ctx.get('default_quote_id') or ctx.get('quote_id') or (ctx.get('active_model') == 'ccn.service.quote' and ctx.get('active_id'))
         for vals in vals_list:
+            if ctx_qid and not vals.get('quote_id'):
+                vals['quote_id'] = ctx_qid
             nm = (vals.get('name') or '').strip()
             if nm and nm.lower() == 'general':
                 vals['name'] = 'General'
@@ -163,6 +167,17 @@ class CCNServiceQuoteSite(models.Model):
                 if 'active' not in vals:
                     vals['active'] = True
         return super().write(vals)
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        ctx = self.env.context or {}
+        qid = ctx.get('default_quote_id') or ctx.get('quote_id')
+        if not qid and ctx.get('active_model') == 'ccn.service.quote':
+            qid = ctx.get('active_id')
+        if qid and 'quote_id' in self._fields and not res.get('quote_id'):
+            res['quote_id'] = qid
+        return res
 
     # UX: 'General' siempre primero en los dropdowns
     @api.model

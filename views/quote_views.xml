@@ -71,7 +71,7 @@
                 <field name="current_site_id" string="Sitio"
                        domain="[('quote_id','in',[False, id])]"
                        context="{'default_quote_id': id}"
-                       options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
+                       options="{'no_open': True}"/>
  
                 <!-- Espaciador con estilo de etiqueta (NO usar <label/> vacío en Odoo 18) -->
                 <!-- Botón Sitio General retirado: se preselecciona automáticamente -->
