@@ -7,6 +7,26 @@ function normalizeCode(code) {
     return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
 }
 
+function ensureCurrentSite(controller) {
+    try {
+        if (!controller?.model || controller.model.name !== "ccn.service.quote") return;
+        const root = controller.model.root;
+        const data = root?.data || {};
+        if (data.current_site_id) return;
+        const sites = data.site_ids || [];
+        if (!Array.isArray(sites) || !sites.length) return;
+        let firstId = null;
+        const s0 = sites[0];
+        if (typeof s0 === "number") firstId = s0;
+        else if (s0 && (typeof s0 === "object")) {
+            firstId = s0.id || s0.resId || s0.resourceId || null;
+        }
+        if (firstId) {
+            root.update({ current_site_id: firstId });
+        }
+    } catch (_e) { /* ignore */ }
+}
+
 function publishStates(controller) {
     try {
         if (!controller?.model || controller.model.name !== "ccn.service.quote") return;
@@ -46,6 +66,7 @@ function publishStates(controller) {
 
 export function initQuoteNotebook(controller) {
     if (controller?.model?.name !== "ccn.service.quote") return;
+    ensureCurrentSite(controller);
     publishStates(controller);
 }
 

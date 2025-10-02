@@ -12,42 +12,8 @@
         <form string="Sitio">
           <sheet>
             <group>
-              <group>
-                <field name="name"/>
-                <field name="quote_id" options="{'no_open': True}"/>
-                <field name="sequence"/>
-              </group>
-              <group string="Indicadores">
-                <field name="headcount" readonly="1"/>
-              </group>
+              <field name="name"/>
             </group>
-
-            <notebook>
-              <page string="Líneas">
-                <field name="line_ids" mode="list">
-                  <list editable="bottom" string="Líneas del sitio">
-                    <field name="product_id" options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
-                    <field name="quantity"/>
-                    <field name="tabulator_percent"/>
-                    <field name="price_unit_final" readonly="1"/>
-                    <field name="total_price" readonly="1"/>
-                  </list>
-                </field>
-              </page>
-
-              <page string="Resumen del sitio">
-                <group>
-                  <field name="subtotal1" readonly="1"/>
-                  <field name="admin_amt" readonly="1"/>
-                  <field name="util_amt" readonly="1"/>
-                  <field name="subtotal2" readonly="1"/>
-                  <field name="transporte_amt" readonly="1"/>
-                  <field name="bienestar_amt" readonly="1"/>
-                  <field name="financial_amt" readonly="1"/>
-                  <field name="total_monthly" readonly="1"/>
-                </group>
-              </page>
-            </notebook>
           </sheet>
         </form>
       </field>
