@@ -122,7 +122,9 @@
                         context="{'rubro_code': 'mano_obra'}" invisible="rubro_state_mano_obra != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}"/>
-                <field name="line_ids_mano_obra" mode="list"
+                <!-- Jardinería -->
+                <field name="line_ids_mano_obra_jardineria" mode="list"
+                        invisible="current_service_type != 'jardineria'"
                         context="{
                           'default_quote_id': id,
                           'default_site_id': current_site_id,
@@ -133,8 +135,25 @@
                         }"
                         domain="[
                           ('rubro_id.code','=','mano_obra'),
-                          ('site_id','=', current_site_id),
-                          ('service_type','=', current_service_type)
+                          ('service_type','=','jardineria'),
+                          ('site_id','=', current_site_id)
+                        ]"/>
+
+                <!-- Limpieza -->
+                <field name="line_ids_mano_obra_limpieza" mode="list"
+                        invisible="current_service_type != 'limpieza'"
+                        context="{
+                          'default_quote_id': id,
+                          'default_site_id': current_site_id,
+                          'default_service_type': current_service_type,
+                          'ctx_rubro_code': 'mano_obra',
+                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
+                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                        }"
+                        domain="[
+                          ('rubro_id.code','=','mano_obra'),
+                          ('service_type','=','limpieza'),
+                          ('site_id','=', current_site_id)
                         ]"/>
               </page>
 
@@ -145,11 +164,11 @@
                         context="{'rubro_code': 'uniforme'}" invisible="rubro_state_uniforme != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}"/>
-                <field name="line_ids_uniforme" mode="list"
+                <field name="line_ids_uniforme_jardineria" mode="list"
+                       invisible="current_service_type != 'jardineria'"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'uniforme',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -157,8 +176,23 @@
                        }"
                        domain="[
                          ('rubro_id.code','=','uniforme'),
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
+                         ('service_type','=','jardineria'),
+                         ('site_id','=', current_site_id)
+                       ]"/>
+                <field name="line_ids_uniforme_limpieza" mode="list"
+                       invisible="current_service_type != 'limpieza'"
+                       context="{
+                         'default_quote_id': id,
+                         'default_site_id': current_site_id,
+                         'default_service_type': current_service_type,
+                         'ctx_rubro_code': 'uniforme',
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                       }"
+                       domain="[
+                         ('rubro_id.code','=','uniforme'),
+                         ('service_type','=','limpieza'),
+                         ('site_id','=', current_site_id)
                        ]"/>
               </page>
 
@@ -169,11 +203,11 @@
                         context="{'rubro_code': 'epp'}" invisible="rubro_state_epp != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}"/>
-                <field name="line_ids_epp" mode="list"
+                <field name="line_ids_epp_jardineria" mode="list"
+                       invisible="current_service_type != 'jardineria'"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'epp',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -181,8 +215,23 @@
                        }"
                        domain="[
                          ('rubro_id.code','=','epp'),
-                         ('site_id','=', current_site_id),
-                         ('service_type','=', current_service_type)
+                         ('service_type','=','jardineria'),
+                         ('site_id','=', current_site_id)
+                       ]"/>
+                <field name="line_ids_epp_limpieza" mode="list"
+                       invisible="current_service_type != 'limpieza'"
+                       context="{
+                         'default_quote_id': id,
+                         'default_site_id': current_site_id,
+                         'default_service_type': current_service_type,
+                         'ctx_rubro_code': 'epp',
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                       }"
+                       domain="[
+                         ('rubro_id.code','=','epp'),
+                         ('service_type','=','limpieza'),
+                         ('site_id','=', current_site_id)
                        ]"/>
               </page>
 
@@ -241,11 +290,11 @@
                         context="{'rubro_code': 'comunicacion_computo'}" invisible="rubro_state_comunicacion_computo != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'comunicacion_computo'}"/>
-                <field name="line_ids_comunicacion_computo" mode="list"
+                <field name="line_ids_comunicacion_computo_jardineria" mode="list"
+                       invisible="current_service_type != 'jardineria'"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'comunicacion_computo',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -253,9 +302,23 @@
                        }"
                        domain="[
                          ('rubro_id.code','=','comunicacion_computo'),
-                         ('site_id','=', current_site_id),
-
-                         ('service_type','=', current_service_type)
+                         ('service_type','=','jardineria'),
+                         ('site_id','=', current_site_id)
+                       ]"/>
+                <field name="line_ids_comunicacion_computo_limpieza" mode="list"
+                       invisible="current_service_type != 'limpieza'"
+                       context="{
+                         'default_quote_id': id,
+                         'default_site_id': current_site_id,
+                         'default_service_type': current_service_type,
+                         'ctx_rubro_code': 'comunicacion_computo',
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                       }"
+                       domain="[
+                         ('rubro_id.code','=','comunicacion_computo'),
+                         ('service_type','=','limpieza'),
+                         ('site_id','=', current_site_id)
                        ]"/>
               </page>
 
@@ -316,11 +379,11 @@
                         context="{'rubro_code': 'perfil_medico'}" invisible="rubro_state_perfil_medico != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'perfil_medico'}"/>
-                <field name="line_ids_perfil_medico" mode="list"
+                <field name="line_ids_perfil_medico_jardineria" mode="list"
+                       invisible="current_service_type != 'jardineria'"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'perfil_medico',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -328,9 +391,23 @@
                        }"
                        domain="[
                          ('rubro_id.code','=','perfil_medico'),
-                         ('site_id','=', current_site_id),
-
-                         ('service_type','=', current_service_type)
+                         ('service_type','=','jardineria'),
+                         ('site_id','=', current_site_id)
+                       ]"/>
+                <field name="line_ids_perfil_medico_limpieza" mode="list"
+                       invisible="current_service_type != 'limpieza'"
+                       context="{
+                         'default_quote_id': id,
+                         'default_site_id': current_site_id,
+                         'default_service_type': current_service_type,
+                         'ctx_rubro_code': 'perfil_medico',
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                       }"
+                       domain="[
+                         ('rubro_id.code','=','perfil_medico'),
+                         ('service_type','=','limpieza'),
+                         ('site_id','=', current_site_id)
                        ]"/>
               </page>
 
@@ -441,11 +518,11 @@
                         context="{'rubro_code': 'capacitacion'}" invisible="rubro_state_capacitacion != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'capacitacion'}"/>
-                <field name="line_ids_capacitacion" mode="list"
+                <field name="line_ids_capacitacion_jardineria" mode="list"
+                       invisible="current_service_type != 'jardineria'"
                        context="{
                          'default_quote_id': id,
                          'default_site_id': current_site_id,
-
                          'default_service_type': current_service_type,
                          'ctx_rubro_code': 'capacitacion',
                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
@@ -453,9 +530,23 @@
                        }"
                        domain="[
                          ('rubro_id.code','=','capacitacion'),
-                         ('site_id','=', current_site_id),
-
-                         ('service_type','=', current_service_type)
+                         ('service_type','=','jardineria'),
+                         ('site_id','=', current_site_id)
+                       ]"/>
+                <field name="line_ids_capacitacion_limpieza" mode="list"
+                       invisible="current_service_type != 'limpieza'"
+                       context="{
+                         'default_quote_id': id,
+                         'default_site_id': current_site_id,
+                         'default_service_type': current_service_type,
+                         'ctx_rubro_code': 'capacitacion',
+                         'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
+                         'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                       }"
+                       domain="[
+                         ('rubro_id.code','=','capacitacion'),
+                         ('service_type','=','limpieza'),
+                         ('site_id','=', current_site_id)
                        ]"/>
               </page>
 
