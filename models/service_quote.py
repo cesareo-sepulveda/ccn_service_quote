@@ -59,6 +59,9 @@ class ServiceQuote(models.Model):
         domain="[('quote_id','=', id)]",
     )
 
+    # Temporal/diagnóstico: contador de sitios registrados para esta cotización
+    site_count = fields.Integer(string='Sitios', compute='_compute_site_count')
+
     current_service_type = fields.Selection(
         [
             ('jardineria', 'Jardinería'),
@@ -380,6 +383,12 @@ class ServiceQuote(models.Model):
     def _onchange_current_service_type(self):
         for quote in self:
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
+
+    @api.depends('site_ids', 'site_ids.active', 'site_ids.name')
+    def _compute_site_count(self):
+        Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
+        for rec in self:
+            rec.site_count = Site.search_count([('quote_id', '=', rec.id)])
 
     @api.model_create_multi
     def create(self, vals_list):

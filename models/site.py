@@ -6,6 +6,10 @@ class CCNServiceQuoteSite(models.Model):
     _name = "ccn.service.quote.site"
     _description = "Sitio de la Cotización CCN"
     _order = "sequence, id"
+    _sql_constraints = [
+        ('ccn_quote_site_unique_name_per_quote', 'unique(quote_id, name)',
+         'El nombre del sitio debe ser único por cotización.')
+    ]
 
     # Básicos
     name = fields.Char(required=True, index=True)

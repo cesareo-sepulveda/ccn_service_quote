@@ -133,14 +133,23 @@
   }
 
   // === Búsqueda alternativa por nombre de campo de la lista
-  function listFieldNameForCode(code){
+  function listFieldNameForCode(code, srvType){
+    // Soporte para listas separadas por tipo de servicio
+    const splitCodes = new Set([
+      'mano_obra', 'uniforme', 'epp', 'comunicacion_computo', 'perfil_medico', 'capacitacion'
+    ]);
+    if (splitCodes.has(code)){
+      if (srvType === 'jardineria') return `line_ids_${code}_jardineria`;
+      if (srvType === 'limpieza') return `line_ids_${code}_limpieza`;
+    }
     return `line_ids_${code}`;
   }
   function fieldRoot(formRoot, fieldName){
     try{ return formRoot.querySelector(`[name="${fieldName}"]`) || formRoot.querySelector(`[data-name="${fieldName}"]`); }catch(_e){ return null; }
   }
   function countRowsInField(formRoot, code){
-    const fname = listFieldNameForCode(code);
+    const srvType = readStrField(formRoot, 'current_service_type');
+    const fname = listFieldNameForCode(code, srvType);
     const root = fieldRoot(formRoot, fname);
     if (!root) return null; // desconocido/no renderizado
     const rows = root.querySelectorAll('.o_list_renderer .o_data_row, .o_list_view .o_data_row, .o_list_table .o_data_row');

@@ -72,6 +72,9 @@
                        domain="[('quote_id','in',[False, id])]"
                        context="{'default_quote_id': id}"
                        options="{'no_open': True}"/>
+
+                <!-- TEMP: contador de sitios para diagnóstico -->
+                <field name="site_count" readonly="1"/>
  
                 <!-- Espaciador con estilo de etiqueta (NO usar <label/> vacío en Odoo 18) -->
                 <!-- Botón Sitio General retirado: se preselecciona automáticamente -->
