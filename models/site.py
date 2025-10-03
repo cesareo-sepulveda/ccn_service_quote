@@ -76,6 +76,9 @@ class CCNServiceQuoteSite(models.Model):
         store=True
     )
 
+    # Marcador de sitio actual (mutua exclusión por cotización)
+    is_current = fields.Boolean(string='Sitio Actual', default=False)
+
     # Cálculos de indicadores
     @api.depends(
         "line_ids.quantity",
@@ -159,7 +162,33 @@ class CCNServiceQuoteSite(models.Model):
                 vals.setdefault('active', True)
                 if 'sequence' not in vals or vals.get('sequence') is None:
                     vals['sequence'] = -999
-        return super().create(vals_list)
+        recs = super().create(vals_list)
+        # Si el contexto lo pide, fijar el sitio recién creado como "Sitio actual" de la cotización
+        if (ctx.get('set_current_on_create') or ctx.get('set_current_site')) and ctx_qid:
+            quote = self.env['ccn.service.quote'].browse(ctx_qid)
+            if quote and recs:
+                # Si hay varios, tomar el primero
+                new_site = recs[0]
+                quote.with_context(skip_site_flag_sync=True).write({'current_site_id': new_site.id})
+                # Si esta cotización sólo tenía el sitio "General" sin líneas, retirarlo para dejar un único sitio
+                try:
+                    general = self.with_context(active_test=False).search([
+                        ('quote_id', '=', quote.id),
+                        ('name', '=ilike', 'general'),
+                    ], limit=1)
+                    if general and general.id != new_site.id:
+                        if not general.line_ids:
+                            general.unlink()
+                        else:
+                            general.write({'active': False})
+                except Exception:
+                    pass
+        # Si no hay 'set_current_on_create', pero es el primer sitio de la cotización, marcarlo como actual
+        for rec in recs:
+            if rec.quote_id and not rec.quote_id.current_site_id:
+                rec.quote_id.with_context(skip_site_flag_sync=True).write({'current_site_id': rec.id})
+                rec.with_context(skip_is_current_sync=True).write({'is_current': True})
+        return recs
 
     def write(self, vals):
         if 'name' in vals and vals.get('name'):
@@ -181,6 +210,35 @@ class CCNServiceQuoteSite(models.Model):
             qid = ctx.get('active_id')
         if qid and 'quote_id' in self._fields and not res.get('quote_id'):
             res['quote_id'] = qid
+        return res
+
+    # === Current site helpers ===
+    def action_set_current_site(self):
+        for rec in self:
+            if rec.quote_id:
+                rec.with_context(skip_is_current_sync=True).write({'is_current': True})
+        return True
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'is_current' in vals and not self.env.context.get('skip_is_current_sync'):
+            for rec in self:
+                q = rec.quote_id
+                if not q:
+                    continue
+                if rec.is_current:
+                    # Este es el actual: apaga los demás y fija en la cotización
+                    (q.site_ids - rec).with_context(skip_is_current_sync=True).write({'is_current': False})
+                    q.with_context(skip_site_flag_sync=True).write({'current_site_id': rec.id})
+                else:
+                    # Si apagaron el actual, reasignar a algún otro o restaurar
+                    if q.current_site_id and q.current_site_id.id == rec.id:
+                        other = (q.site_ids - rec)
+                        if other:
+                            other[:1].with_context(skip_is_current_sync=True).write({'is_current': True})
+                            q.with_context(skip_site_flag_sync=True).write({'current_site_id': other[:1].id})
+                        else:
+                            rec.with_context(skip_is_current_sync=True).write({'is_current': True})
         return res
 
     # UX: 'General' siempre primero en los dropdowns

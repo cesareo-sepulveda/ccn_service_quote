@@ -60,7 +60,7 @@ class ServiceQuote(models.Model):
     )
 
     # Temporal/diagnóstico: contador de sitios registrados para esta cotización
-    site_count = fields.Integer(string='Sitios', compute='_compute_site_count')
+    site_count = fields.Integer(string='Total sitios', compute='_compute_site_count')
 
     current_service_type = fields.Selection(
         [
@@ -386,9 +386,12 @@ class ServiceQuote(models.Model):
 
     @api.depends('site_ids', 'site_ids.active', 'site_ids.name')
     def _compute_site_count(self):
-        Site = self.env['ccn.service.quote.site'].with_context(active_test=False)
         for rec in self:
-            rec.site_count = Site.search_count([('quote_id', '=', rec.id)])
+            # Contar incluyendo registros en memoria (x2many no guardados todavía)
+            try:
+                rec.site_count = len(rec.site_ids.with_context(active_test=False))
+            except Exception:
+                rec.site_count = len(rec.site_ids)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -435,6 +438,11 @@ class ServiceQuote(models.Model):
                 site = rec.current_site_id
                 if site and not site.quote_id:
                     site.write({'quote_id': rec.id})
+                # Mantener flags de is_current sincronizados
+                if site and not self.env.context.get('skip_site_flag_sync'):
+                    # Apagar todos y encender solo el seleccionado
+                    (rec.site_ids - site).with_context(skip_is_current_sync=True).write({'is_current': False})
+                    site.with_context(skip_is_current_sync=True).write({'is_current': True})
         return res
 
 

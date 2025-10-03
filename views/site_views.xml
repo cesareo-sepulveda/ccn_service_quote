@@ -19,9 +19,34 @@
       </field>
     </record>
 
+    <!-- Lista simple para inline en la cotización -->
+    <record id="ccn_view_site_list_inline" model="ir.ui.view">
+      <field name="name">ccn.site.list.inline</field>
+      <field name="model">ccn.service.quote.site</field>
+      <field name="type">list</field>
+      <field name="arch" type="xml">
+        <list string="Sitios" editable="bottom" create="1" edit="1" delete="1">
+          <field name="name"/>
+          <field name="sequence" optional="hide"/>
+          <field name="active" optional="hide"/>
+          <field name="quote_id" invisible="1"/>
+        </list>
+      </field>
+    </record>
+
     <!-- IMPORTANTE: NO heredar la vista de la cotización aquí -->
     <!-- El archivo anterior tenía un <record id="ccn_view_quote_form_sites" ... inherit_id="ccn_service_quote.ccn_view_quote_form"/> -->
     <!-- Ese bloque ya NO debe existir para evitar duplicados -->
+
+    <!-- Acción: abrir crear Sitio en modal (con quote_id por contexto) -->
+    <record id="action_open_site_create_modal" model="ir.actions.act_window">
+      <field name="name">Nuevo Sitio</field>
+      <field name="res_model">ccn.service.quote.site</field>
+      <field name="view_mode">form</field>
+      <field name="view_id" ref="ccn_service_quote.ccn_view_site_form"/>
+      <field name="target">new</field>
+      <field name="context">{'default_quote_id': active_id, 'set_current_on_create': True}</field>
+    </record>
 
   </data>
 </odoo>

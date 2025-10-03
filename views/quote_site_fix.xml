@@ -7,9 +7,7 @@
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
       <field name="arch" type="xml">
         <xpath expr="//field[@name='current_site_id']" position="replace">
-          <field name="current_site_id"
-                 domain="[('quote_id', '=', id)]"
-                 context="{'default_quote_id': id}"/>
+          <field name="current_site_id" invisible="1"/>
         </xpath>
       </field>
     </record>
