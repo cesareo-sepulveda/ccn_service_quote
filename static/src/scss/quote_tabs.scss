@@ -3,6 +3,73 @@
   overflow: visible;
 }
 
+/* ===== Form Header Row (left: fields, right: metrics) ===== */
+.ccn-quote .ccn-quote__header-row {
+  display: grid;
+  /* 50 / 50 split */
+  grid-template-columns: 1fr 1fr;
+  column-gap: 1rem;
+  align-items: start;
+}
+
+.ccn-quote .ccn-quote__header-row > .o_group,
+.ccn-quote .ccn-quote__header-row > .ccn-quote__metrics {
+  width: 100%;
+  max-width: 100%;
+}
+
+/* ===== Right-side Metrics Panel ===== */
+:root { --ccn-header-maxw: 50%; }
+
+.ccn-quote .ccn-quote__metrics {
+  /* sits in the right column of the header grid */
+  margin-left: 0;
+
+  background: #fff;
+  border: 1px solid #e5e7eb; /* neutral gray */
+  border-radius: .5rem;
+  padding: .75rem .9rem;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+
+.ccn-quote .ccn-quote__metrics h4,
+.ccn-quote .ccn-quote__metrics h5 {
+  margin: 0 0 .5rem 0;
+  font-size: .95rem;
+  font-weight: 600;
+}
+
+.ccn-quote .ccn-quote__metrics table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ccn-quote .ccn-quote__metrics thead th {
+  font-weight: 600;
+  color: #4b5563; /* gray-600 */
+  border-bottom: 1px solid #e5e7eb;
+  padding: .35rem .4rem;
+  text-align: left;
+}
+.ccn-quote .ccn-quote__metrics tbody td {
+  padding: .35rem .4rem;
+  border-bottom: 1px solid #f3f4f6; /* gray-100 */
+}
+.ccn-quote .ccn-quote__metrics tbody tr:last-child td {
+  border-bottom: 0;
+}
+.ccn-quote .ccn-quote__metrics .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Ensure notebook starts below both header and metrics */
+.ccn-quote .o_notebook { margin-top: .75rem; }
+
+@media (max-width: 992px) {
+  .ccn-quote .ccn-quote__header-row { grid-template-columns: 1fr; }
+  .ccn-quote .ccn-quote__metrics { margin: .75rem 0 0 0; }
+}
+
 /* base del tab con chevrón */
 .ccn-quote .o_notebook .nav-tabs li .nav-link,
 .ccn-quote .o_notebook .nav-tabs .nav-link {

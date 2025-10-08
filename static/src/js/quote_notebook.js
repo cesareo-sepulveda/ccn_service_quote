@@ -34,31 +34,43 @@ function publishStates(controller) {
         const notebook = el.querySelector(".o_notebook");
         if (!notebook) return;
 
-        const links = notebook.querySelectorAll('.nav-tabs .nav-link[name^="page_"], .nav-tabs .nav-link[aria-controls^="page_"]');
         const data = controller.model.root?.data || {};
         const states = {};
-
-        links.forEach((a) => {
-            const nameAttr = a.getAttribute("name") || "";
-            const mName = nameAttr.match(/^page_(.+)$/);
-            let code = mName ? mName[1] : null;
-            if (!code) {
-                const t = (a.getAttribute("aria-controls") || a.getAttribute("data-bs-target") || a.getAttribute("href") || "").replace(/^#/, "");
-                const mT = t.match(/^page_(.+)$/);
-                code = mT ? mT[1] : null;
+        const counts = {};
+        const ctxStr = `${data.current_site_id || ''}|${data.current_service_type || ''}`;
+        // Publica TODOS los rubro_state_* y rubro_count_* existentes en el record
+        for (const [key, val] of Object.entries(data)){
+            if (!key) continue;
+            if (key.startsWith('rubro_state_')){
+                let code = key.substring('rubro_state_'.length);
+                code = normalizeCode(code);
+                if (val !== undefined && val !== null) states[code] = val;
+            } else if (key.startsWith('rubro_count_')){
+                let code = key.substring('rubro_count_'.length);
+                code = normalizeCode(code);
+                const num = parseInt(val || 0, 10);
+                counts[code] = Number.isNaN(num) ? 0 : num;
             }
-            if (!code) return;
-            code = normalizeCode(code);
-            const field = `rubro_state_${code}`;
-            const v = data[field];
-            if (v) states[code] = v;
-        });
+        }
 
-        const json = JSON.stringify(states);
-        // Publica en 3 lugares por robustez
-        el.dataset.ccnStates = json;
-        (el.closest(".o_form_view") || el).dataset.ccnStates = json;
-        (el.querySelector("form") || el).dataset.ccnStates = json;
+        try {
+            const statesJson = JSON.stringify(states);
+            const countsJson = JSON.stringify(counts);
+            // Publica en 3 lugares por robustez
+            el.dataset.ccnStates = statesJson;
+            el.dataset.ccnCounts = countsJson;
+            el.dataset.ccnCtx = ctxStr;
+            const fv = (el.closest(".o_form_view") || el);
+            fv.dataset.ccnStates = statesJson;
+            fv.dataset.ccnCounts = countsJson;
+            fv.dataset.ccnCtx = ctxStr;
+            const f = (el.querySelector("form") || el);
+            f.dataset.ccnStates = statesJson;
+            f.dataset.ccnCounts = countsJson;
+            f.dataset.ccnCtx = ctxStr;
+            // Persistir en sessionStorage como respaldo
+            try { sessionStorage.setItem(`ccnTabs:${ctxStr}`, JSON.stringify({states, acks: {}})); } catch(_e) {}
+        } catch (_e) { /* ignore */ }
     } catch (e) {
         // silencioso
     }
@@ -68,6 +80,7 @@ export function initQuoteNotebook(controller) {
     if (controller?.model?.name !== "ccn.service.quote") return;
     ensureCurrentSite(controller);
     publishStates(controller);
+    try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
 }
 
 patch(FormController.prototype, {

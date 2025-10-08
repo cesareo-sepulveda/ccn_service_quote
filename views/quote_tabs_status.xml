@@ -1,28 +1,14 @@
 <odoo>
   <data>
     <record id="view_ccn_service_quote_form_tabs_status" model="ir.ui.view">
-      <field name="name">ccn.service.quote.form.tabs.status</field>
+      <field name="name">ccn.service.quote.form.tabs.status (disabled)</field>
       <field name="model">ccn.service.quote</field>
       <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
+      <field name="active">False</field>
       <field name="arch" type="xml">
-        <!-- Publicar estados por rubro en el DOM (ocultos por CSS, no por invisibility) -->
-        <xpath expr="//sheet/group" position="inside">
-          <div class="d-none o_ccn_rubro_states">
-            <field name="rubro_state_mano_obra"/>
-            <field name="rubro_state_uniforme"/>
-            <field name="rubro_state_epp"/>
-            <field name="rubro_state_epp_alturas"/>
-            <field name="rubro_state_equipo_especial_limpieza"/>
-            <field name="rubro_state_comunicacion_computo"/>
-            <field name="rubro_state_herramienta_menor_jardineria"/>
-            <field name="rubro_state_material_limpieza"/>
-            <field name="rubro_state_perfil_medico"/>
-            <field name="rubro_state_maquinaria_limpieza"/>
-            <field name="rubro_state_maquinaria_jardineria"/>
-            <field name="rubro_state_fertilizantes_tierra_lama"/>
-            <field name="rubro_state_consumibles_jardineria"/>
-            <field name="rubro_state_capacitacion"/>
-          </div>
+        <!-- Mantener un XML mínimo para evitar errores si el xmlid no existía -->
+        <xpath expr="//form" position="inside">
+          <separator string="tabs_status disabled"/>
         </xpath>
       </field>
     </record>

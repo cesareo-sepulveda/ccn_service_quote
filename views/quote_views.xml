@@ -58,7 +58,9 @@
         <form string="Cotizador Especial CCN" class="ccn-quote">
           <sheet>
 
-            <!-- ===== Cabecera con etiquetas a la izquierda (2 columnas) ===== -->
+            <!-- ===== Cabecera (2 columnas) ===== -->
+            <group>
+            <div class="ccn-quote__header-row">
             <group col="2">
 
               <!-- Cliente -->
@@ -68,32 +70,13 @@
                 <field name="name" string="Nombre de la cotización"/>
  
                 <!-- Sitio + botón (botón bajo el campo en misma columna) -->
-                <!-- Campo Sitio actual se manejará desde la lista inferior -->
-                <field name="current_site_id" invisible="1"/>
-
-                <!-- TEMP: contador de sitios para diagnóstico -->
-                <field name="site_count" readonly="1" string="Total sitios"/>
-
-                <!-- Sitios (gestión rápida e intuitiva) -->
-                <field name="site_ids" mode="list"
+                <!-- Sitio actual (selector) -->
+                <field name="current_site_id" string="Sitio"
+                       domain="[('id','in', site_ids), ('active','=', True)]"
                        context="{'default_quote_id': id}"
-                       options="{'no_open': False}"
-                       string="Sitios de la cotización">
-                  <list editable="bottom" create="1" delete="1" edit="1" string="Sitios">
-                    <field name="is_current" string="Sitio Actual" widget="boolean_toggle" options="{'force_save': true}"/>
-                    <field name="name"/>
-                    <field name="active" optional="hide"/>
-                    <field name="sequence" optional="hide"/>
-                  </list>
-                  <form string="Sitio">
-                    <sheet>
-                      <group>
-                        <field name="name"/>
-                        <field name="active"/>
-                      </group>
-                    </sheet>
-                  </form>
-                </field>
+                       options="{'no_open': False, 'no_create': False, 'no_create_edit': False}"/>
+
+                <!-- Tabla de sitios retirada a petición; selección se hace arriba -->
  
                 <!-- Espaciador con estilo de etiqueta (NO usar <label/> vacío en Odoo 18) -->
                 <!-- Botón Sitio General retirado: se preselecciona automáticamente -->
@@ -116,8 +99,29 @@
 
             </group>
 
-            <!-- Campos de estado invisibles para el JS de coloreado -->
-            <group invisible="1">
+            <!-- Panel de Indicadores (placeholder) -->
+            <div class="ccn-quote__metrics">
+              <h4>Indicadores</h4>
+              <table>
+                <thead>
+                  <tr>
+                    <th>Indicador</th>
+                    <th class="num">Valor</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>—</td>
+                    <td class="num">—</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            </div>
+            </group>
+
+            <!-- Estados/contadores publicados en DOM para JS (ocultos por CSS, no por invisible) -->
+            <div class="d-none o_ccn_rubro_states">
               <field name="rubro_state_mano_obra"/>
               <field name="rubro_state_uniforme"/>
               <field name="rubro_state_epp"/>
@@ -132,7 +136,22 @@
               <field name="rubro_state_fertilizantes_tierra_lama"/>
               <field name="rubro_state_consumibles_jardineria"/>
               <field name="rubro_state_capacitacion"/>
-            </group>
+              <!-- Contadores por rubro -->
+              <field name="rubro_count_mano_obra"/>
+              <field name="rubro_count_uniforme"/>
+              <field name="rubro_count_epp"/>
+              <field name="rubro_count_epp_alturas"/>
+              <field name="rubro_count_equipo_especial_limpieza"/>
+              <field name="rubro_count_comunicacion_computo"/>
+              <field name="rubro_count_herramienta_menor_jardineria"/>
+              <field name="rubro_count_material_limpieza"/>
+              <field name="rubro_count_perfil_medico"/>
+              <field name="rubro_count_maquinaria_limpieza"/>
+              <field name="rubro_count_maquinaria_jardineria"/>
+              <field name="rubro_count_fertilizantes_tierra_lama"/>
+              <field name="rubro_count_consumibles_jardineria"/>
+              <field name="rubro_count_capacitacion"/>
+            </div>
 
             <!-- ===== Tabs por rubro (solo visibles con tipo de servicio) ===== -->
             <notebook invisible="not current_service_type">

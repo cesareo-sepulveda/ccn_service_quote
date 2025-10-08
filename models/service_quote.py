@@ -99,6 +99,9 @@ class ServiceQuote(models.Model):
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
+    # ACKs (No aplica) por rubro/sitio/tipo — para disparar recomputos de estado
+    ack_ids = fields.One2many('ccn.service.quote.ack', 'quote_id', string='ACKs')
+
     # Campos separados por rubro para evitar duplicación en tabs
     # Mano de Obra (todas) — se mantiene por compatibilidad
     line_ids_mano_obra = fields.One2many(
@@ -234,14 +237,18 @@ class ServiceQuote(models.Model):
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
         'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
-        'current_site_id', 'current_service_type', 'current_type'
+        'current_site_id', 'current_service_type', 'current_type',
+        # Disparar cuando cambian ACKs de esta cotización
+        'ack_ids', 'ack_ids.site_id', 'ack_ids.service_type', 'ack_ids.rubro_code', 'ack_ids.is_empty'
     )
     def _compute_rubro_states(self):
         def state_for(rec, code):
+            # Considerar líneas del rubro en el sitio y tipo de servicio actuales,
+            # sin filtrar por "type" (servicio/material), para que el estado
+            # represente la presencia de información en el rubro independientemente del tipo.
             lines = rec.line_ids.filtered(lambda l:
                 (not rec.current_site_id or l.site_id.id == rec.current_site_id.id) and
                 (not rec.current_service_type or l.service_type == rec.current_service_type) and
-                (not rec.current_type or l.type == rec.current_type) and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
             cnt = len(lines)
@@ -289,20 +296,22 @@ class ServiceQuote(models.Model):
                     'site_id': rec.current_site_id.id,
                     'service_type': rec.current_service_type,
                     'rubro_code': rubro_code,
-                    'is_empty': True,
+                    'is_empty': bool(value),
                 })
 
     def action_mark_rubro_empty(self):
         code = (self.env.context or {}).get('rubro_code')
         if code:
             self._ensure_ack(code, True)
-        return True
+        # Evita recargar la vista: el front ya pinta en ámbar y mantiene estado
+        # Devolver False impide el reload para preservar colores actuales
+        return False
 
     def action_unmark_rubro_empty(self):
         code = (self.env.context or {}).get('rubro_code')
         if code:
             self._ensure_ack(code, False)
-        return True
+        return False
 
     # Abrir asistente de catálogo (por rubro)
     def action_open_catalog_wizard(self):
@@ -438,12 +447,36 @@ class ServiceQuote(models.Model):
                 site = rec.current_site_id
                 if site and not site.quote_id:
                     site.write({'quote_id': rec.id})
-                # Mantener flags de is_current sincronizados
-                if site and not self.env.context.get('skip_site_flag_sync'):
-                    # Apagar todos y encender solo el seleccionado
-                    (rec.site_ids - site).with_context(skip_is_current_sync=True).write({'is_current': False})
-                    site.with_context(skip_is_current_sync=True).write({'is_current': True})
+                # Mantener flags de is_current sincronizados SIEMPRE
+                if site:
+                    (rec.site_ids - site).with_context(ccn_syncing_current_site=True).write({'is_current': False})
+                    site.with_context(ccn_syncing_current_site=True).write({'is_current': True})
         return res
+
+    @api.onchange('site_ids', 'site_ids.is_current')
+    def _onchange_site_ids_current_flag(self):
+        for quote in self:
+            sites = quote.site_ids
+            if not sites:
+                continue
+            current_sites = sites.filtered(lambda s: bool(s.is_current))
+            if not current_sites:
+                # Si no hay ninguno marcado, preferir el actual del encabezado o el primero
+                if quote.current_site_id and quote.current_site_id in sites:
+                    quote.current_site_id.is_current = True
+                    current_sites = quote.current_site_id
+                else:
+                    sites[0].is_current = True
+                    current_sites = sites[0]
+            elif len(current_sites) > 1:
+                # Dejar solo uno activo. Preferir el que coincide con current_site_id
+                prefer = current_sites.filtered(lambda s: s.id and quote.current_site_id and s.id == quote.current_site_id.id) or current_sites[:1]
+                for s in (current_sites - prefer):
+                    s.is_current = False
+                current_sites = prefer
+            # Sincronizar encabezado
+            if current_sites:
+                quote.current_site_id = current_sites[0]
 
 
 # =====================================================================
