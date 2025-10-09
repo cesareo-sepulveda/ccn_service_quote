@@ -1,4 +1,7 @@
 /* SOLO en Service Quote (elemento con clase ccn-quote, sea .o_form_view o <form>) */
+// Configuración de chevrons (variables globales SCSS)
+$ccn-tab-chevron: 16px !default; // ancho de la punta/notch del chevrón
+$ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
 .ccn-quote .o_notebook .nav-tabs {
   overflow: visible;
 }
@@ -74,7 +77,8 @@
 .ccn-quote .o_notebook .nav-tabs li .nav-link,
 .ccn-quote .o_notebook .nav-tabs .nav-link {
   position: relative;
-  margin-right: 10px;
+  /* Evitar huecos entre chevrons: sin margen derecho */
+  margin-right: 0;
   padding-right: 2.25rem;
   color: #1f2d3d !important;
   background: #eef2f7 !important;
@@ -82,17 +86,18 @@
   border-radius: 0 !important;
   display: block;
   z-index: 1;
-  /* Forma original que funcionó bien: punta derecha */
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%) !important;
+  /* Punta derecha parametrizada */
+  clip-path: polygon(0 0, calc(100% - #{$ccn-tab-chevron}) 0, 100% 50%, calc(100% - #{$ccn-tab-chevron}) 100%, 0 100%) !important;
 }
 
 /* continuidad del chevrón entre tabs */
-.ccn-quote .o_notebook .nav-tabs li:not(:first-child) .nav-link,
-.ccn-quote .o_notebook .nav-tabs .nav-link + .nav-link {
-  margin-left: -16px;
+.ccn-quote .o_notebook .nav-tabs li + li .nav-link,
+.ccn-quote .o_notebook .nav-tabs li:not(:first-child) .nav-link {
+  // Solape negativo + gap fijo visible
+  margin-left: calc(-#{$ccn-tab-chevron} + #{$ccn-tab-gap});
   padding-left: 2.25rem;
   /* Muesca izquierda que apunta a la derecha */
-  clip-path: polygon(0 0, calc(100% - 16px) 0, 100% 50%, calc(100% - 16px) 100%, 0 100%, 16px 50%) !important;
+  clip-path: polygon(0 0, calc(100% - #{$ccn-tab-chevron}) 0, 100% 50%, calc(100% - #{$ccn-tab-chevron}) 100%, 0 100%, #{$ccn-tab-chevron} 50%) !important;
 }
 
 /* Asegurarse de que el chevrón conserve su color de fondo */

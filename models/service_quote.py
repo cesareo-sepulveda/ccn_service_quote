@@ -106,6 +106,14 @@ class ServiceQuote(models.Model):
     # ACKs (No aplica) por rubro/sitio/tipo — para disparar recomputos de estado
     ack_ids = fields.One2many('ccn.service.quote.ack', 'quote_id', string='ACKs')
 
+    # Versión instalada del módulo (para verificación rápida en UI)
+    module_version = fields.Char(
+        string='Versión módulo',
+        compute='_compute_module_version',
+        store=False,
+        readonly=True,
+    )
+
     # Campos separados por rubro para evitar duplicación en tabs
     # Mano de Obra (todas) — se mantiene por compatibilidad
     line_ids_mano_obra = fields.One2many(
@@ -277,22 +285,26 @@ class ServiceQuote(models.Model):
         'ack_ids', 'ack_ids.site_id', 'ack_ids.service_type', 'ack_ids.rubro_code', 'ack_ids.is_empty'
     )
     def _compute_rubro_states(self):
+        def _site_for_compute(rec):
+            sid = rec.current_site_id.id if rec.current_site_id else False
+            if not sid and rec.site_ids:
+                gen = rec.site_ids.filtered(lambda s: (s.name or '').strip().lower() == 'general')
+                sid = (gen[:1].id if gen else rec.site_ids[:1].id) or False
+            return sid
+
         def state_for(rec, code):
-            if not rec.current_service_type:
-                return 0
-            # Considerar líneas del rubro en el sitio y tipo de servicio actuales,
-            # sin filtrar por "type" (servicio/material), para que el estado
-            # represente la presencia de información en el rubro independientemente del tipo.
+            site_id = _site_for_compute(rec)
+            # Considerar líneas del rubro en el sitio, independientemente del tipo de servicio
             lines = rec.line_ids.filtered(lambda l:
-                (not rec.current_site_id or l.site_id.id == rec.current_site_id.id) and
-                l.service_type == rec.current_service_type and
+                (not site_id or l.site_id.id == site_id) and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
             cnt = len(lines)
+            # ACK en cualquier tipo de servicio para ese sitio/rubro
             ack = self.env['ccn.service.quote.ack'].search_count([
                 ('quote_id', '=', rec.id),
-                ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
-                ('service_type', '=', rec.current_service_type),
+                ('site_id', '=', site_id or False),
+                ('service_type', 'in', ['jardineria','limpieza','mantenimiento','materiales','servicios_especiales','almacenaje','fletes']),
                 ('rubro_code', '=', code),
                 ('is_empty', '=', True),
             ]) > 0
@@ -321,10 +333,18 @@ class ServiceQuote(models.Model):
         'ack_ids', 'ack_ids.site_id', 'ack_ids.service_type', 'ack_ids.rubro_code', 'ack_ids.is_empty'
     )
     def _compute_rubro_states_per_service(self):
+        def _site_for_compute(rec):
+            sid = rec.current_site_id.id if rec.current_site_id else False
+            if not sid and rec.site_ids:
+                gen = rec.site_ids.filtered(lambda s: (s.name or '').strip().lower() == 'general')
+                sid = (gen[:1].id if gen else rec.site_ids[:1].id) or False
+            return sid
+
         def state_for_service(rec, code, service_type):
+            site_id = _site_for_compute(rec)
             # Buscar líneas del rubro en el sitio actual del servicio
             lines = rec.line_ids.filtered(lambda l:
-                (not rec.current_site_id or l.site_id.id == rec.current_site_id.id) and
+                (not site_id or l.site_id.id == site_id) and
                 l.service_type == service_type and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
@@ -333,7 +353,7 @@ class ServiceQuote(models.Model):
             # Buscar ACKs para este sitio, servicio y rubro
             ack = self.env['ccn.service.quote.ack'].search_count([
                 ('quote_id', '=', rec.id),
-                ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
+                ('site_id', '=', site_id or False),
                 ('service_type', '=', service_type),
                 ('rubro_code', '=', code),
                 ('is_empty', '=', True),
@@ -377,11 +397,19 @@ class ServiceQuote(models.Model):
     # ACK granular
     def _ensure_ack(self, rubro_code, value):
         for rec in self:
-            if not (rec.current_site_id and rec.current_service_type and rubro_code):
+            if not (rec.current_service_type and rubro_code):
                 continue
+            # Asegurar que el sitio pertenezca a la misma cotización; si no, usar/crear 'General'
+            site = rec.current_site_id
+            try:
+                if not site or (site.quote_id and site.quote_id.id != rec.id):
+                    sid = self.env['ccn.service.quote.site'].get_or_create_general(rec.id)
+                    site = self.env['ccn.service.quote.site'].browse(sid)
+            except Exception:
+                site = rec.current_site_id
             ack = self.env['ccn.service.quote.ack'].search([
                 ('quote_id', '=', rec.id),
-                ('site_id', '=', rec.current_site_id.id),
+                ('site_id', '=', site.id if site else False),
                 ('service_type', '=', rec.current_service_type),
                 ('rubro_code', '=', rubro_code),
             ], limit=1)
@@ -390,7 +418,7 @@ class ServiceQuote(models.Model):
             else:
                 self.env['ccn.service.quote.ack'].create({
                     'quote_id': rec.id,
-                    'site_id': rec.current_site_id.id,
+                    'site_id': site.id if site else False,
                     'service_type': rec.current_service_type,
                     'rubro_code': rubro_code,
                     'is_empty': bool(value),
@@ -559,6 +587,18 @@ class ServiceQuote(models.Model):
             # Sincronizar encabezado
             if current_sites:
                 quote.current_site_id = current_sites[0]
+
+    # === Utilidad: versión instalada del módulo ===
+    @api.depends()
+    def _compute_module_version(self):
+        ver = ''
+        try:
+            mod = self.env['ir.module.module'].sudo().search([('name', '=', 'ccn_service_quote')], limit=1)
+            ver = getattr(mod, 'installed_version', None) or getattr(mod, 'latest_version', None) or ''
+        except Exception:
+            ver = ''
+        for rec in self:
+            rec.module_version = ver
 
 
 # =====================================================================
@@ -784,7 +824,8 @@ class CCNServiceQuoteLine(models.Model):
     @api.constrains('site_id', 'quote_id')
     def _check_site_belongs_to_quote(self):
         for line in self:
-            if line.site_id and line.quote_id and line.site_id.quote_id != line.quote_id:
+            # Validar solo si ambos están definidos y el sitio ya tiene quote asignada
+            if line.site_id and line.quote_id and line.site_id.quote_id and line.site_id.quote_id != line.quote_id:
                 raise ValidationError("El sitio de la línea pertenece a otra cotización.")
 
     @api.model_create_multi

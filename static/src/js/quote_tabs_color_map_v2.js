@@ -35,6 +35,39 @@ function getMap() {
     return null;
 }
 
+// ===== DOM helpers: leer campos invisibles/visibles =====
+function readStrField(name){
+    try{
+        const el = document.querySelector(`[name="${name}"]`) || document.querySelector(`[data-name="${name}"]`);
+        if (!el) return '';
+        const sel = el.querySelector && el.querySelector('select');
+        if (sel) return String(sel.value||'').trim();
+        const raw = el.getAttribute('data-value') || el.getAttribute('value') || el.textContent || '';
+        return String(raw).trim();
+    }catch(_e){ return ''; }
+}
+function readIntField(name){
+    try{
+        const el = document.querySelector(`[name="${name}"]`) || document.querySelector(`[data-name="${name}"]`);
+        if (!el) return null;
+        const sel = el.querySelector && el.querySelector('select');
+        let raw;
+        if (sel) raw = sel.value;
+        if (raw == null) raw = el.getAttribute('data-value');
+        if (raw == null) raw = el.getAttribute('value');
+        if (raw == null) raw = el.textContent;
+        if (raw == null) return null;
+        const v = parseInt(String(raw).trim(), 10);
+        return Number.isNaN(v) ? null : v;
+    }catch(_e){ return null; }
+}
+function stateFromNumber(v){
+    if (v === 1 || v === '1') return 'ok';
+    if (v === 2 || v === '2') return 'yellow';
+    if (v === 0 || v === '0') return 'red';
+    return null;
+}
+
 function linkCode(a) {
     const nameAttr = a.getAttribute("name") || a.dataset.name || "";
     let m = nameAttr.match(/^page_(.+)$/);
@@ -51,6 +84,12 @@ function linkCode(a) {
     return null;
 }
 
+// Normaliza códigos especiales para que coincidan con los nombres de campos
+function canon(code){
+    if (!code) return code;
+    return code === 'herr_menor_jardineria' ? 'herramienta_menor_jardineria' : code;
+}
+
 function clearInline(a, li) {
     ["background-color","background-image","border-color","color","--ccn-tab-bg","--ccn-tab-fg","z-index","isolation","position"].forEach(p=>{
         a.style.removeProperty(p);
@@ -62,10 +101,6 @@ function clearInline(a, li) {
 
 function dye(link, state) {
     const li = link.closest("li");
-    if (link.classList.contains("active")) {
-        clearInline(link, li);
-        return;
-    }
     const s = normState(state);
     const { bg, fg } = COLORS[s] || COLORS.red;
 
@@ -86,14 +121,14 @@ function dye(link, state) {
 
     link.setAttribute("data-ccn-dyed", s);
 
+    // Evitar pintar color en el <li> para no tapar el notch/gap del chevrón
     if (li) {
-        li.style.setProperty("--ccn-tab-bg", bg);
-        li.style.setProperty("--ccn-tab-fg", fg);
-        li.setAttribute("data-ccn-dyed", s);
-        // Si el tema pinta el fondo en el <li>, cúbrelo también
-        li.style.setProperty("background-color", bg, "important");
-        li.style.setProperty("background-image", "none", "important");
-        li.style.setProperty("border-color", bg, "important");
+        li.removeAttribute("data-ccn-dyed");
+        li.style.removeProperty("background-color");
+        li.style.removeProperty("background-image");
+        li.style.removeProperty("border-color");
+        li.style.removeProperty("--ccn-tab-bg");
+        li.style.removeProperty("--ccn-tab-fg");
     }
 }
 
@@ -105,38 +140,72 @@ function applyOnce() {
     const map = getMap();
     console.log('Color map:', map);
     if (map && Object.keys(map).length) {
+        const stateFromClasses = (a) => {
+            const li = a.closest("li");
+            if (a.classList.contains("ccn-status-filled") || li?.classList.contains("ccn-status-filled")) return "ok";
+            if (a.classList.contains("ccn-status-ack") || li?.classList.contains("ccn-status-ack")) return "yellow";
+            if (a.classList.contains("ccn-status-empty") || li?.classList.contains("ccn-status-empty")) return "red";
+            return null;
+        };
+        const currentService = readStrField('current_service_type');
+        const suffix = currentService === 'jardineria' ? '_jard' : (currentService === 'limpieza' ? '_limp' : '');
         for (const a of links) {
-            const code = linkCode(a);
+            const code = canon(linkCode(a));
             if (!code) { clearInline(a, a.closest("li")); continue; }
-            const state = map[code] ?? (code === "herr_menor_jardineria" ? map["herramienta_menor_jardineria"] : undefined);
-            console.log('Tab', code, 'state:', state);
-            if (state !== undefined && state !== null) dye(a, state);
-            else clearInline(a, a.closest("li"));
+            // 1) Clases aplicadas por badges (optimismo inmediato sin guardar)
+            const sClass = stateFromClasses(a);
+            // 2) Estados DOM (campos rubro_state_* del servicio activo)
+            let v = null;
+            if (suffix) v = readIntField(`rubro_state_${code}${suffix}`);
+            if (v == null) v = readIntField(`rubro_state_${code}`);
+            const sDom = stateFromNumber(v);
+            // 3) Dataset publicado previamente
+            const ds = map[code];
+            // Prioridad: clases (optimismo) > DOM states > dataset
+            if (sClass) {
+                dye(a, sClass);
+            } else if (sDom) {
+                dye(a, sDom);
+            } else if (ds !== undefined && ds !== null) {
+                dye(a, ds);
+            } else {
+                clearInline(a, a.closest("li"));
+            }
         }
         return;
     }
 
-    // Fallback: usa clases (por si no hay dataset)
+    // Fallback: usa DOM directo o clases (por si no hay dataset)
     for (const a of links) {
         const li = a.closest("li");
         if (a.classList.contains("active")) { clearInline(a, li); continue; }
+        const currentService = readStrField('current_service_type');
+        const suffix = currentService === 'jardineria' ? '_jard' : (currentService === 'limpieza' ? '_limp' : '');
+        const code = canon(linkCode(a));
+        // Prioridad: clases > DOM states
         let s = null;
         if (a.classList.contains("ccn-status-filled") || li?.classList.contains("ccn-status-filled")) s = "ok";
         else if (a.classList.contains("ccn-status-ack") || li?.classList.contains("ccn-status-ack")) s = "yellow";
         else if (a.classList.contains("ccn-status-empty") || li?.classList.contains("ccn-status-empty")) s = "red";
+        if (!s && code){
+            let v = null;
+            if (suffix) v = readIntField(`rubro_state_${code}${suffix}`);
+            if (v == null) v = readIntField(`rubro_state_${code}`);
+            s = stateFromNumber(v);
+        }
         if (s) dye(a, s); else clearInline(a, li);
     }
 }
 
-let raf, t1, t2, t3;
+let raf, t1, t2;
 function scheduleApply() {
     if (raf) cancelAnimationFrame(raf);
-    [t1,t2,t3].forEach(t=>t && clearTimeout(t));
-    // Varios ticks para ganar al toggle interno de Bootstrap/Odoo
+    [t1,t2].forEach(t=>t && clearTimeout(t));
+    // Repintados dentro del límite solicitado (<= 200ms)
+    try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e) {}
     raf = requestAnimationFrame(applyOnce);
-    t1 = setTimeout(applyOnce, 30);
-    t2 = setTimeout(applyOnce, 120);
-    t3 = setTimeout(applyOnce, 360);
+    t1 = setTimeout(() => { try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e) {} applyOnce(); }, 60);
+    t2 = setTimeout(applyOnce, 200);
 }
 
 const service = {
@@ -153,6 +222,8 @@ const service = {
         root.addEventListener("show.bs.tab", scheduleApply, true);
         root.addEventListener("hide.bs.tab", scheduleApply, true);
         root.addEventListener("hidden.bs.tab", scheduleApply, true);
+        // Publicar estados al cambiar de tab para asegurar dataset actualizado
+        root.addEventListener("shown.bs.tab", () => { try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e) {} }, true);
 
         // Cambios de DOM
         const mo = new MutationObserver(scheduleApply);

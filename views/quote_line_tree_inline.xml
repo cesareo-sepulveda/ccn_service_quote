@@ -30,10 +30,14 @@
           <!-- Subtotal -->
           <field name="total_price" string="Subtotal" readonly="1"/>
 
+          <!-- Diagnóstico temporal: mostrar sitio y servicio -->
+          <field name="site_id" string="Sitio" optional="show"/>
+          <field name="service_type" string="Servicio" optional="show"/>
+
           <!-- Metadatos necesarios pero ocultos -->
           <field name="currency_id" invisible="1" column_invisible="1"/>
           <field name="quote_id" invisible="1" column_invisible="1"/>
-          <field name="site_id" invisible="1" column_invisible="1"/>
+          <!-- site_id ya visible arriba durante diagnóstico -->
           <field name="type" invisible="1" column_invisible="1"/>
           <field name="rubro_code" invisible="1" column_invisible="1"/>
         </list>

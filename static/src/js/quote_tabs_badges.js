@@ -74,6 +74,17 @@
     clearTab(link);
     link.classList.add(c);
     li && li.classList.add(c);
+
+    // No pintar color en el <li> (evita cubrir el notch/gap del chevrón)
+    try {
+      if (li) {
+        li.style.removeProperty('background-color');
+        li.style.removeProperty('background-image');
+        li.style.removeProperty('border-color');
+      }
+    } catch(_e) {}
+
+    // Visibilidad del botón se controla en servidor (XML). No tocar desde JS.
   }
 
   // === Lee el valor del campo de estado desde el DOM (invisible/visible) ===
@@ -486,16 +497,14 @@ let __forceFresh = false;
     for(const [code, link] of Object.entries(byCode)){
       const page = pageRootForLink(nb, link); // solo para ubicar el botón No Aplica
       // Determinar filas SIN depender del tab activo ni del mapping de páginas
+      // Priorizar conteo real en DOM; si no se puede contar, usar dataset
       let rowCount = 0;
-      // 1) Preferir contador publicado por el servidor
-      if (dsCounts && Object.prototype.hasOwnProperty.call(dsCounts, code)){
+      const cField = countRowsInField(formRoot, code);
+      if (cField != null) {
+        rowCount = cField;
+      } else if (dsCounts && Object.prototype.hasOwnProperty.call(dsCounts, code)) {
         const n = parseInt(dsCounts[code] || 0, 10);
         rowCount = Number.isNaN(n) ? 0 : n;
-      }
-      // 2) Si no tenemos dataset, contar en el contenedor del campo específico del rubro
-      if (!rowCount){
-        const cField = countRowsInField(formRoot, code);
-        if (cField != null) rowCount = cField;
       }
       // Pintado de estado
       let sNorm;
@@ -514,16 +523,7 @@ let __forceFresh = false;
           else sNorm = (v === 1) ? 1 : (v === 2 ? 2 : 0);
         }
       }
-      // Visibilidad del botón "No Aplica": mostrar solo cuando sNorm === 0
-      try{
-        const showNoAplica = (sNorm === 0);
-        if (page){
-          page.querySelectorAll('button[name="action_mark_rubro_empty"]').forEach((btn)=>{
-            if (showNoAplica) btn.classList.remove('d-none');
-            else btn.classList.add('d-none');
-          });
-        }
-      }catch(_e){}
+      // Botón "No Aplica": visibilidad 100% en XML, sin intervención de JS.
       // Decide contador a mostrar: dataset > conteo de campo; si 0 y es rubro activo, '1+'
       let displayCount = 0;
       if (dsCounts && Object.prototype.hasOwnProperty.call(dsCounts, code)){
@@ -718,6 +718,8 @@ let __forceFresh = false;
       document.body.addEventListener('click', onClick, true);
       document.body.addEventListener('change', (ev)=>{
         if (ev.target.closest && ev.target.closest('.o_form_view')){
+          // Forzar publicación de estados para que otros servicios/colores reaccionen
+          try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e){}
           try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
           // Quick win: si el cambio fue en product_id dentro de un tab, pintar optimista en verde y (1+)
           try{
@@ -770,6 +772,7 @@ let __forceFresh = false;
       }, true);
       document.body.addEventListener('input', (ev)=>{
         if (ev.target.closest && ev.target.closest('.o_form_view')){
+          try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e){}
           try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
         }
       }, true);
@@ -801,6 +804,8 @@ let __forceFresh = false;
                 holder.dataset.ccnStates = JSON.stringify(obj);
               }
             }catch(_e){}
+            // Replicar la publicación para sincronizar servicios
+            try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e){}
             // Repintar inmediatamente
             try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
           }

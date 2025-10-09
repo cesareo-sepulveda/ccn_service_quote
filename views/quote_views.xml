@@ -101,7 +101,11 @@
 
             <!-- Panel de Indicadores (placeholder) -->
             <div class="ccn-quote__metrics">
-              <h4>Indicadores</h4>
+              <h4>Indicadores
+                <span class="float-end text-muted" style="font-size:.8rem; font-weight:400;">
+                  v <field name="module_version" nolabel="1" readonly="1"/>
+                </span>
+              </h4>
               <table>
                 <thead>
                   <tr>

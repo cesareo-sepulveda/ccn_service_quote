@@ -13,7 +13,23 @@
         <xpath expr="//div[hasclass('o_ccn_rubro_states')]" position="replace">
           <div class="d-none o_ccn_rubro_states">
 
-            <!-- Publica TODOS los estados (jardinería y limpieza) siempre -->
+            <!-- Estados GENÉRICOS por rubro (sin servicio) para pintado inicial/seguro -->
+            <field name="rubro_state_mano_obra"/>
+            <field name="rubro_state_uniforme"/>
+            <field name="rubro_state_epp"/>
+            <field name="rubro_state_epp_alturas"/>
+            <field name="rubro_state_equipo_especial_limpieza"/>
+            <field name="rubro_state_comunicacion_computo"/>
+            <field name="rubro_state_herramienta_menor_jardineria"/>
+            <field name="rubro_state_material_limpieza"/>
+            <field name="rubro_state_perfil_medico"/>
+            <field name="rubro_state_maquinaria_limpieza"/>
+            <field name="rubro_state_maquinaria_jardineria"/>
+            <field name="rubro_state_fertilizantes_tierra_lama"/>
+            <field name="rubro_state_consumibles_jardineria"/>
+            <field name="rubro_state_capacitacion"/>
+
+            <!-- Estados por servicio (jardinería y limpieza) -->
             <!-- Usamos d-none en lugar de invisible para que se envíen al frontend -->
             <field name="rubro_state_mano_obra_jard"/>
             <field name="rubro_state_uniforme_jard"/>

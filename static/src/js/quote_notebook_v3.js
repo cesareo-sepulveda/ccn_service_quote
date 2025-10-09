@@ -27,75 +27,77 @@ function ensureCurrentSite(controller) {
     } catch (_e) { /* ignore */ }
 }
 
+// Helpers DOM para leer valores de campos invisibles/visibles
+function readIntFieldDOM(name){
+    try{
+        const el = document.querySelector(`[name="${name}"]`) || document.querySelector(`[data-name="${name}"]`);
+        if (!el) return null;
+        const sel = el.querySelector && el.querySelector('select');
+        let raw;
+        if (sel) raw = sel.value;
+        if (raw == null) raw = el.getAttribute('data-value');
+        if (raw == null) raw = el.getAttribute('value');
+        if (raw == null) raw = el.textContent;
+        if (raw == null) return null;
+        const v = parseInt(String(raw).trim(), 10);
+        return Number.isNaN(v) ? null : v;
+    }catch(_e){ return null; }
+}
+function readStrFieldDOM(name){
+    try{
+        const el = document.querySelector(`[name="${name}"]`) || document.querySelector(`[data-name="${name}"]`);
+        if (!el) return '';
+        const sel = el.querySelector && el.querySelector('select');
+        if (sel) return String(sel.value||'').trim();
+        const raw = el.getAttribute('data-value') || el.getAttribute('value') || el.textContent || '';
+        return String(raw).trim();
+    }catch(_e){ return ''; }
+}
+
 function publishStates(controller) {
     try {
         if (!controller?.model || controller.model.name !== "ccn.service.quote") return;
         const data = controller?.model?.root?.data || {};
         const states = {};
         const counts = {};
-        // Contexto completo para evitar contaminar entre registros: id|site|service
+        const fv = document.querySelector('.o_form_view');
         const rid = controller?.model?.root?.resId || data.id || 'new';
-        const ctxStr = `${rid}|${data.current_site_id || ''}|${data.current_service_type || ''}`;
+        const currentService = readStrFieldDOM('current_service_type');
+        const currentSite = readIntFieldDOM('current_site_id');
+        const ctxStr = `${rid}|${currentSite||''}|${currentService||''}`;
 
-        // Determinar sufijo según el tipo de servicio actual
-        const currentService = data.current_service_type || '';
         let suffix = '';
-        if (currentService === 'jardineria') {
-            suffix = '_jard';
-        } else if (currentService === 'limpieza') {
-            suffix = '_limp';
-        }
+        if (currentService === 'jardineria') suffix = '_jard';
+        else if (currentService === 'limpieza') suffix = '_limp';
 
-        // Leer estados específicos por servicio si existe el sufijo, sino usar genéricos
-        for (const [key, val] of Object.entries(data)){
-            if (!key) continue;
-
-            // Priorizar campos específicos por servicio (_jard o _limp)
-            if (suffix && key.startsWith('rubro_state_') && key.endsWith(suffix)){
-                let code = key.substring('rubro_state_'.length, key.length - suffix.length);
-                code = normalizeCode(code);
-                if (val !== undefined && val !== null) {
-                    states[code] = val;
-                }
-            }
-            // Fallback a campos genéricos solo si no hay sufijo (otros servicios)
-            else if (!suffix && key.startsWith('rubro_state_') && !key.includes('_jard') && !key.includes('_limp')){
-                let code = key.substring('rubro_state_'.length);
-                code = normalizeCode(code);
-                if (val !== undefined && val !== null) {
-                    states[code] = val;
-                }
-            }
-            // Contadores (mantener lógica original)
-            else if (key.startsWith('rubro_count_') && !key.includes('_jard') && !key.includes('_limp')){
-                let code = key.substring('rubro_count_'.length);
-                code = normalizeCode(code);
-                const num = parseInt(val || 0, 10);
-                counts[code] = Number.isNaN(num) ? 0 : num;
-            }
+        const CODES = [
+            'mano_obra','uniforme','epp','epp_alturas','equipo_especial_limpieza','comunicacion_computo',
+            'herramienta_menor_jardineria','material_limpieza','perfil_medico','maquinaria_limpieza',
+            'maquinaria_jardineria','fertilizantes_tierra_lama','consumibles_jardineria','capacitacion'
+        ];
+        for (const code of CODES){
+            let v = null;
+            if (suffix) v = readIntFieldDOM(`rubro_state_${code}${suffix}`);
+            if (v == null) v = readIntFieldDOM(`rubro_state_${code}`);
+            if (v != null) states[code] = v;
+            const cnt = readIntFieldDOM(`rubro_count_${code}`);
+            if (cnt != null) counts[code] = cnt;
         }
 
         try {
             const statesJson = JSON.stringify(states);
             const countsJson = JSON.stringify(counts);
-            
-            // Publicar en el form view (siempre existe)
-            const fv = document.querySelector(".o_form_view");
             if (fv) {
                 fv.dataset.ccnStates = statesJson;
                 fv.dataset.ccnCounts = countsJson;
                 fv.dataset.ccnCtx = ctxStr;
             }
-
-            // Publicar en notebook si existe
             const notebook = document.querySelector(".o_notebook");
             if (notebook) {
                 notebook.dataset.ccnStates = statesJson;
                 notebook.dataset.ccnCounts = countsJson;
                 notebook.dataset.ccnCtx = ctxStr;
             }
-            
-            // Persistir en sessionStorage como respaldo
             try { sessionStorage.setItem(`ccnTabs:${ctxStr}`, JSON.stringify({states, acks: {}})); } catch(_e) {}
         } catch (_e) {
             console.error('Error publishing states:', _e);
@@ -117,11 +119,21 @@ function initQuoteNotebook(controller) {
     }, 50);
 }
 
+// Exponer un helper global para forzar la publicación de estados desde otros scripts
+let __ccnLastController = null;
+function exposePublisher(ctrl){
+    __ccnLastController = ctrl;
+    try {
+        window.__ccnPublishLastStates = () => { try { publishStates(__ccnLastController); } catch(_e) {} };
+    } catch(_e) {}
+}
+
 patch(FormController.prototype, {
     setup() {
         super.setup();
         // Publicar con delay en setup inicial
         setTimeout(() => initQuoteNotebook(this), 100);
+        exposePublisher(this);
 
         // Agregar listener para cambios en el formulario
         const self = this;
@@ -157,5 +169,6 @@ patch(FormController.prototype, {
         super.onWillUpdateProps(...arguments);
         // En updates, publicar con delay
         setTimeout(() => initQuoteNotebook(this), 50);
+        exposePublisher(this);
     },
 });
