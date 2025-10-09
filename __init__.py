@@ -5,6 +5,7 @@ from . import models
 from odoo import api, SUPERUSER_ID
 
 def post_init_hook(cr, registry):
+    """Post-installation hook compatible con Odoo (cr, registry)."""
     env = api.Environment(cr, SUPERUSER_ID, {})
     Quote = env['ccn.service.quote'].sudo()
     Site = env['ccn.service.quote.site'].sudo()
@@ -12,7 +13,7 @@ def post_init_hook(cr, registry):
 
     quotes = Quote.search([])
     for q in quotes:
-        generals = q.site_ids.filtered(lambda s: (s.name or '').strip().lower() == 'general')
+        generals = q.site_ids.with_context(active_test=False).filtered(lambda s: (s.name or '').strip().lower() == 'general')
         if not generals:
             canonical = Site.create({'quote_id': q.id, 'name': 'General', 'active': True, 'sequence': -999})
         else:

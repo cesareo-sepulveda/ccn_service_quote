@@ -1,11 +1,12 @@
 /** CCN Quote Tabs — pinta leyendo rubro_state_* desde el DOM (sin RPC/URL/res_id)
- *  - No hace clics ni “barridos”.
+ *  - No hace clics ni "barridos".
  *  - Pinta al inicio y re-pinta solo cuando cambian los campos rubro_state_*.
  *  - Estados: 1 => verde (ccn-status-filled), 2 => ámbar (ccn-status-ack), 0/otros => rojo (ccn-status-empty).
  *  - Odoo 18 CE, sin imports. Respeta tu geometría/chevrons; solo añade clases.
  */
 (function () {
   "use strict";
+  console.log('Badges JS loaded');
 
   // === Etiquetas EXACTAS (11) que nos pasaste → code de rubro ===
   function norm(s){
@@ -86,11 +87,17 @@
     return Number.isNaN(v) ? null : v;
   }
   function readStrField(root, fieldName){
-    const el = root.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
-    if(!el) return null;
-    const raw = el.getAttribute("data-value") ?? el.getAttribute("value") ?? el.textContent;
-    if(raw == null) return null;
-    return String(raw).trim();
+      const el = root.querySelector(`[name="${fieldName}"], [data-name="${fieldName}"]`);
+      if(!el) return null;
+      // Para campos de selección, buscar el <select> dentro del div
+      const select = el.querySelector('select');
+      if (select) {
+          const raw = select.value || select.getAttribute("value") || select.getAttribute("data-value");
+          if (raw) return String(raw).trim();
+      }
+      const raw = el.getAttribute("value") ?? el.getAttribute("data-value") ?? el.textContent;
+      if(raw == null) return null;
+      return String(raw).trim();
   }
 
   // === Escribe (solo en DOM) el valor de estado de un campo (para feedback inmediato) ===
@@ -139,19 +146,23 @@
     }catch(_e){ return {}; }
   }
   function fallbackStatesFromDOM(root){
-    const out = {};
-    try{
-      const codes = [
-        'mano_obra','uniforme','epp','epp_alturas','equipo_especial_limpieza','comunicacion_computo',
-        'herramienta_menor_jardineria','material_limpieza','perfil_medico','maquinaria_limpieza',
-        'maquinaria_jardineria','fertilizantes_tierra_lama','consumibles_jardineria','capacitacion'
-      ];
-      for(const code of codes){
-        const v = readIntField(root, `rubro_state_${code}`);
-        if (v != null) out[code] = v;
-      }
-    }catch(_e){}
-    return out;
+      const out = {};
+      try{
+          const stype = readStrField(root, 'current_service_type');
+          const codes = [
+              'mano_obra','uniforme','epp','epp_alturas','equipo_especial_limpieza','comunicacion_computo',
+              'herramienta_menor_jardineria','material_limpieza','perfil_medico','maquinaria_limpieza',
+              'maquinaria_jardineria','fertilizantes_tierra_lama','consumibles_jardineria','capacitacion'
+          ];
+          for(const code of codes){
+              let fieldName = `rubro_state_${code}`;
+              if (stype === 'jardineria') fieldName = `rubro_state_${code}_jard`;
+              else if (stype === 'limpieza') fieldName = `rubro_state_${code}_limp`;
+              const v = readIntField(root, fieldName);
+              if (v != null) out[code] = v;
+          }
+      }catch(_e){}
+      return out;
   }
 
   // === Contadores publicados por el FormController (JSON en data-ccn-counts) ===
@@ -399,30 +410,47 @@ let __filledMemoMap = {};
 // Overrides locales por contexto para mantener "No Aplica" (ámbar) tras reload/repintados
 let __ackOverrides = {};
 let __ackOverridesMap = {};
-// Estados persistidos por contexto (para restaurar tras reload)
+// No persistimos estados de color entre contextos para evitar contaminación
 let __persistStates = {};
 let __persistStatesMap = {};
 let __ctxChanged = false;
 // Código del rubro en edición activa (optimista) — se aplica solo al siguiente pintado
 let __activeCodeOptimistic = null;
+// Flag para forzar estados frescos en cambio de contexto
+let __forceFresh = false;
   function currentCtxKey(formRoot){
+    // Contexto por record y site, no por service_type para mantener __ackOverrides
+    const recordId = readIntField(formRoot, 'id') || 'new';
     const site = readIntField(formRoot, 'current_site_id');
-    const stype = readStrField(formRoot, 'current_service_type');
-    return `${site||''}|${stype||''}`;
+    return `${recordId}|${site||''}`;
   }
   function ensureCtx(formRoot){
     const key = currentCtxKey(formRoot);
     if (key !== __ctxKey){
       __ctxKey = key;
+      const recordId = readIntField(formRoot, 'id') || 'new';
       const persisted = loadPersist(formRoot);
       const persistedStates = persisted.states || {};
-      const persistedAcks = persisted.acks || {};
+      const persistedAcks = (recordId === 'new') ? {} : (persisted.acks || {});
       if (!__filledMemoMap[key]) __filledMemoMap[key] = {};
       if (!__ackOverridesMap[key]) __ackOverridesMap[key] = { ...persistedAcks };
       if (!__persistStatesMap[key]) __persistStatesMap[key] = { ...persistedStates };
+      // Forzar estados frescos en cambio de contexto
+      if (__forceFresh) {
+        __persistStatesMap[key] = {};
+        __ackOverridesMap[key] = {};
+        __filledMemoMap[key] = {};
+      }
       __filledMemo = __filledMemoMap[key];
       __ackOverrides = __ackOverridesMap[key];
       __persistStates = __persistStatesMap[key];
+      // Cargar ackOverrides desde los campos del DOM si no hay persisted
+      if (!Object.keys(__ackOverrides).length) {
+        const domStates = fallbackStatesFromDOM(formRoot);
+        for (const [code, v] of Object.entries(domStates)) {
+          if (v === 2) __ackOverrides[code] = true;
+        }
+      }
       __ctxChanged = true;
     }
   }
@@ -446,12 +474,12 @@ let __activeCodeOptimistic = null;
     ensureCtx(formRoot);
     let dsStates = readStatesFromDataset(formRoot);
     let dsCounts = readCountsFromDataset(formRoot);
-    const dsCtx = readCtxFromDataset(formRoot);
-    const ctxNow = currentCtxKey(formRoot);
-    // Si el dataset corresponde a otro contexto (sitio/servicio), ignóralo por completo
-    if (dsCtx && dsCtx !== ctxNow){ dsStates = {}; dsCounts = {}; }
-    // No usar fallback a DOM: evita arrastrar estados de un contexto anterior
-    if (!dsStates || !Object.keys(dsStates).length) dsStates = (__persistStates || {});
+    // Si no hay dataset, usar DOM
+    if (!dsStates || !Object.keys(dsStates).length){
+      dsStates = fallbackStatesFromDOM(formRoot);
+    }
+    // Forzar estados frescos en cambio de contexto
+    if (__forceFresh) { dsStates = {}; dsCounts = {}; __forceFresh = false; }
     if (!dsCounts || !Object.keys(dsCounts).length) dsCounts = {};
     let changed = false;
     const activeCode = __activeCodeOptimistic; // snapshot y limpiar al final
@@ -471,39 +499,28 @@ let __activeCodeOptimistic = null;
       }
       // Pintado de estado
       let sNorm;
-      if (__ctxChanged) {
-        // En el primer repintado tras cambio de servicio/sitio, forzar todos a ROJO
-        sNorm = 0;
-      } else if (rowCount > 0) {
+      if (rowCount > 0) {
         sNorm = 1;
         __filledMemo[code] = true;
         // Hay filas, ya no aplica override ámbar
         if (__ackOverrides && __ackOverrides[code] != null) delete __ackOverrides[code];
       } else {
-        // No leas el DOM (puede traer valores del contexto previo). Solo confía en dataset o en optimismo local.
-        let st = 0;
-        const v = dsStates?.[code];
-        if (v === 1 || v === 2) st = v;
-        if (__ackOverrides[code] === 2) sNorm = 2; // mantener ámbar local
-        else if (__filledMemo[code] || (activeCode && code === activeCode)) sNorm = 1;
-        else sNorm = (st === 1) ? 1 : (st === 2 ? 2 : 0);
-        // Estabilidad: no "degradar" a rojo si antes estaba verde y no hay evidencia nueva
-        const prev = last[code];
-        if (!__ctxChanged && prev === 1 && sNorm === 0 && (v == null)) {
-          sNorm = 1;
+        // Sin filas: usar __ackOverrides si está marcado, sino el valor del dataset
+        if (__ackOverrides[code]) sNorm = 2;
+        else {
+          const v = dsStates?.[code];
+          if (activeCode && code === activeCode) sNorm = 1;  // optimismo inmediato
+          else if (__filledMemo[code]) sNorm = 1;                 // mantener verde hasta que el conteo real llegue
+          else sNorm = (v === 1) ? 1 : (v === 2 ? 2 : 0);
         }
       }
-      // Visibilidad del botón "No Aplica": base en sNorm, pero:
-      // - Solo ocultamos (add d-none) en rubro activo o en cambio de contexto
-      // - Siempre permitimos mostrar (remove d-none) cuando sNorm === 0
+      // Visibilidad del botón "No Aplica": mostrar solo cuando sNorm === 0
       try{
         const showNoAplica = (sNorm === 0);
-        const isActive = (activeCode && code === activeCode);
-        const allowHide = __ctxChanged || isActive;
         if (page){
           page.querySelectorAll('button[name="action_mark_rubro_empty"]').forEach((btn)=>{
             if (showNoAplica) btn.classList.remove('d-none');
-            else if (allowHide) btn.classList.add('d-none');
+            else btn.classList.add('d-none');
           });
         }
       }catch(_e){}
@@ -524,16 +541,7 @@ let __activeCodeOptimistic = null;
       }
     }
     // Guardar persistencia por contexto (estados + overrides de ámbar)
-    try{
-      const toSave = {};
-      for (const code of Object.keys(byCode)){
-        if (last[code] != null) toSave[code] = last[code];
-      }
-      __persistStatesMap[__ctxKey] = { ...toSave };
-      __persistStates = __persistStatesMap[__ctxKey];
-      __ackOverridesMap[__ctxKey] = { ...__ackOverrides };
-      savePersist(formRoot, __persistStates, __ackOverrides);
-    }catch(_e){}
+    try{ __ackOverridesMap[__ctxKey] = { ...__ackOverrides }; savePersist(formRoot, {}, __ackOverrides); }catch(_e){}
     // Limpiar optimismo: solo aplica a un ciclo de pintado
     __activeCodeOptimistic = null;
     __ctxChanged = false;
@@ -564,8 +572,9 @@ let __activeCodeOptimistic = null;
           const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
           if (name === 'current_service_type' || name === 'current_site_id'){
             // Reset duro si el cambio ocurrió por script (sin evento change)
+            __forceFresh = true;
             try{ hardContextReset(formRoot, nb); }catch(_e){}
-            schedule();
+            // No pintar aquí, esperar a que publishStates actualice el dataset
             return;
           }
           if (name.startsWith("rubro_state_") || name.startsWith("rubro_count_")){
@@ -595,7 +604,7 @@ let __activeCodeOptimistic = null;
       subtree: true,
       characterData: true,
       attributes: true,
-      attributeFilter: ["data-value", "value", "class", "data-ccn-states", "data-ccn-counts"],
+      attributeFilter: ["data-value", "value", "class"],
     });
 
     // Exponer para debug opcional
@@ -662,14 +671,10 @@ let __activeCodeOptimistic = null;
             __filledMemo = {};
             __filledMemoMap = {};
             __activeCodeOptimistic = null;
+            __ackOverrides = {};
+            __ackOverridesMap = {};
             __ctxChanged = true;
-            // Limpiar datasets viejos para evitar que otros servicios pinten con info previa
-            try{
-              const holder = (formRoot.closest && formRoot.closest('.o_form_view')) || formRoot;
-              if (holder && holder.dataset){ holder.dataset.ccnStates='{}'; holder.dataset.ccnCounts='{}'; holder.dataset.ccnCtx=''; }
-              const inner = formRoot.querySelector && formRoot.querySelector('form');
-              if (inner && inner.dataset){ inner.dataset.ccnStates='{}'; inner.dataset.ccnCounts='{}'; inner.dataset.ccnCtx=''; }
-            }catch(_e){}
+            __forceFresh = true;
             try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
             paintFromStates(formRoot, nb, byCode, last);
           }catch(_e){}
@@ -768,29 +773,36 @@ let __activeCodeOptimistic = null;
           try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
         }
       }, true);
-      // Pintado optimista al marcar "No Aplica": aplica ámbar al instante en el rubro correcto
+      // Pintado optimista al marcar "No Aplica": aplicar ámbar inmediatamente
       document.body.addEventListener('click', (ev)=>{
         const btn = ev.target.closest && ev.target.closest('button[name="action_mark_rubro_empty"]');
         if (!btn) return;
         try{
           const page = btn.closest('.o_notebook .tab-pane, .o_notebook [id^="page_"]');
-          // 1) Obtener code a partir del contenedor de lista dentro de la page
           let code = codeFromPage(page);
           code = canon(code);
-          // 2) Buscar el <a> por code en el índice (más estable que linkForPage)
           const link = code ? byCode[code] : null;
           if (code && link){
             applyTab(link, 2);
             last[code] = 2;
-            // Persistir en DOM para estabilidad visual
-            try{ writeIntField(formRoot, STATE_FIELD(code), 2); }catch(_e){}
-            // Guardar override local (por contexto actual) y persistirlo
-            __ackOverrides[code] = 2;
+            // Escribir en el campo per-servicio correcto
+            const stype = readStrField(formRoot, 'current_service_type');
+            let fieldName = `rubro_state_${code}`;
+            if (stype === 'jardineria') fieldName = `rubro_state_${code}_jard`;
+            else if (stype === 'limpieza') fieldName = `rubro_state_${code}_limp`;
+            try{ writeIntField(formRoot, fieldName, 2); }catch(_e){}
+            // Actualizar el dataset para que color_map lo use
             try{
-              const toSave = {};
-              for (const c of Object.keys(byCode)) if (last[c] != null) toSave[c] = last[c];
-              savePersist(formRoot, toSave, __ackOverrides);
+              const holder = formRoot.closest('.o_form_view') || formRoot;
+              let ds = holder.dataset.ccnStates;
+              if (ds) {
+                const obj = JSON.parse(ds);
+                obj[code] = 2;
+                holder.dataset.ccnStates = JSON.stringify(obj);
+              }
             }catch(_e){}
+            // Repintar inmediatamente
+            try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
           }
         }catch(_e){}
       }, true);

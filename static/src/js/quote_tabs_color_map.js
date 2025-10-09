@@ -10,9 +10,9 @@ const COLORS = {
 
 function normalizeState(v) {
     const s = String(v || "").toLowerCase().trim();
-    if (s === "ok" || s === "green" || s === "verde") return "ok";
-    if (s.startsWith("yell") || s === "amarillo") return "yellow";
-    if (s === "red" || s === "rojo") return "red";
+    if (s === "0" || s === "red" || s === "rojo") return "red";
+    if (s === "1" || s === "ok" || s === "green" || s === "verde") return "ok";
+    if (s === "2" || s.startsWith("yell") || s === "amarillo") return "yellow";
     return s || "red";
 }
 

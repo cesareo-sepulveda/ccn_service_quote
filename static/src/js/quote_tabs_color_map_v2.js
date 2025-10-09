@@ -1,4 +1,5 @@
 /** @odoo-module **/
+console.log('quote_tabs_color_map_v2.js loaded (ES module)');
 
 import { registry } from "@web/core/registry";
 
@@ -10,9 +11,9 @@ const COLORS = {
 
 function normState(v) {
     const s = String(v || "").toLowerCase().trim();
-    if (s === "ok" || s === "green" || s === "verde") return "ok";
-    if (s.startsWith("yell") || s === "amarillo") return "yellow";
-    if (s === "red" || s === "rojo") return "red";
+    if (s === "0" || s === "red" || s === "rojo") return "red";
+    if (s === "1" || s === "ok" || s === "green" || s === "verde") return "ok";
+    if (s === "2" || s.startsWith("yell") || s === "amarillo") return "yellow";
     return "red";
 }
 
@@ -102,12 +103,14 @@ function applyOnce() {
     if (!links.length) return;
 
     const map = getMap();
+    console.log('Color map:', map);
     if (map && Object.keys(map).length) {
         for (const a of links) {
             const code = linkCode(a);
             if (!code) { clearInline(a, a.closest("li")); continue; }
             const state = map[code] ?? (code === "herr_menor_jardineria" ? map["herramienta_menor_jardineria"] : undefined);
-            if (state) dye(a, state);
+            console.log('Tab', code, 'state:', state);
+            if (state !== undefined && state !== null) dye(a, state);
             else clearInline(a, a.closest("li"));
         }
         return;
@@ -139,6 +142,7 @@ function scheduleApply() {
 const service = {
     name: "ccn_quote_tabs_color_map_v2",
     start() {
+        console.log('Color map service started');
         // Primera pasada
         scheduleApply();
 
@@ -152,7 +156,7 @@ const service = {
 
         // Cambios de DOM
         const mo = new MutationObserver(scheduleApply);
-        mo.observe(root, { childList: true, subtree: true });
+        mo.observe(root, { childList: true, subtree: true, attributes: true });
 
         // Eventos típicos
         root.addEventListener("click", (ev) => {

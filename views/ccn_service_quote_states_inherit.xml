@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <record id="ccn_view_quote_form_colors_per_service_inherit" model="ir.ui.view">
+      <field name="name">ccn.service.quote.form.colors.per.service</field>
+      <field name="model">ccn.service.quote</field>
+      <field name="inherit_id" ref="ccn_service_quote.ccn_view_quote_form"/>
+      <field name="priority">90</field>
+      <field name="arch" type="xml">
+
+        <!-- Bloque oculto con estados por servicio (Odoo 18: sin attrs/states) -->
+        <xpath expr="//div[hasclass('o_ccn_rubro_states')]" position="replace">
+          <div class="d-none o_ccn_rubro_states">
+
+            <!-- Publica TODOS los estados (jardinería y limpieza) siempre -->
+            <!-- Usamos d-none en lugar de invisible para que se envíen al frontend -->
+            <field name="rubro_state_mano_obra_jard"/>
+            <field name="rubro_state_uniforme_jard"/>
+            <field name="rubro_state_epp_jard"/>
+            <field name="rubro_state_epp_alturas_jard"/>
+            <field name="rubro_state_equipo_especial_limpieza_jard"/>
+            <field name="rubro_state_comunicacion_computo_jard"/>
+            <field name="rubro_state_herramienta_menor_jardineria_jard"/>
+            <field name="rubro_state_material_limpieza_jard"/>
+            <field name="rubro_state_perfil_medico_jard"/>
+            <field name="rubro_state_maquinaria_limpieza_jard"/>
+            <field name="rubro_state_maquinaria_jardineria_jard"/>
+            <field name="rubro_state_fertilizantes_tierra_lama_jard"/>
+            <field name="rubro_state_consumibles_jardineria_jard"/>
+            <field name="rubro_state_capacitacion_jard"/>
+
+            <field name="rubro_state_mano_obra_limp"/>
+            <field name="rubro_state_uniforme_limp"/>
+            <field name="rubro_state_epp_limp"/>
+            <field name="rubro_state_epp_alturas_limp"/>
+            <field name="rubro_state_equipo_especial_limpieza_limp"/>
+            <field name="rubro_state_comunicacion_computo_limp"/>
+            <field name="rubro_state_herramienta_menor_jardineria_limp"/>
+            <field name="rubro_state_material_limpieza_limp"/>
+            <field name="rubro_state_perfil_medico_limp"/>
+            <field name="rubro_state_maquinaria_limpieza_limp"/>
+            <field name="rubro_state_maquinaria_jardineria_limp"/>
+            <field name="rubro_state_fertilizantes_tierra_lama_limp"/>
+            <field name="rubro_state_consumibles_jardineria_limp"/>
+            <field name="rubro_state_capacitacion_limp"/>
+
+            <!-- Conservamos los contadores (si tu JS los usa) -->
+            <field name="rubro_count_mano_obra"/>
+            <field name="rubro_count_uniforme"/>
+            <field name="rubro_count_epp"/>
+            <field name="rubro_count_epp_alturas"/>
+            <field name="rubro_count_equipo_especial_limpieza"/>
+            <field name="rubro_count_comunicacion_computo"/>
+            <field name="rubro_count_herramienta_menor_jardineria"/>
+            <field name="rubro_count_material_limpieza"/>
+            <field name="rubro_count_perfil_medico"/>
+            <field name="rubro_count_maquinaria_limpieza"/>
+            <field name="rubro_count_maquinaria_jardineria"/>
+            <field name="rubro_count_fertilizantes_tierra_lama"/>
+            <field name="rubro_count_consumibles_jardineria"/>
+            <field name="rubro_count_capacitacion"/>
+          </div>
+        </xpath>
+
+        <!-- BOTONES "NO APLICA" DUPLICADOS POR SERVICIO (Odoo 18: usar invisible="...") -->
+
+        <!-- Mano de Obra -->
+        <xpath expr="//page[@name='page_mano_obra']//button[@name='action_mark_rubro_empty']" position="replace">
+          <!-- Jardinería -->
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'mano_obra'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_mano_obra_jard != 0)"/>
+          <!-- Limpieza -->
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'mano_obra'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_mano_obra_limp != 0)"/>
+        </xpath>
+
+        <!-- Uniforme -->
+        <xpath expr="//page[@name='page_uniforme']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'uniforme'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_uniforme_jard != 0)"/>
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'uniforme'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_uniforme_limp != 0)"/>
+        </xpath>
+
+        <!-- EPP -->
+        <xpath expr="//page[@name='page_epp']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'epp'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_epp_jard != 0)"/>
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'epp'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_epp_limp != 0)"/>
+        </xpath>
+
+        <!-- EPP Alturas (solo jardinería) -->
+        <xpath expr="//page[@name='page_epp_alturas']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'epp_alturas'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_epp_alturas_jard != 0)"/>
+        </xpath>
+
+        <!-- Equipo Especial de Limpieza (solo limpieza) -->
+        <xpath expr="//page[@name='page_equipo_especial_limpieza']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'equipo_especial_limpieza'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_equipo_especial_limpieza_limp != 0)"/>
+        </xpath>
+
+        <!-- Comunicación y Cómputo -->
+        <xpath expr="//page[@name='page_comunicacion_computo']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'comunicacion_computo'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_comunicacion_computo_jard != 0)"/>
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'comunicacion_computo'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_comunicacion_computo_limp != 0)"/>
+        </xpath>
+
+        <!-- Herr. Menor Jardinería (solo jardinería) -->
+        <xpath expr="//page[@name='page_herr_menor_jardineria']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'herramienta_menor_jardineria'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_herramienta_menor_jardineria_jard != 0)"/>
+        </xpath>
+
+        <!-- Material de Limpieza (solo limpieza) -->
+        <xpath expr="//page[@name='page_material_limpieza']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'material_limpieza'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_material_limpieza_limp != 0)"/>
+        </xpath>
+
+        <!-- Perfil Médico -->
+        <xpath expr="//page[@name='page_perfil_medico']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'perfil_medico'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_perfil_medico_jard != 0)"/>
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'perfil_medico'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_perfil_medico_limp != 0)"/>
+        </xpath>
+
+        <!-- Maquinaria de Limpieza (solo limpieza) -->
+        <xpath expr="//page[@name='page_maquinaria_limpieza']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'maquinaria_limpieza'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_maquinaria_limpieza_limp != 0)"/>
+        </xpath>
+
+        <!-- Maquinaria de Jardinería (solo jardinería) -->
+        <xpath expr="//page[@name='page_maquinaria_jardineria']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'maquinaria_jardineria'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_maquinaria_jardineria_jard != 0)"/>
+        </xpath>
+
+        <!-- Fertilizantes y Tierra Lama (solo jardinería) -->
+        <xpath expr="//page[@name='page_fertilizantes_tierra_lama']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'fertilizantes_tierra_lama'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_fertilizantes_tierra_lama_jard != 0)"/>
+        </xpath>
+
+        <!-- Consumibles de Jardinería (solo jardinería) -->
+        <xpath expr="//page[@name='page_consumibles_jardineria']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'consumibles_jardineria'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_consumibles_jardineria_jard != 0)"/>
+        </xpath>
+
+        <!-- Capacitación -->
+        <xpath expr="//page[@name='page_capacitacion']//button[@name='action_mark_rubro_empty']" position="replace">
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'capacitacion'}"
+                  invisible="(current_service_type != 'jardineria') or (rubro_state_capacitacion_jard != 0)"/>
+          <button string="No Aplica" type="object" name="action_mark_rubro_empty"
+                  class="btn btn-secondary"
+                  context="{'rubro_code': 'capacitacion'}"
+                  invisible="(current_service_type != 'limpieza') or (rubro_state_capacitacion_limp != 0)"/>
+        </xpath>
+
+      </field>
+    </record>
+
+  </data>
+</odoo>

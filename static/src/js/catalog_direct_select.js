@@ -165,7 +165,7 @@ registry.category("actions").add("ccn_catalog_direct_select", async (env, action
   const { dialog, notification } = env.services;
   const ctx = (action && action.context) || {};
   const quoteId = ctx.quote_id || ctx.active_id;
-  const siteId = ctx.site_id || null;
+  let siteId = ctx.site_id || null;
   const serviceType = ctx.service_type || null;
   const rubro = ctx.rubro_code || null;
   if (!quoteId || !rubro){
@@ -178,5 +178,12 @@ registry.category("actions").add("ccn_catalog_direct_select", async (env, action
     ['product_tmpl_id.ccn_rubro_ids.code', '=', rubro],
   ];
   notification?.add('Abriendo Catálogo…', { type: 'info', sticky: false });
+  // Si no viene siteId en el contexto, resolver al 'General' del quote
+  try {
+    if (!siteId && quoteId) {
+      const sid = await env.services.orm.call('ccn.service.quote.site', 'get_or_create_general', [quoteId]);
+      if (sid) siteId = sid;
+    }
+  } catch(_e) {}
   dialog.add(CCNCatalogDialog, { domain, quoteId, siteId, serviceType, rubro });
 });

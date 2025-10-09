@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 from odoo import Command, api, fields, models, _
 from odoo.exceptions import ValidationError
+import logging
+import time
+
+_logger = logging.getLogger(__name__)
 
 # -------------------------
 # Catálogo de rubros (códigos)
@@ -234,6 +238,37 @@ class ServiceQuote(models.Model):
     rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states")
     rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
 
+    # Estados por rubro y servicio específico (para vistas)
+    rubro_state_mano_obra_jard                 = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_uniforme_jard                  = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_epp_jard                       = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_epp_alturas_jard               = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_equipo_especial_limpieza_jard  = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_comunicacion_computo_jard      = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_herramienta_menor_jardineria_jard = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_material_limpieza_jard         = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_perfil_medico_jard             = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_maquinaria_limpieza_jard       = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_maquinaria_jardineria_jard     = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_fertilizantes_tierra_lama_jard = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_consumibles_jardineria_jard    = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_capacitacion_jard              = fields.Integer(compute="_compute_rubro_states_per_service")
+
+    rubro_state_mano_obra_limp                 = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_uniforme_limp                  = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_epp_limp                       = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_epp_alturas_limp               = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_equipo_especial_limpieza_limp  = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_comunicacion_computo_limp      = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_herramienta_menor_jardineria_limp = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_material_limpieza_limp         = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_perfil_medico_limp             = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_maquinaria_limpieza_limp       = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_maquinaria_jardineria_limp     = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_fertilizantes_tierra_lama_limp = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_consumibles_jardineria_limp    = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_capacitacion_limp              = fields.Integer(compute="_compute_rubro_states_per_service")
+
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
         'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
@@ -243,19 +278,21 @@ class ServiceQuote(models.Model):
     )
     def _compute_rubro_states(self):
         def state_for(rec, code):
+            if not rec.current_service_type:
+                return 0
             # Considerar líneas del rubro en el sitio y tipo de servicio actuales,
             # sin filtrar por "type" (servicio/material), para que el estado
             # represente la presencia de información en el rubro independientemente del tipo.
             lines = rec.line_ids.filtered(lambda l:
                 (not rec.current_site_id or l.site_id.id == rec.current_site_id.id) and
-                (not rec.current_service_type or l.service_type == rec.current_service_type) and
+                l.service_type == rec.current_service_type and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
             cnt = len(lines)
             ack = self.env['ccn.service.quote.ack'].search_count([
                 ('quote_id', '=', rec.id),
                 ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
-                ('service_type', '=', rec.current_service_type or False),
+                ('service_type', '=', rec.current_service_type),
                 ('rubro_code', '=', code),
                 ('is_empty', '=', True),
             ]) > 0
@@ -276,6 +313,66 @@ class ServiceQuote(models.Model):
             rec.rubro_state_fertilizantes_tierra_lama = state_for(rec, 'fertilizantes_tierra_lama')
             rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
             rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
+
+    @api.depends(
+        'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
+        'line_ids.site_id', 'line_ids.service_type', 'line_ids.type',
+        'current_site_id', 'current_service_type',
+        'ack_ids', 'ack_ids.site_id', 'ack_ids.service_type', 'ack_ids.rubro_code', 'ack_ids.is_empty'
+    )
+    def _compute_rubro_states_per_service(self):
+        def state_for_service(rec, code, service_type):
+            # Buscar líneas del rubro en el sitio actual del servicio
+            lines = rec.line_ids.filtered(lambda l:
+                (not rec.current_site_id or l.site_id.id == rec.current_site_id.id) and
+                l.service_type == service_type and
+                ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
+            )
+            cnt = len(lines)
+
+            # Buscar ACKs para este sitio, servicio y rubro
+            ack = self.env['ccn.service.quote.ack'].search_count([
+                ('quote_id', '=', rec.id),
+                ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
+                ('service_type', '=', service_type),
+                ('rubro_code', '=', code),
+                ('is_empty', '=', True),
+            ]) > 0
+
+            return 1 if cnt > 0 else (2 if ack else 0)
+
+        for rec in self:
+            # Jardinería
+            rec.rubro_state_mano_obra_jard                 = state_for_service(rec, 'mano_obra', 'jardineria')
+            rec.rubro_state_uniforme_jard                  = state_for_service(rec, 'uniforme', 'jardineria')
+            rec.rubro_state_epp_jard                       = state_for_service(rec, 'epp', 'jardineria')
+            rec.rubro_state_epp_alturas_jard               = state_for_service(rec, 'epp_alturas', 'jardineria')
+            rec.rubro_state_equipo_especial_limpieza_jard  = state_for_service(rec, 'equipo_especial_limpieza', 'jardineria')
+            rec.rubro_state_comunicacion_computo_jard      = state_for_service(rec, 'comunicacion_computo', 'jardineria')
+            rec.rubro_state_herramienta_menor_jardineria_jard = state_for_service(rec, 'herramienta_menor_jardineria', 'jardineria')
+            rec.rubro_state_material_limpieza_jard         = state_for_service(rec, 'material_limpieza', 'jardineria')
+            rec.rubro_state_perfil_medico_jard             = state_for_service(rec, 'perfil_medico', 'jardineria')
+            rec.rubro_state_maquinaria_limpieza_jard       = state_for_service(rec, 'maquinaria_limpieza', 'jardineria')
+            rec.rubro_state_maquinaria_jardineria_jard     = state_for_service(rec, 'maquinaria_jardineria', 'jardineria')
+            rec.rubro_state_fertilizantes_tierra_lama_jard = state_for_service(rec, 'fertilizantes_tierra_lama', 'jardineria')
+            rec.rubro_state_consumibles_jardineria_jard    = state_for_service(rec, 'consumibles_jardineria', 'jardineria')
+            rec.rubro_state_capacitacion_jard              = state_for_service(rec, 'capacitacion', 'jardineria')
+
+            # Limpieza
+            rec.rubro_state_mano_obra_limp                 = state_for_service(rec, 'mano_obra', 'limpieza')
+            rec.rubro_state_uniforme_limp                  = state_for_service(rec, 'uniforme', 'limpieza')
+            rec.rubro_state_epp_limp                       = state_for_service(rec, 'epp', 'limpieza')
+            rec.rubro_state_epp_alturas_limp               = state_for_service(rec, 'epp_alturas', 'limpieza')
+            rec.rubro_state_equipo_especial_limpieza_limp  = state_for_service(rec, 'equipo_especial_limpieza', 'limpieza')
+            rec.rubro_state_comunicacion_computo_limp      = state_for_service(rec, 'comunicacion_computo', 'limpieza')
+            rec.rubro_state_herramienta_menor_jardineria_limp = state_for_service(rec, 'herramienta_menor_jardineria', 'limpieza')
+            rec.rubro_state_material_limpieza_limp         = state_for_service(rec, 'material_limpieza', 'limpieza')
+            rec.rubro_state_perfil_medico_limp             = state_for_service(rec, 'perfil_medico', 'limpieza')
+            rec.rubro_state_maquinaria_limpieza_limp       = state_for_service(rec, 'maquinaria_limpieza', 'limpieza')
+            rec.rubro_state_maquinaria_jardineria_limp     = state_for_service(rec, 'maquinaria_jardineria', 'limpieza')
+            rec.rubro_state_fertilizantes_tierra_lama_limp = state_for_service(rec, 'fertilizantes_tierra_lama', 'limpieza')
+            rec.rubro_state_consumibles_jardineria_limp    = state_for_service(rec, 'consumibles_jardineria', 'limpieza')
+            rec.rubro_state_capacitacion_limp              = state_for_service(rec, 'capacitacion', 'limpieza')
 
     # ACK granular
     def _ensure_ack(self, rubro_code, value):
@@ -303,8 +400,6 @@ class ServiceQuote(models.Model):
         code = (self.env.context or {}).get('rubro_code')
         if code:
             self._ensure_ack(code, True)
-        # Evita recargar la vista: el front ya pinta en ámbar y mantiene estado
-        # Devolver False impide el reload para preservar colores actuales
         return False
 
     def action_unmark_rubro_empty(self):
@@ -313,25 +408,7 @@ class ServiceQuote(models.Model):
             self._ensure_ack(code, False)
         return False
 
-    # Abrir asistente de catálogo (por rubro)
-    def action_open_catalog_wizard(self):
-        self.ensure_one()
-        ctx = dict(self.env.context or {})
-        # Contexto base para defaults del wizard
-        ctx.update({
-            'default_quote_id': self.id,
-            'default_site_id': self.current_site_id.id if self.current_site_id else False,
-            'default_service_type': self.current_service_type or False,
-            'default_rubro_code': ctx.get('rubro_code') or ctx.get('ctx_rubro_code') or False,
-        })
-        return {
-            'type': 'ir.actions.act_window',
-            'name': 'Agregar desde catálogo',
-            'res_model': 'ccn.quote.catalog.wizard',
-            'view_mode': 'form',
-            'target': 'current',
-            'context': ctx,
-        }
+    # (Unificado) Abrir catálogo directo vía client action
 
     # Botón para garantizar/crear Sitio "General"
     def action_ensure_general(self):
@@ -392,6 +469,11 @@ class ServiceQuote(models.Model):
     def _onchange_current_service_type(self):
         for quote in self:
             quote.current_type = 'material' if quote.current_service_type == 'materiales' else 'servicio'
+            # Forzar recomputo de estados para actualizar colores
+            quote._compute_rubro_states()
+            quote._compute_rubro_states_per_service()
+            # Forzar trigger del JavaScript para que lea los nuevos campos
+            quote.tab_update_trigger = int(time.time())
 
     @api.depends('site_ids', 'site_ids.active', 'site_ids.name')
     def _compute_site_count(self):
@@ -498,7 +580,8 @@ class CCNServiceQuoteLine(models.Model):
     site_id = fields.Many2one(
         'ccn.service.quote.site',
         string='Sitio',
-        ondelete='set null',
+        required=True,
+        ondelete='restrict',
         index=True,
     )
 
@@ -658,6 +741,15 @@ class CCNServiceQuoteLine(models.Model):
         if 'default_site_id' in ctx and 'site_id' in self._fields:
             res.setdefault('site_id', ctx.get('default_site_id'))
 
+        # Salvaguarda: si no hay site_id pero sí quote_id, usar/crear 'General'
+        if not res.get('site_id'):
+            qid = res.get('quote_id') or ctx.get('default_quote_id')
+            if qid:
+                try:
+                    res['site_id'] = self.env['ccn.service.quote.site'].get_or_create_general(qid)
+                except Exception:
+                    pass
+
         if 'default_type' in ctx and 'type' in self._fields:
             res.setdefault('type', ctx.get('default_type'))
 
@@ -687,3 +779,24 @@ class CCNServiceQuoteLine(models.Model):
                 ]
             }
         }
+
+    # Coherencia: el sitio debe pertenecer a la misma cotización
+    @api.constrains('site_id', 'quote_id')
+    def _check_site_belongs_to_quote(self):
+        for line in self:
+            if line.site_id and line.quote_id and line.site_id.quote_id != line.quote_id:
+                raise ValidationError("El sitio de la línea pertenece a otra cotización.")
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        # Garantiza site_id siempre presente: si falta, usa/crea 'General' del quote
+        for vals in vals_list:
+            if not vals.get('site_id'):
+                qid = vals.get('quote_id') or (self.env.context or {}).get('default_quote_id')
+                if qid:
+                    try:
+                        vals['site_id'] = self.env['ccn.service.quote.site'].get_or_create_general(qid)
+                    except Exception:
+                        # permitir que el required dispare error si no logramos resolverlo
+                        pass
+        return super().create(vals_list)
