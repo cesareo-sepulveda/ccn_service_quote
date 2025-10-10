@@ -209,3 +209,32 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
   li.ccn-status-empty:not(.active) .o_chevron,
   li.ccn-status-empty:not(.active) .tab-chevron  { border-left-color: var(--ccn-empty) !important; background-color: var(--ccn-empty) !important; }
 }
+
+/* =============================================================
+   Outline negro para el tab ACTIVO (chevron)
+   - Borde negro + box-shadow para resaltar claramente
+   - Mayor z-index para sobreponer a tabs vecinos
+   ============================================================= */
+.ccn-quote .o_notebook .nav-tabs .nav-link.active,
+.ccn-quote .o_notebook .nav-tabs li.active > .nav-link {
+  z-index: 50;
+  border-color: #000 !important;
+  /* anillo de 1px alrededor respetando el clip-path */
+  box-shadow: 0 0 0 1px #000;
+}
+
+/* Hover del activo: conservar brillo y outline */
+.ccn-quote .o_notebook .nav-tabs .nav-link.active:hover,
+.ccn-quote .o_notebook .nav-tabs li.active > .nav-link:hover {
+  filter: brightness(0.97);
+  box-shadow: 0 0 0 1px #000;
+}
+
+/* Chevrons dedicados en algunos temas: elevar y contornear ligeramente */
+.ccn-quote .o_notebook .nav-tabs li.active .o_chevron,
+.ccn-quote .o_notebook .nav-tabs li.active .tab-chevron {
+  position: relative;
+  z-index: 51;
+  /* ligero realce para que se perciba la punta */
+  filter: drop-shadow(0 0 0 #000) drop-shadow(0 0 1px #000) !important;
+}
