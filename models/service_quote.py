@@ -828,6 +828,18 @@ class CCNServiceQuoteLine(models.Model):
             if line.site_id and line.quote_id and line.site_id.quote_id and line.site_id.quote_id != line.quote_id:
                 raise ValidationError("El sitio de la línea pertenece a otra cotización.")
 
+    # Validación adicional: asegurar que todos los campos necesarios estén presentes para garantizar independencia
+    @api.constrains('site_id', 'service_type', 'rubro_id', 'quote_id')
+    def _check_line_independence_fields(self):
+        """Valida que las líneas tengan todos los campos necesarios para garantizar independencia de datos."""
+        for line in self:
+            if not line.site_id:
+                raise ValidationError("Cada línea debe tener un sitio asignado para garantizar independencia de datos.")
+            if not line.service_type:
+                raise ValidationError("Cada línea debe tener un tipo de servicio asignado para garantizar independencia de datos.")
+            if not line.rubro_id:
+                raise ValidationError("Cada línea debe tener un rubro asignado para garantizar independencia de datos.")
+
     @api.model_create_multi
     def create(self, vals_list):
         # Garantiza site_id siempre presente: si falta, usa/crea 'General' del quote
