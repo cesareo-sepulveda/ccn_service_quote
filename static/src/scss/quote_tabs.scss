@@ -211,79 +211,52 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
 }
 
 /* =============================================================
-   Outline negro para TODOS los chevrons (tabs activos e inactivos)
-   - Usa filter: drop-shadow para crear el efecto de borde negro
-   - drop-shadow respeta el clip-path, a diferencia de box-shadow
-   - Múltiples drop-shadows en todas direcciones para simular outline
+   Outline negro SOLO para el tab ACTIVO usando pseudo-elemento
+   - Dibuja una capa encima del chevron con solo el borde
+   - Mucho más eficiente que múltiples drop-shadows
    ============================================================= */
 
-/* Outline negro para TODOS los tabs */
-.ccn-quote .o_notebook .nav-tabs li .nav-link,
-.ccn-quote .o_notebook .nav-tabs .nav-link {
-  /* Múltiples drop-shadows para crear efecto de outline completo */
-  filter: drop-shadow(1px 0 0 #000) 
-          drop-shadow(-1px 0 0 #000) 
-          drop-shadow(0 1px 0 #000) 
-          drop-shadow(0 -1px 0 #000)
-          drop-shadow(1px 1px 0 #000)
-          drop-shadow(-1px -1px 0 #000)
-          drop-shadow(1px -1px 0 #000)
-          drop-shadow(-1px 1px 0 #000);
+/* Outline negro usando ::after SOLO para el tab activo */
+.ccn-quote .o_notebook .nav-tabs .nav-link.active::after,
+.ccn-quote .o_notebook .nav-tabs li.active > .nav-link::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  border: 3px solid #000;
+  border-radius: 0;
+  pointer-events: none; /* No interferir con clics */
+  z-index: 51;
+  /* Mismo clip-path que el tab principal (primer tab - sin muesca izquierda) */
+  clip-path: polygon(0 0, calc(100% - #{$ccn-tab-chevron}) 0, 100% 50%, calc(100% - #{$ccn-tab-chevron}) 100%, 0 100%);
 }
 
-/* Tab activo: outline más grueso y z-index mayor */
+/* Outline para tab activo que NO es el primero (tiene muesca izquierda) */
+.ccn-quote .o_notebook .nav-tabs li:not(:first-child).active > .nav-link::after,
+.ccn-quote .o_notebook .nav-tabs li + li .nav-link.active::after {
+  /* Mismo clip-path con muesca izquierda que el tab principal */
+  clip-path: polygon(0 0, calc(100% - #{$ccn-tab-chevron}) 0, 100% 50%, calc(100% - #{$ccn-tab-chevron}) 100%, 0 100%, #{$ccn-tab-chevron} 50%);
+}
+
+/* Restaurar hover simple */
+.ccn-quote .o_notebook .nav-tabs li .nav-link:hover,
+.ccn-quote .o_notebook .nav-tabs .nav-link:hover {
+  filter: brightness(0.97);
+}
+
+/* Hover del activo */
+.ccn-quote .o_notebook .nav-tabs .nav-link.active:hover,
+.ccn-quote .o_notebook .nav-tabs li.active > .nav-link:hover {
+  filter: brightness(0.97);
+}
+
+/* Asegurar z-index para el tab activo */
 .ccn-quote .o_notebook .nav-tabs .nav-link.active,
 .ccn-quote .o_notebook .nav-tabs li.active > .nav-link {
   z-index: 50;
-  border-color: #000 !important;
-  /* Outline negro más prominente para el tab activo (2px en lugar de 1px) */
-  filter: drop-shadow(2px 0 0 #000) 
-          drop-shadow(-2px 0 0 #000) 
-          drop-shadow(0 2px 0 #000) 
-          drop-shadow(0 -2px 0 #000)
-          drop-shadow(1.5px 1.5px 0 #000)
-          drop-shadow(-1.5px -1.5px 0 #000)
-          drop-shadow(1.5px -1.5px 0 #000)
-          drop-shadow(-1.5px 1.5px 0 #000)
-          drop-shadow(1px 0 0 #000)
-          drop-shadow(-1px 0 0 #000)
-          drop-shadow(0 1px 0 #000)
-          drop-shadow(0 -1px 0 #000);
-}
-
-/* Hover: mantener outline y agregar brillo */
-.ccn-quote .o_notebook .nav-tabs li .nav-link:hover,
-.ccn-quote .o_notebook .nav-tabs .nav-link:hover {
-  /* NO PODEMOS combinar drop-shadow con brightness directamente
-     porque filter reemplaza, no acumula. Usamos solo drop-shadow. */
-  filter: drop-shadow(1px 0 0 #000) 
-          drop-shadow(-1px 0 0 #000) 
-          drop-shadow(0 1px 0 #000) 
-          drop-shadow(0 -1px 0 #000)
-          drop-shadow(1px 1px 0 #000)
-          drop-shadow(-1px -1px 0 #000)
-          drop-shadow(1px -1px 0 #000)
-          drop-shadow(-1px 1px 0 #000);
-  /* Aplicar brightness en el background en su lugar */
-  opacity: 0.95;
-}
-
-/* Hover del activo: outline grueso */
-.ccn-quote .o_notebook .nav-tabs .nav-link.active:hover,
-.ccn-quote .o_notebook .nav-tabs li.active > .nav-link:hover {
-  filter: drop-shadow(2px 0 0 #000) 
-          drop-shadow(-2px 0 0 #000) 
-          drop-shadow(0 2px 0 #000) 
-          drop-shadow(0 -2px 0 #000)
-          drop-shadow(1.5px 1.5px 0 #000)
-          drop-shadow(-1.5px -1.5px 0 #000)
-          drop-shadow(1.5px -1.5px 0 #000)
-          drop-shadow(-1.5px 1.5px 0 #000)
-          drop-shadow(1px 0 0 #000)
-          drop-shadow(-1px 0 0 #000)
-          drop-shadow(0 1px 0 #000)
-          drop-shadow(0 -1px 0 #000);
-  opacity: 0.95;
 }
 
 /* Chevrons dedicados en algunos temas: elevar ligeramente */
