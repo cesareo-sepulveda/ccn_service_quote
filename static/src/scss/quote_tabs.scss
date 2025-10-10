@@ -211,30 +211,69 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
 }
 
 /* =============================================================
-   Outline negro para el tab ACTIVO (chevron)
-   - Borde negro + box-shadow para resaltar claramente
-   - Mayor z-index para sobreponer a tabs vecinos
+   Outline negro para TODOS los chevrons (tabs activos e inactivos)
+   - Usa filter: drop-shadow para crear el efecto de borde negro
+   - drop-shadow respeta el clip-path, a diferencia de box-shadow
    ============================================================= */
+
+/* Outline negro para TODOS los tabs */
+.ccn-quote .o_notebook .nav-tabs li .nav-link,
+.ccn-quote .o_notebook .nav-tabs .nav-link {
+  /* drop-shadow crea un contorno que respeta el clip-path */
+  filter: drop-shadow(0 0 0 #000) 
+          drop-shadow(1px 0 0 #000) 
+          drop-shadow(-1px 0 0 #000) 
+          drop-shadow(0 1px 0 #000) 
+          drop-shadow(0 -1px 0 #000);
+}
+
+/* Tab activo: outline más grueso y z-index mayor */
 .ccn-quote .o_notebook .nav-tabs .nav-link.active,
 .ccn-quote .o_notebook .nav-tabs li.active > .nav-link {
   z-index: 50;
   border-color: #000 !important;
-  /* anillo de 1px alrededor respetando el clip-path */
-  box-shadow: 0 0 0 1px #000;
+  /* Outline negro más prominente para el tab activo */
+  filter: drop-shadow(0 0 0 #000) 
+          drop-shadow(1.5px 0 0 #000) 
+          drop-shadow(-1.5px 0 0 #000) 
+          drop-shadow(0 1.5px 0 #000) 
+          drop-shadow(0 -1.5px 0 #000)
+          drop-shadow(1px 1px 0 #000)
+          drop-shadow(-1px -1px 0 #000)
+          drop-shadow(1px -1px 0 #000)
+          drop-shadow(-1px 1px 0 #000);
 }
 
-/* Hover del activo: conservar brillo y outline */
+/* Hover: mantener outline y agregar brillo */
+.ccn-quote .o_notebook .nav-tabs li .nav-link:hover,
+.ccn-quote .o_notebook .nav-tabs .nav-link:hover {
+  /* Combinar drop-shadow con brightness */
+  filter: drop-shadow(0 0 0 #000) 
+          drop-shadow(1px 0 0 #000) 
+          drop-shadow(-1px 0 0 #000) 
+          drop-shadow(0 1px 0 #000) 
+          drop-shadow(0 -1px 0 #000)
+          brightness(0.97);
+}
+
+/* Hover del activo: outline grueso + brillo */
 .ccn-quote .o_notebook .nav-tabs .nav-link.active:hover,
 .ccn-quote .o_notebook .nav-tabs li.active > .nav-link:hover {
-  filter: brightness(0.97);
-  box-shadow: 0 0 0 1px #000;
+  filter: drop-shadow(0 0 0 #000) 
+          drop-shadow(1.5px 0 0 #000) 
+          drop-shadow(-1.5px 0 0 #000) 
+          drop-shadow(0 1.5px 0 #000) 
+          drop-shadow(0 -1.5px 0 #000)
+          drop-shadow(1px 1px 0 #000)
+          drop-shadow(-1px -1px 0 #000)
+          drop-shadow(1px -1px 0 #000)
+          drop-shadow(-1px 1px 0 #000)
+          brightness(0.97);
 }
 
-/* Chevrons dedicados en algunos temas: elevar y contornear ligeramente */
+/* Chevrons dedicados en algunos temas: elevar ligeramente */
 .ccn-quote .o_notebook .nav-tabs li.active .o_chevron,
 .ccn-quote .o_notebook .nav-tabs li.active .tab-chevron {
   position: relative;
   z-index: 51;
-  /* ligero realce para que se perciba la punta */
-  filter: drop-shadow(0 0 0 #000) drop-shadow(0 0 1px #000) !important;
 }
