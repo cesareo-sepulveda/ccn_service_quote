@@ -214,17 +214,21 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
    Outline negro para TODOS los chevrons (tabs activos e inactivos)
    - Usa filter: drop-shadow para crear el efecto de borde negro
    - drop-shadow respeta el clip-path, a diferencia de box-shadow
+   - Múltiples drop-shadows en todas direcciones para simular outline
    ============================================================= */
 
 /* Outline negro para TODOS los tabs */
 .ccn-quote .o_notebook .nav-tabs li .nav-link,
 .ccn-quote .o_notebook .nav-tabs .nav-link {
-  /* drop-shadow crea un contorno que respeta el clip-path */
-  filter: drop-shadow(0 0 0 #000) 
-          drop-shadow(1px 0 0 #000) 
+  /* Múltiples drop-shadows para crear efecto de outline completo */
+  filter: drop-shadow(1px 0 0 #000) 
           drop-shadow(-1px 0 0 #000) 
           drop-shadow(0 1px 0 #000) 
-          drop-shadow(0 -1px 0 #000);
+          drop-shadow(0 -1px 0 #000)
+          drop-shadow(1px 1px 0 #000)
+          drop-shadow(-1px -1px 0 #000)
+          drop-shadow(1px -1px 0 #000)
+          drop-shadow(-1px 1px 0 #000);
 }
 
 /* Tab activo: outline más grueso y z-index mayor */
@@ -232,43 +236,54 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
 .ccn-quote .o_notebook .nav-tabs li.active > .nav-link {
   z-index: 50;
   border-color: #000 !important;
-  /* Outline negro más prominente para el tab activo */
-  filter: drop-shadow(0 0 0 #000) 
-          drop-shadow(1.5px 0 0 #000) 
-          drop-shadow(-1.5px 0 0 #000) 
-          drop-shadow(0 1.5px 0 #000) 
-          drop-shadow(0 -1.5px 0 #000)
-          drop-shadow(1px 1px 0 #000)
-          drop-shadow(-1px -1px 0 #000)
-          drop-shadow(1px -1px 0 #000)
-          drop-shadow(-1px 1px 0 #000);
+  /* Outline negro más prominente para el tab activo (2px en lugar de 1px) */
+  filter: drop-shadow(2px 0 0 #000) 
+          drop-shadow(-2px 0 0 #000) 
+          drop-shadow(0 2px 0 #000) 
+          drop-shadow(0 -2px 0 #000)
+          drop-shadow(1.5px 1.5px 0 #000)
+          drop-shadow(-1.5px -1.5px 0 #000)
+          drop-shadow(1.5px -1.5px 0 #000)
+          drop-shadow(-1.5px 1.5px 0 #000)
+          drop-shadow(1px 0 0 #000)
+          drop-shadow(-1px 0 0 #000)
+          drop-shadow(0 1px 0 #000)
+          drop-shadow(0 -1px 0 #000);
 }
 
 /* Hover: mantener outline y agregar brillo */
 .ccn-quote .o_notebook .nav-tabs li .nav-link:hover,
 .ccn-quote .o_notebook .nav-tabs .nav-link:hover {
-  /* Combinar drop-shadow con brightness */
-  filter: drop-shadow(0 0 0 #000) 
-          drop-shadow(1px 0 0 #000) 
+  /* NO PODEMOS combinar drop-shadow con brightness directamente
+     porque filter reemplaza, no acumula. Usamos solo drop-shadow. */
+  filter: drop-shadow(1px 0 0 #000) 
           drop-shadow(-1px 0 0 #000) 
           drop-shadow(0 1px 0 #000) 
           drop-shadow(0 -1px 0 #000)
-          brightness(0.97);
-}
-
-/* Hover del activo: outline grueso + brillo */
-.ccn-quote .o_notebook .nav-tabs .nav-link.active:hover,
-.ccn-quote .o_notebook .nav-tabs li.active > .nav-link:hover {
-  filter: drop-shadow(0 0 0 #000) 
-          drop-shadow(1.5px 0 0 #000) 
-          drop-shadow(-1.5px 0 0 #000) 
-          drop-shadow(0 1.5px 0 #000) 
-          drop-shadow(0 -1.5px 0 #000)
           drop-shadow(1px 1px 0 #000)
           drop-shadow(-1px -1px 0 #000)
           drop-shadow(1px -1px 0 #000)
-          drop-shadow(-1px 1px 0 #000)
-          brightness(0.97);
+          drop-shadow(-1px 1px 0 #000);
+  /* Aplicar brightness en el background en su lugar */
+  opacity: 0.95;
+}
+
+/* Hover del activo: outline grueso */
+.ccn-quote .o_notebook .nav-tabs .nav-link.active:hover,
+.ccn-quote .o_notebook .nav-tabs li.active > .nav-link:hover {
+  filter: drop-shadow(2px 0 0 #000) 
+          drop-shadow(-2px 0 0 #000) 
+          drop-shadow(0 2px 0 #000) 
+          drop-shadow(0 -2px 0 #000)
+          drop-shadow(1.5px 1.5px 0 #000)
+          drop-shadow(-1.5px -1.5px 0 #000)
+          drop-shadow(1.5px -1.5px 0 #000)
+          drop-shadow(-1.5px 1.5px 0 #000)
+          drop-shadow(1px 0 0 #000)
+          drop-shadow(-1px 0 0 #000)
+          drop-shadow(0 1px 0 #000)
+          drop-shadow(0 -1px 0 #000);
+  opacity: 0.95;
 }
 
 /* Chevrons dedicados en algunos temas: elevar ligeramente */
