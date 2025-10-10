@@ -213,32 +213,61 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
 /* =============================================================
    Outline negro SOLO para el tab ACTIVO usando pseudo-elemento
    - Dibuja una capa encima del chevron con solo el borde
-   - Mucho más eficiente que múltiples drop-shadows
+   - Ajustado con inset para que el borde sea visible en los lados
    ============================================================= */
+
+/* El nav-link necesita position relative para el pseudo-elemento */
+.ccn-quote .o_notebook .nav-tabs li .nav-link,
+.ccn-quote .o_notebook .nav-tabs .nav-link {
+  position: relative;
+}
 
 /* Outline negro usando ::after SOLO para el tab activo */
 .ccn-quote .o_notebook .nav-tabs .nav-link.active::after,
 .ccn-quote .o_notebook .nav-tabs li.active > .nav-link::after {
   content: '';
   position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  /* Inset de 2px para que el borde sea visible en los laterales */
+  top: 2px;
+  left: 2px;
+  right: 2px;
+  bottom: 2px;
+  width: calc(100% - 4px);
+  height: calc(100% - 4px);
   background: transparent;
   border: 3px solid #000;
   border-radius: 0;
   pointer-events: none; /* No interferir con clics */
-  z-index: 51;
-  /* Mismo clip-path que el tab principal (primer tab - sin muesca izquierda) */
-  clip-path: polygon(0 0, calc(100% - #{$ccn-tab-chevron}) 0, 100% 50%, calc(100% - #{$ccn-tab-chevron}) 100%, 0 100%);
+  z-index: -1; /* Detrás del texto pero encima del fondo */
+  /* Mismo clip-path ajustado para el inset */
+  clip-path: polygon(
+    2px 2px, 
+    calc(100% - #{$ccn-tab-chevron} - 2px) 2px, 
+    calc(100% + 2px) 50%, 
+    calc(100% - #{$ccn-tab-chevron} - 2px) calc(100% - 2px), 
+    2px calc(100% - 2px)
+  );
 }
 
 /* Outline para tab activo que NO es el primero (tiene muesca izquierda) */
 .ccn-quote .o_notebook .nav-tabs li:not(:first-child).active > .nav-link::after,
 .ccn-quote .o_notebook .nav-tabs li + li .nav-link.active::after {
-  /* Mismo clip-path con muesca izquierda que el tab principal */
-  clip-path: polygon(0 0, calc(100% - #{$ccn-tab-chevron}) 0, 100% 50%, calc(100% - #{$ccn-tab-chevron}) 100%, 0 100%, #{$ccn-tab-chevron} 50%);
+  /* Mismo clip-path con muesca izquierda ajustado para el inset */
+  clip-path: polygon(
+    2px 2px, 
+    calc(100% - #{$ccn-tab-chevron} - 2px) 2px, 
+    calc(100% + 2px) 50%, 
+    calc(100% - #{$ccn-tab-chevron} - 2px) calc(100% - 2px), 
+    2px calc(100% - 2px), 
+    calc(#{$ccn-tab-chevron} + 2px) 50%
+  );
+}
+
+/* Asegurar que el contenido del tab (texto, badge, etc.) esté por encima */
+.ccn-quote .o_notebook .nav-tabs .nav-link.active > *,
+.ccn-quote .o_notebook .nav-tabs li.active > .nav-link > * {
+  position: relative;
+  z-index: 1;
 }
 
 /* Restaurar hover simple */
