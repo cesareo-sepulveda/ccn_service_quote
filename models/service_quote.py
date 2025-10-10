@@ -100,6 +100,7 @@ class ServiceQuote(models.Model):
     financial_percent = fields.Float(string='Costo Financiero (%)', default=0.0)
     transporte_rate = fields.Float(string='Tarifa Transporte P/P', default=0.0)
     bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
+    prestaciones_percent = fields.Float(string='Porcentaje prestaciones (%)', default=45.0)
 
     line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
 
@@ -295,19 +296,24 @@ class ServiceQuote(models.Model):
         def state_for(rec, code):
             site_id = _site_for_compute(rec)
             # Considerar líneas del rubro en el sitio, independientemente del tipo de servicio
+            # IMPORTANTE: Solo contar líneas GUARDADAS (con id), ignorar líneas temporales en memoria
             lines = rec.line_ids.filtered(lambda l:
+                l.id and  # ← CLAVE: Solo líneas guardadas en BD
                 (not site_id or l.site_id.id == site_id) and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
             cnt = len(lines)
             # ACK en cualquier tipo de servicio para ese sitio/rubro
-            ack = self.env['ccn.service.quote.ack'].search_count([
-                ('quote_id', '=', rec.id),
-                ('site_id', '=', site_id or False),
-                ('service_type', 'in', ['jardineria','limpieza','mantenimiento','materiales','servicios_especiales','almacenaje','fletes']),
-                ('rubro_code', '=', code),
-                ('is_empty', '=', True),
-            ]) > 0
+            # IMPORTANTE: Si no hay site_id válido, NO buscar ACKs (devolver False para evitar falsos positivos)
+            ack = False
+            if site_id:
+                ack = self.env['ccn.service.quote.ack'].search_count([
+                    ('quote_id', '=', rec.id),
+                    ('site_id', '=', site_id),
+                    ('service_type', 'in', ['jardineria','limpieza','mantenimiento','materiales','servicios_especiales','almacenaje','fletes']),
+                    ('rubro_code', '=', code),
+                    ('is_empty', '=', True),
+                ]) > 0
             return 1 if cnt > 0 else (2 if ack else 0)
 
         for rec in self:
@@ -343,7 +349,9 @@ class ServiceQuote(models.Model):
         def state_for_service(rec, code, service_type):
             site_id = _site_for_compute(rec)
             # Buscar líneas del rubro en el sitio actual del servicio
+            # IMPORTANTE: Solo contar líneas GUARDADAS (con id), ignorar líneas temporales en memoria
             lines = rec.line_ids.filtered(lambda l:
+                l.id and  # ← CLAVE: Solo líneas guardadas en BD
                 (not site_id or l.site_id.id == site_id) and
                 l.service_type == service_type and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
@@ -351,13 +359,16 @@ class ServiceQuote(models.Model):
             cnt = len(lines)
 
             # Buscar ACKs para este sitio, servicio y rubro
-            ack = self.env['ccn.service.quote.ack'].search_count([
-                ('quote_id', '=', rec.id),
-                ('site_id', '=', site_id or False),
-                ('service_type', '=', service_type),
-                ('rubro_code', '=', code),
-                ('is_empty', '=', True),
-            ]) > 0
+            # IMPORTANTE: Si no hay site_id válido, NO buscar ACKs (devolver False para evitar falsos positivos)
+            ack = False
+            if site_id:
+                ack = self.env['ccn.service.quote.ack'].search_count([
+                    ('quote_id', '=', rec.id),
+                    ('site_id', '=', site_id),
+                    ('service_type', '=', service_type),
+                    ('rubro_code', '=', code),
+                    ('is_empty', '=', True),
+                ]) > 0
 
             return 1 if cnt > 0 else (2 if ack else 0)
 
@@ -709,9 +720,38 @@ class CCNServiceQuoteLine(models.Model):
         currency_field='currency_id',
     )
     total_price = fields.Monetary(
-        string='Subtotal final',
+        string='Total Mensual',
         compute='_compute_total_price',
         store=False,
+    )
+
+    # Frecuencia y subtotal mensual
+    frequency = fields.Selection([
+        ('weekly', 'Semanal'),
+        ('fortnight_14', 'Catorcenal'),
+        ('biweekly', 'Quincenal'),
+        ('monthly', 'Mensual'),
+        ('bimonthly', 'Bimestral'),
+        ('quarterly', 'Trimestral'),
+        ('semiannual', 'Semestral'),
+        ('annual', 'Anual'),
+        ('18m', '18 Meses'),
+        ('24m', '24 Meses'),
+    ], string='Frecuencia', default='monthly', required=True)
+
+    monthly_subtotal = fields.Monetary(
+        string='Subtotal Mensual',
+        compute='_compute_monthly_subtotal',
+        store=True,
+        currency_field='currency_id',
+    )
+
+    # Prestaciones (solo aplica a Mano de Obra; en otros rubros = 0)
+    mo_prestaciones = fields.Monetary(
+        string='Prestaciones',
+        compute='_compute_mo_prestaciones',
+        store=False,
+        currency_field='currency_id',
     )
 
     # ===== Cómputos =====
@@ -761,13 +801,67 @@ class CCNServiceQuoteLine(models.Model):
                 amt = line.quote_id.currency_id.round(amt)
             line.amount_tax = amt
 
-    @api.depends('quantity', 'price_unit_final')
+    @api.depends('quantity', 'monthly_subtotal', 'quote_id.prestaciones_percent', 'rubro_code')
     def _compute_total_price(self):
         for line in self:
-            val = (line.price_unit_final or 0.0) * (line.quantity or 0.0)
+            # Total Mensual:
+            # - Mano de Obra: (Percepción Mensual + Prestaciones) x Cantidad
+            # - Otros rubros: Subtotal Mensual x Cantidad
+            if (line.rubro_code or '').strip() == 'mano_obra':
+                base = (line.monthly_subtotal or 0.0) + (line.mo_prestaciones or 0.0)
+                val = base * (line.quantity or 0.0)
+            else:
+                val = (line.monthly_subtotal or 0.0) * (line.quantity or 0.0)
             if line.quote_id.currency_id:
                 val = line.quote_id.currency_id.round(val)
             line.total_price = val
+
+    @api.depends('monthly_subtotal', 'quote_id.prestaciones_percent', 'rubro_code')
+    def _compute_mo_prestaciones(self):
+        for line in self:
+            if (line.rubro_code or '').strip() == 'mano_obra':
+                perc = (getattr(line.quote_id, 'prestaciones_percent', 0.0) or 0.0) / 100.0
+                val = (line.monthly_subtotal or 0.0) * perc
+            else:
+                val = 0.0
+            if line.quote_id.currency_id:
+                val = line.quote_id.currency_id.round(val)
+            line.mo_prestaciones = val
+
+    @api.depends('price_unit_final', 'frequency')
+    def _compute_monthly_subtotal(self):
+        for line in self:
+            # Subtotal mensual unitario (no multiplicado por cantidad)
+            unit_total = (line.price_unit_final or 0.0)
+            f = (line.frequency or 'monthly')
+            # Factores a mes equivalente
+            if f == 'weekly':
+                factor = 30.42 / 7.0
+            elif f == 'fortnight_14':
+                factor = 30.42 / 14.0
+            elif f == 'biweekly':
+                factor = 2.0
+            elif f == 'monthly':
+                factor = 1.0
+            elif f == 'bimonthly':
+                factor = 1.0 / 2.0
+            elif f == 'quarterly':
+                factor = 1.0 / 3.0
+            elif f == 'semiannual':
+                factor = 1.0 / 6.0
+            elif f == 'annual':
+                factor = 1.0 / 12.0
+            elif f == '18m':
+                factor = 1.0 / 18.0
+            elif f == '24m':
+                factor = 1.0 / 24.0
+            else:
+                factor = 1.0
+
+            val = unit_total * factor
+            if line.quote_id.currency_id:
+                val = line.quote_id.currency_id.round(val)
+            line.monthly_subtotal = val
 
     # ===== Defaults desde contexto =====
     @api.model

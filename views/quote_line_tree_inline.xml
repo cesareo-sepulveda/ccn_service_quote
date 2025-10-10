@@ -18,21 +18,30 @@
           <!-- Cantidad -->
           <field name="quantity"/>
 
-          <!-- Precio Unitario -->
-          <field name="price_unit_final" string="Precio Unitario"/>
+          <!-- Precio Base (entre producto y tabulador) -->
+          <field name="product_base_price" string="Precio Base" readonly="1"/>
 
           <!-- Tabulador (0/3/5/10 %) -->
           <field name="tabulator_percent" string="Tabulador"/>
 
+          <!-- Precio Ajustado (resultado del tabulador) -->
+          <field name="price_unit_final" string="Precio Ajustado"/>
+
+          <!-- Frecuencia -->
+          <field name="frequency" string="Frecuencia"/>
+
+          <!-- Subtotal (unitario mensual) -->
+          <field name="monthly_subtotal" string="Subtotal" readonly="1"/>
+
           <!-- IVA -->
           <field name="amount_tax" string="IVA" readonly="1"/>
 
-          <!-- Subtotal -->
-          <field name="total_price" string="Subtotal" readonly="1"/>
+          <!-- Total Mensual -->
+          <field name="total_price" string="Total Mensual" readonly="1"/>
 
           <!-- Diagnóstico temporal: mostrar sitio y servicio -->
-          <field name="site_id" string="Sitio" optional="show"/>
-          <field name="service_type" string="Servicio" optional="show"/>
+          <field name="site_id" string="Sitio" optional="hide"/>
+          <field name="service_type" string="Servicio" optional="hide"/>
 
           <!-- Metadatos necesarios pero ocultos -->
           <field name="currency_id" invisible="1" column_invisible="1"/>

@@ -2,53 +2,52 @@
 <odoo>
   <data>
 
-    <!-- LIST INLINE (para usar dentro de la quote por rubro) -->
-    <record id="ccn_view_quote_line_list_inline" model="ir.ui.view">
-      <field name="name">ccn.quote.line.list.inline</field>
+    <!-- LIST INLINE específica para Mano de Obra -->
+    <record id="ccn_view_quote_line_list_inline_mano_obra" model="ir.ui.view">
+      <field name="name">ccn.quote.line.list.inline.mano_obra</field>
       <field name="model">ccn.service.quote.line</field>
       <field name="type">list</field>
       <field name="arch" type="xml">
-        <list editable="bottom" string="Líneas del rubro">
-          <!-- Ocultamos rubro en columnas (lo fija la pestaña) -->
+        <list editable="bottom" string="Líneas Mano de Obra">
           <field name="rubro_id" invisible="1" column_invisible="1"/>
           <field name="rubro_code" invisible="1" column_invisible="1"/>
 
           <!-- Producto/Servicio del rubro -->
-          <field name="product_id" required="1"
+          <field name="product_id"
+                 required="1"
                  domain="[('product_tmpl_id.ccn_exclude_from_quote','=',False),
                           ('product_tmpl_id.sale_ok','=', True),
                           ('product_tmpl_id.ccn_rubro_ids.code','in',[context.get('ctx_rubro_code'), rubro_code])]"
                  context="{'search_default_sale_ok': 1}"
                  options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
-          <!-- Cantidad -->
+          <!-- Cantidad (segunda columna) -->
           <field name="quantity"/>
 
-          <!-- Precio Base (entre producto y tabulador) -->
-          <field name="product_base_price" string="Precio Base" readonly="1"/>
+          <!-- Percepción Base (antes: Precio Base) -->
+          <field name="product_base_price" string="Percepción" readonly="1"/>
 
           <!-- Tabulador -->
           <field name="tabulator_percent" string="Tabulador"/>
 
-          <!-- Precio Ajustado (resultado de tabulador) -->
-          <field name="price_unit_final" string="Precio Ajustado" readonly="1"/>
+          <!-- Percepción Ajustada (antes: Precio Ajustado) -->
+          <field name="price_unit_final" string="Ajuste" readonly="1"/>
 
           <!-- Frecuencia -->
           <field name="frequency" string="Frecuencia"/>
 
-          <!-- Subtotal (unitario mensual) -->
-          <field name="monthly_subtotal" string="Subtotal" readonly="1"/>
+          <!-- Percepción Mensual (antes: Subtotal Mensual) -->
+          <field name="monthly_subtotal" string="Mensual" readonly="1"/>
 
-          <!-- Precio Unitario (final) omitido por error de carga -->
+          <!-- Prestaciones (Percepción Mensual x % prestaciones) -->
+          <field name="mo_prestaciones" string="Prestaciones" readonly="1"/>
 
-          <!-- Total Mensual -->
+          <!-- Total Mensual = (Percepción Mensual + Prestaciones) x Cantidad -->
           <field name="total_price" string="Total Mensual" readonly="1"/>
 
-          <!-- Diagnóstico temporal: mostrar sitio y servicio -->
+          <!-- Metadatos y diagnóstico oculto -->
           <field name="site_id" string="Sitio" optional="hide"/>
           <field name="service_type" string="Servicio" optional="hide"/>
-
-          <!-- Metadatos ocultos -->
           <field name="quote_id" invisible="1" column_invisible="1"/>
           <field name="type" invisible="1" column_invisible="1"/>
           <field name="currency_id" invisible="1" column_invisible="1"/>
@@ -56,13 +55,13 @@
       </field>
     </record>
 
-    <!-- FORM INLINE (por si el usuario abre una línea) -->
-    <record id="ccn_view_quote_line_form_inline" model="ir.ui.view">
-      <field name="name">ccn.quote.line.form.inline</field>
+    <!-- FORM INLINE específica para Mano de Obra -->
+    <record id="ccn_view_quote_line_form_inline_mano_obra" model="ir.ui.view">
+      <field name="name">ccn.quote.line.form.inline.mano_obra</field>
       <field name="model">ccn.service.quote.line</field>
       <field name="type">form</field>
       <field name="arch" type="xml">
-        <form string="Línea">
+        <form string="Línea Mano de Obra">
           <group>
             <field name="rubro_id" invisible="1"/>
             <field name="rubro_code" invisible="1"/>
@@ -75,11 +74,12 @@
                    options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
             <field name="quantity"/>
-            <field name="product_base_price" string="Precio Base" readonly="1"/>
-            <field name="tabulator_percent"/>
-            <field name="price_unit_final" string="Precio Ajustado" readonly="1"/>
-            <field name="frequency"/>
-            <field name="monthly_subtotal" string="Subtotal" readonly="1"/>
+            <field name="product_base_price" string="Percepción" readonly="1"/>
+            <field name="tabulator_percent" string="Tabulador"/>
+            <field name="price_unit_final" string="Ajuste" readonly="1"/>
+            <field name="frequency" string="Frecuencia"/>
+            <field name="monthly_subtotal" string="Mensual" readonly="1"/>
+            <field name="mo_prestaciones" string="Prestaciones" readonly="1"/>
             <field name="total_price" string="Total Mensual" readonly="1"/>
 
             <field name="quote_id" invisible="1"/>

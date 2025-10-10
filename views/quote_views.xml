@@ -94,8 +94,10 @@
                 <field name="financial_percent" string="Costo Financiero (%)"/>
  
                 <field name="transporte_rate" string="Tarifa Transporte P/P"/>
- 
+
                 <field name="bienestar_rate" string="Tarifa Bienestar P/P"/>
+
+                <field name="prestaciones_percent" string="Porcentaje prestaciones (%)"/>
 
             </group>
 
@@ -175,8 +177,8 @@
                           'default_site_id': current_site_id,
                           'default_service_type': current_service_type,
                           'ctx_rubro_code': 'mano_obra',
-                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_mano_obra',
+                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_mano_obra'
                         }"
                         domain="[
                           ('rubro_id.code','=','mano_obra'),
@@ -192,8 +194,8 @@
                           'default_site_id': current_site_id,
                           'default_service_type': current_service_type,
                           'ctx_rubro_code': 'mano_obra',
-                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline',
-                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline'
+                          'list_view_ref': 'ccn_service_quote.ccn_view_quote_line_list_inline_mano_obra',
+                          'form_view_ref': 'ccn_service_quote.ccn_view_quote_line_form_inline_mano_obra'
                         }"
                         domain="[
                           ('rubro_id.code','=','mano_obra'),

@@ -44,3 +44,11 @@
 .o_ccn_catalog_body table.table-sm td, .o_ccn_catalog_body table.table-sm th {
   vertical-align: middle;
 }
+
+/* === CCN Quote — Ajustes de columnas en listas === */
+/* Reducir ancho de columna 'Tabulador' en listas dentro del formulario de cotización */
+.ccn-quote .o_list_view thead th[data-name="tabulator_percent"],
+.ccn-quote .o_list_view tbody td[data-name="tabulator_percent"] {
+  width: 8rem !important;
+  max-width: 8rem !important;
+}

@@ -7,6 +7,42 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 
 ---
 
+## [18.0.9.8.32] - 2025-01-XX
+
+### Corregido
+- **Bug crítico**: Color de tabs se actualizaba incorrectamente
+  - **Problema 1**: Tab se ponía verde al hacer clic en "Agregar una línea" sin guardar
+  - **Problema 2**: Al cancelar agregar línea, el tab quedaba verde sin datos reales
+  - **Problema 3**: Al eliminar líneas, el tab no volvía a gris/rojo hasta salir del formulario
+  - **Causa**: Campos compute contaban líneas temporales (sin `id`) creadas en memoria
+  - **Solución**: Agregado filtro `l.id and` en ambas funciones compute:
+    - `state_for()` - [línea 300](models/service_quote.py#L300)
+    - `state_for_service()` - [línea 351](models/service_quote.py#L351)
+  - **Resultado**: Tab se actualiza **solo cuando se guardan/eliminan líneas reales** en BD
+
+### Mejorado
+- Actualización de color de tabs ahora es inmediata y precisa
+- Solo líneas guardadas en base de datos afectan el color del tab
+- Mejor experiencia de usuario: colores reflejan estado real, no acciones temporales
+
+---
+
+## [18.0.9.8.31] - 2025-01-XX
+
+### Corregido
+- **Bug crítico**: Tabs aparecían en color ámbar en cotizaciones nuevas (sin datos ni ACKs)
+  - **Causa**: La búsqueda de ACKs con `site_id=False` encontraba falsos positivos
+  - **Solución**: Agregada validación `if site_id:` antes de buscar ACKs en ambas funciones:
+    - `_compute_rubro_states()` - [líneas 305-313](models/service_quote.py#L305-L313)
+    - `_compute_rubro_states_per_service()` - [líneas 355-363](models/service_quote.py#L355-L363)
+  - **Resultado**: Ahora cotizaciones nuevas muestran todos los tabs en **gris/rojo** (estado=0) correctamente
+
+### Mejorado
+- Lógica de búsqueda de ACKs más robusta: solo busca cuando existe un `site_id` válido
+- Previene falsos positivos en el cálculo de estados de rubros
+
+---
+
 ## [18.0.9.8.30] - 2025-01-XX
 
 ### Agregado
