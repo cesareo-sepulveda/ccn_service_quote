@@ -46,9 +46,69 @@
 }
 
 /* === CCN Quote — Ajustes de columnas en listas === */
-/* Reducir ancho de columna 'Tabulador' en listas dentro del formulario de cotización */
+/* Reducir ancho de la columna 'Tabulador' en listas dentro del formulario de cotización */
 .ccn-quote .o_list_view thead th[data-name="tabulator_percent"],
-.ccn-quote .o_list_view tbody td[data-name="tabulator_percent"] {
-  width: 8rem !important;
-  max-width: 8rem !important;
+.ccn-quote .o_list_view thead th[name="tabulator_percent"],
+.ccn-quote .o_list_view tbody td[data-name="tabulator_percent"],
+.ccn-quote .o_list_view tbody td[name="tabulator_percent"],
+.ccn-quote .o_list_table thead th[data-name="tabulator_percent"],
+.ccn-quote .o_list_table thead th[name="tabulator_percent"],
+.ccn-quote .o_list_table tbody td[data-name="tabulator_percent"],
+.ccn-quote .o_list_table tbody td[name="tabulator_percent"] {
+  width: 6rem !important;
+  max-width: 6rem !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Evitar que el widget interno fuerce un ancho mínimo grande */
+.ccn-quote .o_list_view td[data-name="tabulator_percent"] .o_field_widget,
+.ccn-quote .o_list_view td[name="tabulator_percent"] .o_field_widget,
+.ccn-quote .o_list_table td[data-name="tabulator_percent"] .o_field_widget,
+.ccn-quote .o_list_table td[name="tabulator_percent"] .o_field_widget,
+.ccn-quote .o_list_view td[data-name="tabulator_percent"] select,
+.ccn-quote .o_list_view td[name="tabulator_percent"] select,
+.ccn-quote .o_list_table td[data-name="tabulator_percent"] select,
+.ccn-quote .o_list_table td[name="tabulator_percent"] select,
+.ccn-quote .o_list_view td[data-name="tabulator_percent"] .o_input,
+.ccn-quote .o_list_view td[name="tabulator_percent"] .o_input,
+.ccn-quote .o_list_table td[data-name="tabulator_percent"] .o_input,
+.ccn-quote .o_list_table td[name="tabulator_percent"] .o_input {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+/* Reducir ancho de la columna 'Frecuencia' */
+.ccn-quote .o_list_view thead th[data-name="frequency"],
+.ccn-quote .o_list_view thead th[name="frequency"],
+.ccn-quote .o_list_view tbody td[data-name="frequency"],
+.ccn-quote .o_list_view tbody td[name="frequency"],
+.ccn-quote .o_list_table thead th[data-name="frequency"],
+.ccn-quote .o_list_table thead th[name="frequency"],
+.ccn-quote .o_list_table tbody td[data-name="frequency"],
+.ccn-quote .o_list_table tbody td[name="frequency"] {
+  width: 7rem !important;
+  max-width: 7rem !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ccn-quote .o_list_view td[data-name="frequency"] .o_field_widget,
+.ccn-quote .o_list_view td[name="frequency"] .o_field_widget,
+.ccn-quote .o_list_table td[data-name="frequency"] .o_field_widget,
+.ccn-quote .o_list_table td[name="frequency"] .o_field_widget,
+.ccn-quote .o_list_view td[data-name="frequency"] select,
+.ccn-quote .o_list_view td[name="frequency"] select,
+.ccn-quote .o_list_table td[data-name="frequency"] select,
+.ccn-quote .o_list_table td[name="frequency"] select,
+.ccn-quote .o_list_view td[data-name="frequency"] .o_input,
+.ccn-quote .o_list_view td[name="frequency"] .o_input,
+.ccn-quote .o_list_table td[data-name="frequency"] .o_input,
+.ccn-quote .o_list_table td[name="frequency"] .o_input {
+  min-width: 0 !important;
+  width: 100% !important;
+  max-width: 100% !important;
 }
