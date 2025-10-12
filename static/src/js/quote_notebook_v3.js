@@ -87,6 +87,13 @@ function publishStates(controller) {
         try {
             const statesJson = JSON.stringify(states);
             const countsJson = JSON.stringify(counts);
+
+            // Solo log UNA VEZ cuando hay un problema
+            const hasStates = Object.keys(states).length > 0;
+            if (!hasStates || !fv) {
+                console.warn('[CCN] ⚠️ Publish issue - States empty?', hasStates, 'FormView found?', !!fv);
+            }
+
             if (fv) {
                 fv.dataset.ccnStates = statesJson;
                 fv.dataset.ccnCounts = countsJson;

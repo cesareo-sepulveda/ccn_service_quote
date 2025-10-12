@@ -232,51 +232,51 @@ class ServiceQuote(models.Model):
 
 
     # Estados por rubro (filtrados por sitio/servicio/tipo actual)
-    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states")
-    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states")
+    rubro_state_mano_obra                 = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_uniforme                  = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_epp                       = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_epp_alturas               = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_equipo_especial_limpieza  = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_comunicacion_computo      = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_herramienta_menor_jardineria = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_material_limpieza         = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_perfil_medico             = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_maquinaria_limpieza       = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_maquinaria_jardineria     = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_fertilizantes_tierra_lama = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_consumibles_jardineria    = fields.Integer(compute="_compute_rubro_states", store=True)
+    rubro_state_capacitacion              = fields.Integer(compute="_compute_rubro_states", store=True)
 
     # Estados por rubro y servicio específico (para vistas)
-    rubro_state_mano_obra_jard                 = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_uniforme_jard                  = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_epp_jard                       = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_epp_alturas_jard               = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_equipo_especial_limpieza_jard  = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_comunicacion_computo_jard      = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_herramienta_menor_jardineria_jard = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_material_limpieza_jard         = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_perfil_medico_jard             = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_maquinaria_limpieza_jard       = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_maquinaria_jardineria_jard     = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_fertilizantes_tierra_lama_jard = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_consumibles_jardineria_jard    = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_capacitacion_jard              = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_mano_obra_jard                 = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_uniforme_jard                  = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_epp_jard                       = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_epp_alturas_jard               = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_equipo_especial_limpieza_jard  = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_comunicacion_computo_jard      = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_herramienta_menor_jardineria_jard = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_material_limpieza_jard         = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_perfil_medico_jard             = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_maquinaria_limpieza_jard       = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_maquinaria_jardineria_jard     = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_fertilizantes_tierra_lama_jard = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_consumibles_jardineria_jard    = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_capacitacion_jard              = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
 
-    rubro_state_mano_obra_limp                 = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_uniforme_limp                  = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_epp_limp                       = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_epp_alturas_limp               = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_equipo_especial_limpieza_limp  = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_comunicacion_computo_limp      = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_herramienta_menor_jardineria_limp = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_material_limpieza_limp         = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_perfil_medico_limp             = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_maquinaria_limpieza_limp       = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_maquinaria_jardineria_limp     = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_fertilizantes_tierra_lama_limp = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_consumibles_jardineria_limp    = fields.Integer(compute="_compute_rubro_states_per_service")
-    rubro_state_capacitacion_limp              = fields.Integer(compute="_compute_rubro_states_per_service")
+    rubro_state_mano_obra_limp                 = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_uniforme_limp                  = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_epp_limp                       = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_epp_alturas_limp               = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_equipo_especial_limpieza_limp  = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_comunicacion_computo_limp      = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_herramienta_menor_jardineria_limp = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_material_limpieza_limp         = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_perfil_medico_limp             = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_maquinaria_limpieza_limp       = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_maquinaria_jardineria_limp     = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_fertilizantes_tierra_lama_limp = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_consumibles_jardineria_limp    = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
+    rubro_state_capacitacion_limp              = fields.Integer(compute="_compute_rubro_states_per_service", store=True)
 
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
@@ -298,8 +298,12 @@ class ServiceQuote(models.Model):
             # Considerar líneas del rubro en el sitio, independientemente del tipo de servicio
             # IMPORTANTE: Solo contar líneas GUARDADAS (con id), ignorar líneas temporales en memoria
             lines = rec.line_ids.filtered(lambda l:
-                l.id and  # ← CLAVE: Solo líneas guardadas en BD
-                (not site_id or l.site_id.id == site_id) and
+                # Filtro ESTRICTO: Solo líneas con ID entero Y que existan en BD
+                l.id and
+                isinstance(l.id, int) and
+                l.id > 0 and  # IDs positivos (extra validación)
+                l._origin.id and  # El registro original existe
+                (not site_id or (l.site_id and l.site_id.id == site_id)) and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
             cnt = len(lines)
@@ -351,8 +355,12 @@ class ServiceQuote(models.Model):
             # Buscar líneas del rubro en el sitio actual del servicio
             # IMPORTANTE: Solo contar líneas GUARDADAS (con id), ignorar líneas temporales en memoria
             lines = rec.line_ids.filtered(lambda l:
-                l.id and  # ← CLAVE: Solo líneas guardadas en BD
-                (not site_id or l.site_id.id == site_id) and
+                # Filtro ESTRICTO: Solo líneas con ID entero Y que existan en BD
+                l.id and
+                isinstance(l.id, int) and
+                l.id > 0 and  # IDs positivos (extra validación)
+                l._origin.id and  # El registro original existe
+                (not site_id or (l.site_id and l.site_id.id == site_id)) and
                 l.service_type == service_type and
                 ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
             )
@@ -418,7 +426,12 @@ class ServiceQuote(models.Model):
                     site = self.env['ccn.service.quote.site'].browse(sid)
             except Exception:
                 site = rec.current_site_id
-            ack = self.env['ccn.service.quote.ack'].search([
+
+            # Usar sudo() y context para evitar disparar constraints innecesarios
+            # al crear/modificar ACKs (evita error de validación de unicidad en cotización)
+            AckModel = self.env['ccn.service.quote.ack'].sudo().with_context(skip_quote_constraints=True)
+
+            ack = AckModel.search([
                 ('quote_id', '=', rec.id),
                 ('site_id', '=', site.id if site else False),
                 ('service_type', '=', rec.current_service_type),
@@ -427,7 +440,7 @@ class ServiceQuote(models.Model):
             if ack:
                 ack.write({'is_empty': bool(value)})
             else:
-                self.env['ccn.service.quote.ack'].create({
+                AckModel.create({
                     'quote_id': rec.id,
                     'site_id': site.id if site else False,
                     'service_type': rec.current_service_type,
@@ -561,6 +574,18 @@ class ServiceQuote(models.Model):
         return True
 
     def write(self, vals):
+        # Evitar disparar constraint SQL de unicidad cuando los valores no cambian
+        # Esto previene errores al crear/modificar ACKs que actualizan ack_ids
+        if vals and not self.env.context.get('skip_uniqueness_filter'):
+            # Filtrar campos que disparan el constraint si no han cambiado
+            if len(self) == 1 and ('partner_id' in vals or 'name' in vals):
+                if 'partner_id' in vals and vals['partner_id'] == self.partner_id.id:
+                    vals = dict(vals)
+                    del vals['partner_id']
+                if 'name' in vals and vals['name'] == self.name:
+                    vals = dict(vals)
+                    del vals['name']
+
         res = super().write(vals)
         # Si se cambió current_site_id y el sitio no tiene quote_id, enlazarlo
         if 'current_site_id' in vals:
@@ -947,3 +972,23 @@ class CCNServiceQuoteLine(models.Model):
                         # permitir que el required dispare error si no logramos resolverlo
                         pass
         return super().create(vals_list)
+
+    def write(self, vals):
+        """Override write para forzar recálculo cuando cambian campos relevantes."""
+        result = super().write(vals)
+        # Forzar recálculo de la cotización padre si cambian campos que afectan estados
+        if any(field in vals for field in ['site_id', 'service_type', 'rubro_id', 'rubro_code']):
+            quotes = self.mapped('quote_id')
+            if quotes:
+                # Forzar recálculo inmediato
+                quotes.modified(['line_ids'])
+        return result
+
+    def unlink(self):
+        """Override unlink para forzar recálculo después de eliminar líneas."""
+        quotes = self.mapped('quote_id')
+        result = super().unlink()
+        if quotes:
+            # Forzar recálculo inmediato después de eliminar
+            quotes.modified(['line_ids'])
+        return result

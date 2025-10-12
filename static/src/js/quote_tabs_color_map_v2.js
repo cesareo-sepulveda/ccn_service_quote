@@ -134,78 +134,99 @@ function dye(link, state) {
 
 function applyOnce() {
     const f = formRoot();
+
+    // IMPORTANTE: Solo aplicar en vistas de ccn.service.quote
+    // Verificación MUY ESTRICTA: debe existir el elemento .o_ccn_rubro_states
+    // Este elemento es ÚNICO de las cotizaciones CCN y no existe en otros módulos
+    const rubroStatesElement = f.querySelector('.o_ccn_rubro_states');
+
+    if (!rubroStatesElement) {
+        // No es una cotización CCN, salir sin hacer nada
+        return;
+    }
+
     const links = [...f.querySelectorAll(".o_notebook .nav-tabs .nav-link")];
-    if (!links.length) return;
+    if (!links.length) {
+        return;
+    }
 
     const map = getMap();
-    console.log('Color map:', map);
+    // Solo log si el map es null (problema)
+    if (!map || !Object.keys(map).length) {
+        console.warn('[CCN] ⚠️ Color map is null or empty - tabs will use DOM fallback');
+    }
+
     if (map && Object.keys(map).length) {
-        const stateFromClasses = (a) => {
-            const li = a.closest("li");
-            if (a.classList.contains("ccn-status-filled") || li?.classList.contains("ccn-status-filled")) return "ok";
-            if (a.classList.contains("ccn-status-ack") || li?.classList.contains("ccn-status-ack")) return "yellow";
-            if (a.classList.contains("ccn-status-empty") || li?.classList.contains("ccn-status-empty")) return "red";
-            return null;
-        };
         const currentService = readStrField('current_service_type');
         const suffix = currentService === 'jardineria' ? '_jard' : (currentService === 'limpieza' ? '_limp' : '');
         for (const a of links) {
             const code = canon(linkCode(a));
             if (!code) { clearInline(a, a.closest("li")); continue; }
-            // 1) Clases aplicadas por badges (optimismo inmediato sin guardar)
-            const sClass = stateFromClasses(a);
-            // 2) Estados DOM (campos rubro_state_* del servicio activo)
+
+            // Dataset como PRIMERA fuente (más confiable)
+            const ds = map[code];
+
+            // DOM como fallback
             let v = null;
             if (suffix) v = readIntField(`rubro_state_${code}${suffix}`);
             if (v == null) v = readIntField(`rubro_state_${code}`);
             const sDom = stateFromNumber(v);
-            // 3) Dataset publicado previamente
-            const ds = map[code];
-            // Prioridad: clases (optimismo) > DOM states > dataset
-            if (sClass) {
-                dye(a, sClass);
+
+            // Prioridad: dataset > DOM states
+            if (ds !== undefined && ds !== null) {
+                dye(a, ds);
             } else if (sDom) {
                 dye(a, sDom);
-            } else if (ds !== undefined && ds !== null) {
-                dye(a, ds);
             } else {
-                clearInline(a, a.closest("li"));
+                // Si no hay valor, asumir rojo (vacío)
+                dye(a, 'red');
             }
         }
         return;
     }
 
-    // Fallback: usa DOM directo o clases (por si no hay dataset)
+    // Fallback: usa DOM directo (por si no hay dataset)
     for (const a of links) {
-        const li = a.closest("li");
-        if (a.classList.contains("active")) { clearInline(a, li); continue; }
         const currentService = readStrField('current_service_type');
         const suffix = currentService === 'jardineria' ? '_jard' : (currentService === 'limpieza' ? '_limp' : '');
         const code = canon(linkCode(a));
-        // Prioridad: clases > DOM states
+        // Leer SOLO desde campos DOM (fuente de verdad) - NO usar clases CSS
         let s = null;
-        if (a.classList.contains("ccn-status-filled") || li?.classList.contains("ccn-status-filled")) s = "ok";
-        else if (a.classList.contains("ccn-status-ack") || li?.classList.contains("ccn-status-ack")) s = "yellow";
-        else if (a.classList.contains("ccn-status-empty") || li?.classList.contains("ccn-status-empty")) s = "red";
-        if (!s && code){
+        if (code){
             let v = null;
             if (suffix) v = readIntField(`rubro_state_${code}${suffix}`);
             if (v == null) v = readIntField(`rubro_state_${code}`);
             s = stateFromNumber(v);
         }
-        if (s) dye(a, s); else clearInline(a, li);
+        // Si no hay valor, asumir rojo (vacío)
+        if (s) dye(a, s); else dye(a, 'red');
     }
 }
 
 let raf, t1, t2;
+let isApplying = false; // Flag para prevenir re-entrada
+
 function scheduleApply() {
+    if (isApplying) return; // Prevenir loop infinito
     if (raf) cancelAnimationFrame(raf);
     [t1,t2].forEach(t=>t && clearTimeout(t));
     // Repintados dentro del límite solicitado (<= 200ms)
     try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e) {}
-    raf = requestAnimationFrame(applyOnce);
-    t1 = setTimeout(() => { try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e) {} applyOnce(); }, 60);
-    t2 = setTimeout(applyOnce, 200);
+    raf = requestAnimationFrame(() => {
+        isApplying = true;
+        try { applyOnce(); } finally { isApplying = false; }
+    });
+    t1 = setTimeout(() => {
+        isApplying = true;
+        try {
+            window.__ccnPublishLastStates && window.__ccnPublishLastStates();
+            applyOnce();
+        } finally { isApplying = false; }
+    }, 60);
+    t2 = setTimeout(() => {
+        isApplying = true;
+        try { applyOnce(); } finally { isApplying = false; }
+    }, 200);
 }
 
 const service = {
@@ -225,9 +246,9 @@ const service = {
         // Publicar estados al cambiar de tab para asegurar dataset actualizado
         root.addEventListener("shown.bs.tab", () => { try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e) {} }, true);
 
-        // Cambios de DOM
-        const mo = new MutationObserver(scheduleApply);
-        mo.observe(root, { childList: true, subtree: true, attributes: true });
+        // Cambios de DOM - DESACTIVADO TEMPORALMENTE para evitar loop infinito
+        // const mo = new MutationObserver(scheduleApply);
+        // mo.observe(root, { childList: true, subtree: true, attributes: true });
 
         // Eventos típicos
         root.addEventListener("click", (ev) => {

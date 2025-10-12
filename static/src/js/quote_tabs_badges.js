@@ -3,10 +3,11 @@
  *  - Pinta al inicio y re-pinta solo cuando cambian los campos rubro_state_*.
  *  - Estados: 1 => verde (ccn-status-filled), 2 => ámbar (ccn-status-ack), 0/otros => rojo (ccn-status-empty).
  *  - Odoo 18 CE, sin imports. Respeta tu geometría/chevrons; solo añade clases.
+ *  - v18.0.9.8.72 - Contar filas en tab activo + watch mutations en notebook
  */
 (function () {
   "use strict";
-  console.log('Badges JS loaded');
+  console.log('Badges JS v18.0.9.8.81 loaded - Fix: persist green on inactive tabs');
 
   // === Etiquetas EXACTAS (11) que nos pasaste → code de rubro ===
   function norm(s){
@@ -324,33 +325,46 @@
     if (!root) return 0;
     // Preferir filas OWL reales
     const rows = root.querySelectorAll('.o_data_row');
+    console.log('[COUNT-DEBUG] v18.0.9.8.67 - .o_data_row found:', rows.length);
     if (rows.length){
       let cnt = 0;
-      rows.forEach((tr)=>{
+      rows.forEach((tr, idx)=>{
         const rowId = tr.getAttribute('data-res-id') || tr.getAttribute('data-id') || tr.getAttribute('data-record-id') || tr.getAttribute('data-oe-id');
+        console.log(`[COUNT-DEBUG] Row ${idx}: rowId=${rowId}`);
         if (rowId){ cnt += 1; return; }
         const cell = tr.querySelector('td[data-name="product_id"], td[name="product_id"]');
+        console.log(`[COUNT-DEBUG] Row ${idx}: cell found?`, !!cell);
         if (!cell) return;
-        if (cell.querySelector('a[href], .o_m2o_chip, .o_m2o_tag')){ cnt += 1; return; }
+        const link = cell.querySelector('a[href], .o_m2o_chip, .o_m2o_tag');
+        console.log(`[COUNT-DEBUG] Row ${idx}: link found?`, !!link);
+        if (link){ cnt += 1; return; }
         const inp = cell.querySelector('input[role="combobox"], input.o-autocomplete--input');
-        if (inp && (inp.value || '').trim()) { cnt += 1; return; }
+        const inputValue = inp ? (inp.value || '').trim() : '';
+        console.log(`[COUNT-DEBUG] Row ${idx}: input found?`, !!inp, 'value:', inputValue);
+        if (inp && inputValue) { cnt += 1; return; }
       });
+      console.log('[COUNT-DEBUG] Final count from .o_data_row:', cnt);
       return cnt;
     }
     // Fallback conservador: no cuentes placeholder ni encabezados
+    console.log('[COUNT-DEBUG] No .o_data_row found, using tbody fallback');
     const body = root.querySelector('tbody');
-    if (!body) return 0;
+    if (!body) { console.log('[COUNT-DEBUG] No tbody found'); return 0; }
     let cnt = 0;
-    body.querySelectorAll('tr').forEach((tr)=>{
-      if (tr.closest('thead')) return;
-      if (tr.matches('.o_list_no_records, .o_empty_list')) return;
-      if (tr.querySelector('.o_field_x2many_list_row_add')) return;
+    const trs = body.querySelectorAll('tr');
+    console.log('[COUNT-DEBUG] tbody tr count:', trs.length);
+    body.querySelectorAll('tr').forEach((tr, idx)=>{
+      if (tr.closest('thead')) { console.log(`[COUNT-DEBUG] TR ${idx}: inside thead`); return; }
+      if (tr.matches('.o_list_no_records, .o_empty_list')) { console.log(`[COUNT-DEBUG] TR ${idx}: empty list marker`); return; }
+      if (tr.querySelector('.o_field_x2many_list_row_add')) { console.log(`[COUNT-DEBUG] TR ${idx}: add row button`); return; }
       const cell = tr.querySelector('td[data-name="product_id"], td[name="product_id"]');
-      if (!cell) return;
-      if (cell.querySelector('a[href], .o_m2o_chip, .o_m2o_tag')) { cnt += 1; return; }
+      if (!cell) { console.log(`[COUNT-DEBUG] TR ${idx}: no product_id cell`); return; }
+      if (cell.querySelector('a[href], .o_m2o_chip, .o_m2o_tag')) { console.log(`[COUNT-DEBUG] TR ${idx}: has link, counting`); cnt += 1; return; }
       const inp = cell.querySelector('input[role="combobox"], input.o-autocomplete--input');
-      if (inp && (inp.value || '').trim()) { cnt += 1; return; }
+      if (inp && (inp.value || '').trim()) { console.log(`[COUNT-DEBUG] TR ${idx}: has input with value, counting`); cnt += 1; return; }
+      console.log(`[COUNT-DEBUG] TR ${idx}: no valid product`);
     });
+    console.log('[COUNT-DEBUG] Final count from tbody fallback:', cnt);
     return cnt;
   }
   function countPageRows(page){ return countListRows(page); }
@@ -388,14 +402,83 @@
     return `line_ids_${code}`;
   }
   function fieldRoot(formRoot, fieldName){
-    try{ return formRoot.querySelector(`[name="${fieldName}"]`) || formRoot.querySelector(`[data-name="${fieldName}"]`); }catch(_e){ return null; }
+    try{
+      // ESTRATEGIA 1: Buscar en TODO el formulario (para campos que están fuera de tabs)
+      let root = formRoot.querySelector(`[name="${fieldName}"]`);
+      if (root) {
+        console.log(`[FIELD-ROOT] Found by [name="${fieldName}"] in formRoot`);
+        return root;
+      }
+
+      root = formRoot.querySelector(`[data-name="${fieldName}"]`);
+      if (root) {
+        console.log(`[FIELD-ROOT] Found by [data-name="${fieldName}"] in formRoot`);
+        return root;
+      }
+
+      root = formRoot.querySelector(`.o_field_widget[name="${fieldName}"]`);
+      if (root) {
+        console.log(`[FIELD-ROOT] Found by .o_field_widget[name="${fieldName}"] in formRoot`);
+        return root;
+      }
+
+      root = formRoot.querySelector(`.o_field_one2many[name="${fieldName}"]`);
+      if (root) {
+        console.log(`[FIELD-ROOT] Found by .o_field_one2many[name="${fieldName}"] in formRoot`);
+        return root;
+      }
+
+      // ESTRATEGIA 2: Buscar dentro de TODAS las páginas del notebook
+      // Los campos de líneas pueden estar en páginas no visibles
+      const notebook = formRoot.querySelector('.o_notebook');
+      if (notebook) {
+        const pages = notebook.querySelectorAll('.tab-pane');
+        // Buscando en páginas del notebook...
+
+        for (let i = 0; i < pages.length; i++) {
+          const page = pages[i];
+
+          root = page.querySelector(`[name="${fieldName}"]`);
+          if (root) {
+            console.log(`[FIELD-ROOT] Found by [name="${fieldName}"] in page ${i}`);
+            return root;
+          }
+
+          root = page.querySelector(`[data-name="${fieldName}"]`);
+          if (root) {
+            console.log(`[FIELD-ROOT] Found by [data-name="${fieldName}"] in page ${i}`);
+            return root;
+          }
+
+          root = page.querySelector(`.o_field_widget[name="${fieldName}"]`);
+          if (root) {
+            console.log(`[FIELD-ROOT] Found by .o_field_widget[name="${fieldName}"] in page ${i}`);
+            return root;
+          }
+
+          root = page.querySelector(`.o_field_one2many[name="${fieldName}"]`);
+          if (root) {
+            console.log(`[FIELD-ROOT] Found by .o_field_one2many[name="${fieldName}"] in page ${i}`);
+            return root;
+          }
+        }
+      }
+
+      // Field not found - silenciar log para reducir ruido
+
+      return null;
+    }catch(_e){
+      console.error('[FIELD-ROOT] Exception:', _e);
+      return null;
+    }
   }
   function countRowsInField(formRoot, code){
     const srvType = readStrField(formRoot, 'current_service_type');
     const fname = listFieldNameForCode(code, srvType);
     const root = fieldRoot(formRoot, fname);
     if (!root) return null; // desconocido/no renderizado
-    return countListRows(root);
+    const result = countListRows(root);
+    return result;
   }
 
   // === Construye índice tab→code y code→link por etiqueta visible ===
@@ -494,50 +577,116 @@ let __forceFresh = false;
     if (!dsCounts || !Object.keys(dsCounts).length) dsCounts = {};
     let changed = false;
     const activeCode = __activeCodeOptimistic; // snapshot y limpiar al final
-    for(const [code, link] of Object.entries(byCode)){
-      const page = pageRootForLink(nb, link); // solo para ubicar el botón No Aplica
-      // Determinar filas SIN depender del tab activo ni del mapping de páginas
-      // Priorizar conteo real en DOM; si no se puede contar, usar dataset
-      let rowCount = 0;
-      const cField = countRowsInField(formRoot, code);
-      if (cField != null) {
-        rowCount = cField;
-      } else if (dsCounts && Object.prototype.hasOwnProperty.call(dsCounts, code)) {
-        const n = parseInt(dsCounts[code] || 0, 10);
-        rowCount = Number.isNaN(n) ? 0 : n;
-      }
-      // Pintado de estado
-      let sNorm;
-      if (rowCount > 0) {
-        sNorm = 1;
-        __filledMemo[code] = true;
-        // Hay filas, ya no aplica override ámbar
-        if (__ackOverrides && __ackOverrides[code] != null) delete __ackOverrides[code];
-      } else {
-        // Sin filas: usar __ackOverrides si está marcado, sino el valor del dataset
-        if (__ackOverrides[code]) sNorm = 2;
-        else {
-          const v = dsStates?.[code];
-          if (activeCode && code === activeCode) sNorm = 1;  // optimismo inmediato
-          else if (__filledMemo[code]) sNorm = 1;                 // mantener verde hasta que el conteo real llegue
-          else sNorm = (v === 1) ? 1 : (v === 2 ? 2 : 0);
+
+    // ODOO 18: Detectar tab activo PRIMERO (solo 1 tab-pane está renderizado)
+    let activeTabCode = null;
+    let activeRowCount = null;
+
+    // Buscar el link activo para saber qué code es
+    const activeLink = nb.querySelector('.nav-tabs .nav-link.active');
+    if (activeLink) {
+      for (const [code, link] of Object.entries(byCode)) {
+        if (link === activeLink) {
+          activeTabCode = code;
+          break;
         }
       }
-      // Botón "No Aplica": visibilidad 100% en XML, sin intervención de JS.
-      // Decide contador a mostrar: dataset > conteo de campo; si 0 y es rubro activo, '1+'
+    }
+
+    // Si encontramos tab activo, contar sus filas
+    if (activeTabCode) {
+      const activePage = nb.querySelector('.tab-pane.active');
+      if (activePage) {
+        const table = activePage.querySelector('.o_list_table');
+        if (table) {
+          const rows = table.querySelectorAll('.o_data_row');
+          let count = 0;
+          rows.forEach((row) => {
+            const rowId = row.getAttribute('data-res-id') || row.getAttribute('data-id');
+            if (rowId) {
+              count++;
+              return;
+            }
+            const productCell = row.querySelector('td[data-name="product_id"], td[name="product_id"]');
+            if (productCell) {
+              const link = productCell.querySelector('a[href], .o_m2o_chip');
+              const input = productCell.querySelector('input[role="combobox"]');
+              if (link || (input && input.value.trim())) {
+                count++;
+              }
+            }
+          });
+          activeRowCount = count;
+        }
+      }
+    }
+
+    // Ahora iterar sobre TODOS los tabs
+    for(const [code, link] of Object.entries(byCode)){
+      let sNorm;
+      let rowCount = null;
+      const stateValue = dsStates?.[code]; // Leer estado del backend
+
+      // Si este es el tab activo, usar el conteo que ya hicimos
+      if (code === activeTabCode && activeRowCount !== null) {
+        rowCount = activeRowCount;
+        // Actualizar memoria con el conteo en tiempo real
+        if (rowCount > 0) {
+          __filledMemo[code] = true;
+        } else {
+          __filledMemo[code] = false;
+        }
+      }
+
+      // Determinar estado normalizado (sNorm)
+      // Prioridad: override ámbar > conteo directo > memoria > backend
+      if (__ackOverrides[code]) {
+        // Override "No Aplica" (ámbar)
+        sNorm = 2;
+      } else if (rowCount !== null) {
+        // Tab activo: usar conteo directo (SIEMPRE tiene prioridad)
+        sNorm = rowCount > 0 ? 1 : 0;
+      } else if (__filledMemo[code]) {
+        // Tab inactivo: usar memoria (persiste el verde cuando cambias de tab)
+        sNorm = 1;
+      } else if (stateValue === 1) {
+        // Backend dice que está lleno (registro guardado)
+        sNorm = 1;
+        __filledMemo[code] = true;
+      } else if (stateValue === 2) {
+        // Backend dice "No Aplica"
+        sNorm = 2;
+      } else {
+        // Sin información: vacío
+        sNorm = 0;
+      }
+
+      // Limpiar override si ahora está verde
+      if (sNorm === 1 && __ackOverrides[code] != null) {
+        delete __ackOverrides[code];
+      }
+
+      // Log solo si el estado cambió (evitar spam)
+      // (El log se movió a applyTab para mostrar solo cuando cambia)
+      // Contador de líneas: usar dsCounts del backend (si existe)
       let displayCount = 0;
       if (dsCounts && Object.prototype.hasOwnProperty.call(dsCounts, code)){
         const dsNum = parseInt(dsCounts[code] || 0, 10) || 0;
         displayCount = dsNum;
       }
-      if (!displayCount && rowCount) displayCount = rowCount;
-      if (!displayCount && !__ctxChanged && activeCode && code === activeCode) displayCount = '1+';
+      // Si no hay contador pero el estado es verde (1) o tenemos filas contadas, mostrar contador
+      if (!displayCount && rowCount && rowCount > 0) displayCount = rowCount;
+      if (!displayCount && stateValue === 1) displayCount = '✓';
       try{ setTabCount(link, displayCount); }catch(_e){}
 
       if (last[code] !== sNorm){
         applyTab(link, sNorm);
         last[code] = sNorm;
         changed = true;
+        // Log solo cuando el estado cambia Y es tab activo con conteo real
+        if (sNorm === 1 && rowCount !== null && rowCount > 0) {
+          console.log(`✅ ${code}: ${rowCount} filas → VERDE`);
+        }
       }
     }
     // Guardar persistencia por contexto (estados + overrides de ámbar)
@@ -567,8 +716,27 @@ let __forceFresh = false;
           // Si cambió algo en un nodo que alberga un campo rubro_state_*, repinta
           const t = mut.target;
           if (!(t instanceof Element)) continue;
-          // Cualquier cambio dentro del notebook: repintar (agresivo pero con RAF throttle)
-          if (t.closest && t.closest('.o_notebook')){ schedule(); return; }
+
+          // ODOO 18: Detectar cambios en tabs activos (cuando agregas/eliminas líneas)
+          // Buscar cambios en .o_data_row, .o_list_table, o botones "Agregar una línea"
+          if (t.closest && t.closest('.o_notebook')){
+            // Solo procesar cambios en el tab activo
+            const activePane = t.closest('.tab-pane.active');
+            if (!activePane) {
+              // Cambio en tab inactivo, ignorar
+              continue;
+            }
+            // Si es un cambio en una tabla de líneas, repintar inmediatamente
+            if (t.matches('.o_list_table, .o_data_row, .o_field_x2many_list, .o_field_one2many, .o_field_many2many') ||
+                t.querySelector('.o_list_table, .o_data_row')) {
+              schedule();
+              return;
+            }
+            // Cambio genérico dentro del notebook activo (throttled)
+            schedule();
+            return;
+          }
+
           const name = t.getAttribute?.("name") || t.getAttribute?.("data-name") || "";
           if (name === 'current_service_type' || name === 'current_site_id'){
             // Reset duro si el cambio ocurrió por script (sin evento change)
@@ -641,6 +809,11 @@ let __forceFresh = false;
     const tryStart = () =>{
       const formRoot = document.querySelector('.o_form_view');
       const nb = getNotebook();
+      // IMPORTANTE: Solo ejecutar en vistas de ccn.service.quote
+      // Verificar que existe el elemento .o_ccn_rubro_states (único de CCN quotes)
+      if (!formRoot) return false;
+      const rubroStatesElement = formRoot.querySelector('.o_ccn_rubro_states');
+      if (!rubroStatesElement) return false; // No es una cotización CCN
       if(formRoot && nb) return cb(formRoot, nb);
     };
     if (tryStart()) return;
@@ -721,55 +894,31 @@ let __forceFresh = false;
           // Forzar publicación de estados para que otros servicios/colores reaccionen
           try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e){}
           try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-          // Quick win: si el cambio fue en product_id dentro de un tab, pintar optimista en verde y (1+)
+
+          // Pintado optimista SOLO si hay un valor REAL en product_id (no solo por abrir el formulario)
           try{
-            const holder = ev.target.closest('td[name="product_id"], td[data-name="product_id"], [name="product_id"], [data-name="product_id"], .o_data_row');
+            const holder = ev.target.closest('td[name="product_id"], td[data-name="product_id"], [name="product_id"], [data-name="product_id"]');
             if (holder && holder.closest){
-              let code = codeFromCell(holder) || codeFromPage(holder.closest('.o_notebook .tab-pane, .o_notebook [id^="page_"]'));
-              code = canon(code);
-              const link = code ? byCode[code] : null;
-          if (code && link){
-            __activeCodeOptimistic = code;
-            applyTab(link, 1);
-            last[code] = 1;
-            setTabCount(link, '1+');
-            // Mantener verde en repintados hasta que el conteo real alcance
-            __filledMemo[code] = true;
-          }
+              // Verificar que realmente hay un producto seleccionado (no solo el formulario abierto)
+              const hasValue = holder.querySelector('a[href], .o_m2o_chip, .o_m2o_tag');
+              const input = holder.querySelector('input[role="combobox"], input.o-autocomplete--input');
+              const hasInputValue = input && (input.value || '').trim().length > 0;
+
+              if (hasValue || hasInputValue) {
+                let code = codeFromCell(holder) || codeFromPage(holder.closest('.o_notebook .tab-pane, .o_notebook [id^="page_"]'));
+                code = canon(code);
+                const link = code ? byCode[code] : null;
+                if (code && link){
+                  applyTab(link, 1);
+                  last[code] = 1;
+                }
+              }
             }
           }catch(_e){}
         }
       }, true);
-      // También reacciona a escritura en el input M2O con blur/keyup
-      const optimisticPaint = (ev)=>{
-        try{
-          const input = ev.target;
-          if (!(input && input.closest)) return;
-          const isM2O = input.matches('input[role="combobox"], input.o-autocomplete--input, .o_input');
-          if (!isM2O) return;
-          const cell = input.closest('td[data-name="product_id"], td[name="product_id"], [data-name="product_id"], [name="product_id"]');
-          if (!cell) return;
-          let code = codeFromCell(cell) || codeFromPage(input.closest('.o_notebook .tab-pane, .o_notebook [id^="page_"]'));
-          code = canon(code);
-          const hasText = (input.value || '').trim().length > 0;
-          if (code && hasText){
-            const link = byCode[code];
-            if (link){
-              __activeCodeOptimistic = code;
-              applyTab(link, 1);
-              last[code] = 1;
-              setTabCount(link, '1+');
-              // Mantener verde en repintados hasta que el conteo real alcance
-              __filledMemo[code] = true;
-            }
-          }
-        }catch(_e){}
-      };
-      document.body.addEventListener('blur', optimisticPaint, true);
-      document.body.addEventListener('keyup', (ev)=>{
-        const k = ev.key || '';
-        if (k === 'Enter' || k === 'Tab') optimisticPaint(ev);
-      }, true);
+      // REMOVIDO: optimisticPaint - causaba tabs verdes en cuanto se hacía click en "Agregar línea"
+      // El MutationObserver detecta cambios reales automáticamente
       document.body.addEventListener('input', (ev)=>{
         if (ev.target.closest && ev.target.closest('.o_form_view')){
           try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e){}
@@ -786,6 +935,8 @@ let __forceFresh = false;
           code = canon(code);
           const link = code ? byCode[code] : null;
           if (code && link){
+            // Actualizar override para que persista al cambiar de tab
+            __ackOverrides[code] = true;
             applyTab(link, 2);
             last[code] = 2;
             // Escribir en el campo per-servicio correcto
