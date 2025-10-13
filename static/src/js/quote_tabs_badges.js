@@ -514,6 +514,8 @@
     const fname = listFieldNameForCode(code, srvType);
     const root = fieldRoot(formRoot, fname);
     if (!root) return null; // desconocido/no renderizado
+    // Evitar trabajo en tabs no visibles
+    try { if (root.offsetParent === null) return 0; } catch(_e) {}
     const result = countListRows(root);
     return result;
   }
@@ -929,9 +931,8 @@ let __greenHold = {};
             if (t.matches('.o_list_table, .o_data_row, .o_field_x2many_list, .o_field_one2many, .o_field_many2many') ||
                 t.querySelector('.o_list_table, .o_data_row')) {
               schedule();
-              // Publicar estados tras cambios en listas para sincronizar dataset/backend
-              setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 120);
-              setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 450);
+              // Publicar estados tras cambios en listas (una sola vez, trailing)
+              setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 180);
               return;
             }
             // Cambio genérico dentro del notebook activo (throttled)
@@ -1135,10 +1136,11 @@ let __greenHold = {};
           }
         }catch(_e){}
         // Re-pintar después de que OWL aplique la selección y dispare change
-        setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 240);
-        // Publicar estados para sincronizar dataset
-        setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 180);
-        setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 600);
+        // Publicar y repintar una sola vez
+        setTimeout(()=>{
+          try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){}
+          try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+        }, 200);
       }, true);
       // Confirmación via Enter en el input del many2one
       document.body.addEventListener('keydown', (ev)=>{
@@ -1156,10 +1158,11 @@ let __greenHold = {};
             __greenHold[code] = Date.now() + 1200;
             __filledMemo[code] = true;
           }catch(_e){}
-          // Esperar más tiempo para que Odoo procese el many2one y dispare change
-          setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 280);
-          setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 200);
-          setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 650);
+          // Esperar a que Odoo procese y publicar/repintar una sola vez
+          setTimeout(()=>{
+            try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){}
+            try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+          }, 220);
           // Actualizar DOM/dataset inmediatamente para consolidar VERDE
           try{
             const stype = readStrField(formRoot, 'current_service_type');
@@ -1195,61 +1198,15 @@ let __greenHold = {};
           let code = codeFromPage(page) || (link ? linkCodeByAttrs(link) : null);
           if (!code && link) code = codeFromLabel(link);
           code = canon(code);
-
-          // if (DEBUG) { /* eslint-disable-next-line no-console */ console.log(`[CCN-ADD] Click en "Agregar línea" en ${code}`); }
-          try { paintFromStates(formRoot, nb, byCode, last); } catch(_e) {}
-          // Publicar estados poco después para empujar recomputos y refrescos de dataset
-          setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 180);
-          setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 520);
+          // Publicar estados poco después para empujar recomputos y refrescos de dataset (único)
+          setTimeout(()=>{
+            try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){}
+            try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+          }, 180);
         }catch(_e){}
       }, true);
       // Reforzar en interacciones típicas de tabs/listas
-      const onClick = (ev)=>{
-        if (ev.target.closest && ev.target.closest('.o_notebook .nav-tabs .nav-link')){
-          // Antes de cambiar, evaluar el tab activo saliente: limpiar memo si quedó vacío
-          try {
-            const prevActiveLink = nb.querySelector('.nav-tabs .nav-link.active');
-            if (prevActiveLink) {
-              let prevCode = linkCodeByAttrs(prevActiveLink) || codeFromLabel(prevActiveLink);
-              prevCode = canon(prevCode);
-              if (prevCode) {
-                const prevPage = nb.querySelector('.tab-pane.active');
-                const savedPage = countPageRowsStrict(prevPage);
-                const savedField = countRowsInFieldStrict(formRoot, prevCode);
-                const ds = readStatesFromDataset(formRoot);
-                const shouldClear = (!__ackOverrides[prevCode]) && (ds?.[prevCode] !== 1) && ((savedPage + savedField) === 0);
-                if (shouldClear) {
-                  delete __filledMemo[prevCode];
-                  delete __greenHold[prevCode];
-                  try { __persistStates[prevCode] = 0; } catch(_e) {}
-                  try {
-                    const holder = formRoot.closest('.o_form_view') || formRoot;
-                    const dsRaw = holder.dataset.ccnStates || '{}';
-                    const obj = JSON.parse(dsRaw);
-                    obj[prevCode] = 0;
-                    holder.dataset.ccnStates = JSON.stringify(obj);
-                  } catch(_e) {}
-                  try { applyTab(prevActiveLink, 0); last[prevCode] = 0; } catch(_e) {}
-                }
-              }
-            }
-          } catch(_e) {}
-          checkRecordChange();
-
-          // IMPORTANTE: Solo repintar al cambiar de tab, NO forzar rojo
-          // El backend es la fuente de verdad para el estado real
-          try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-
-          // Refrescar estados del backend después de cambiar de tab
-          setTimeout(()=>{
-            try {
-              window.__ccnPublishLastStates && window.__ccnPublishLastStates();
-              paintFromStates(formRoot, nb, byCode, last);
-            } catch(_e) {}
-          }, 300);
-        }
-      };
-      document.body.addEventListener('click', onClick, true);
+      // Quitar repintado en click; usar únicamente eventos de Bootstrap (shown/hidden)
       document.body.addEventListener('change', (ev)=>{
         if (ev.target.closest && ev.target.closest('.o_form_view')){
           checkRecordChange();
@@ -1392,11 +1349,11 @@ let __greenHold = {};
                 delete __greenHold[code];
               }
 
-              // Forzar actualización del backend y repintar
-              window.__ccnPublishLastStates && window.__ccnPublishLastStates();
-              setTimeout(()=>{ paintFromStates(formRoot, nb, byCode, last); }, 100);
+              // Forzar actualización del backend y repintar (una sola vez)
+              try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){}
+              setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 120);
           }catch(_e){ if (DEBUG) console.error('[CCN-BLUR] Error:', _e); }
-          }, 200);
+          }, 150);
         }catch(_e){}
       }, true);
 

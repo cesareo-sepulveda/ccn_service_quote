@@ -178,7 +178,7 @@ patch(FormController.prototype, {
                     attributeFilter: ['class', 'data-value', 'value']  // evitar data-ccn-* para no loop
                 });
             }
-        }, 1000);
+        }, 150);
     },
     onWillUpdateProps() {
         super.onWillUpdateProps(...arguments);
