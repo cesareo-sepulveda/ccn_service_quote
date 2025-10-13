@@ -391,6 +391,20 @@
     return 0;
   }
   function countPageRows(page){ return countListRows(page); }
+  // Estricto: solo filas guardadas (id numérico > 0). No cuenta inputs con texto
+  function countListRowsStrict(root){
+    if (!root) return 0;
+    const rows = root.querySelectorAll('.o_data_row');
+    if (!rows.length) return 0;
+    let cnt = 0;
+    rows.forEach((tr)=>{
+      const idRaw = tr.getAttribute('data-res-id') || tr.getAttribute('data-id') || tr.getAttribute('data-record-id') || tr.getAttribute('data-oe-id');
+      const idNum = (idRaw == null) ? NaN : parseInt(String(idRaw).trim(), 10);
+      if (!Number.isNaN(idNum) && idNum > 0) cnt += 1;
+    });
+    return cnt;
+  }
+  function countPageRowsStrict(page){ return countListRowsStrict(page); }
   function hasListContainer(page){
     if (!page) return false;
     return !!page.querySelector('.o_list_renderer, .o_list_view, .o_list_table, tbody tr');
@@ -502,6 +516,13 @@
     if (!root) return null; // desconocido/no renderizado
     const result = countListRows(root);
     return result;
+  }
+  function countRowsInFieldStrict(formRoot, code){
+    const srvType = readStrField(formRoot, 'current_service_type');
+    const fname = listFieldNameForCode(code, srvType);
+    const root = fieldRoot(formRoot, fname);
+    if (!root) return 0;
+    return countListRowsStrict(root);
   }
 
   // === Construye índice tab→code y code→link por etiqueta visible ===
@@ -618,10 +639,8 @@ let __greenHold = {};
       if (!__filledMemoMap[key]) __filledMemoMap[key] = {};
       if (!__ackOverridesMap[key]) __ackOverridesMap[key] = { ...persistedAcks };
       if (!__persistStatesMap[key]) __persistStatesMap[key] = { ...persistedStates };
-      // Forzar estados frescos en cambio de contexto
+      // Forzar estado fresco solo para memorias efímeras; conservar overrides/persistidos por contexto
       if (__forceFresh) {
-        __persistStatesMap[key] = {};
-        __ackOverridesMap[key] = {};
         __filledMemoMap[key] = {};
       }
       __filledMemo = __filledMemoMap[key];
@@ -652,6 +671,11 @@ let __greenHold = {};
     // Usar el índice inicial; evitar reindex en cada pintado
     const map = byCode;
     ensureCtx(formRoot);
+    // Si el contexto acaba de cambiar (servicio/sitio), arrancar desde estado limpio
+    if (__ctxChanged) {
+      try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
+      __ctxChanged = false;
+    }
     let dsStates = readStatesFromDataset(formRoot);
     let dsCounts = readCountsFromDataset(formRoot);
     // Si no hay dataset, usar DOM
@@ -663,6 +687,25 @@ let __greenHold = {};
     if (!dsCounts || !Object.keys(dsCounts).length) dsCounts = {};
     let changed = false;
     const activeCode = __activeCodeOptimistic; // snapshot y limpiar al final
+
+    // Si no hay estados aún publicados para este contexto, inicializar colores determinísticamente:
+    // - Ámbar solo si hay override local explícito (No Aplica) en este contexto
+    // - En otro caso, rojo para todos
+    if (!dsStates || !Object.keys(dsStates).length) {
+      for (const [code, link] of Object.entries(byCode)) {
+        const desired = __ackOverrides[code] ? 2 : 0;
+        const desiredClass = clsFor(desired);
+        const liNode = link.closest ? link.closest('li') : null;
+        const missingClass = !link.classList.contains(desiredClass) || (liNode && !liNode.classList.contains(desiredClass));
+        if (missingClass) {
+          applyTab(link, desired);
+          if (last) last[code] = desired;
+          changed = true;
+        }
+      }
+      // No continuar con lógica normal hasta que el backend publique estados para este contexto
+      return changed;
+    }
 
     // ODOO 18: Detectar tab activo PRIMERO (solo 1 tab-pane está renderizado)
     let activeTabCode = null;
@@ -691,7 +734,7 @@ let __greenHold = {};
     for(const [code, link] of Object.entries(map)){
       let sNorm;
       let rowCount = null;
-      const stateValue = dsStates?.[code]; // Leer estado del backend
+      let stateValue = dsStates?.[code]; // Leer estado del backend (mutable)
       // Conteo desde el widget del campo (para cualquier tab, incluso inactivo)
       // IMPORTANTE: Solo contar fieldCount si NO es un registro nuevo (evita contaminación DOM)
       const isNewRecord = !readIntField(formRoot, 'id');
@@ -715,6 +758,34 @@ let __greenHold = {};
         // Solo marcar memoria verde si el backend LO CONFIRMA (stateValue === 1)
         if (stateValue === 1) {
           __filledMemo[code] = true;
+        }
+      }
+
+      // FORZAR ROJO INMEDIATO en el TAB ACTIVO si quedó vacío tras eliminar
+      // (prioriza conteos locales sobre backend transitorio)
+      if (code === activeTabCode) {
+        const noRows = (fieldCount === 0) && (rowCount === null || rowCount === 0);
+        if (noRows && !__ackOverrides[code]) {
+          // limpiar memorias optimistas y marcar backend local a 0
+          delete __filledMemo[code];
+          delete __greenHold[code];
+          stateValue = 0;
+          try { __persistStates[code] = 0; } catch(_e) {}
+          // Reflejar inmediatamente en DOM/dataset para que ningún repintado revierta a verde
+          try{
+            const stype = readStrField(formRoot, 'current_service_type');
+            let fieldName = `rubro_state_${code}`;
+            if (stype === 'jardineria') fieldName = `rubro_state_${code}_jard`;
+            else if (stype === 'limpieza') fieldName = `rubro_state_${code}_limp`;
+            writeIntField(formRoot, fieldName, 0);
+          }catch(_e){}
+          try{
+            const holder = formRoot.closest('.o_form_view') || formRoot;
+            const dsRaw = holder.dataset.ccnStates || '{}';
+            const obj = JSON.parse(dsRaw);
+            obj[code] = 0;
+            holder.dataset.ccnStates = JSON.stringify(obj);
+          }catch(_e){}
         }
       }
 
@@ -963,16 +1034,13 @@ let __greenHold = {};
         if (ctxKey !== lastCtxKey) {
           // console.log(`[CCN] ⚠️ RESET COMPLETO - Ctx changed from ${lastCtxKey} to ${ctxKey}`);
           // Reset completo cuando cambia el contexto (incluye new→new)
-          try { sessionStorage.removeItem(`ccnTabs:${lastCtxKey}`); } catch(_e) {}
+          // No eliminar persistencias del contexto anterior: permite volver y restaurar colores
           lastCtxKey = ctxKey;
           __currentRecordUniqueId = null;
           __ctxKey = null;
           __filledMemo = {};
+          // Limpiar solo memorias efímeras; preservar overrides/persistidos por contexto
           __filledMemoMap = {};
-          __persistStates = {};
-          __persistStatesMap = {};
-          __ackOverrides = {};
-          __ackOverridesMap = {};
           __forceFresh = true;
           for (const k in last) delete last[k];
           try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
@@ -1005,10 +1073,6 @@ let __greenHold = {};
             __filledMemo = {};
             __filledMemoMap = {};
             __activeCodeOptimistic = null;
-            __ackOverrides = {};
-            __ackOverridesMap = {};
-            __persistStates = {};
-            __persistStatesMap = {};
             __ctxChanged = true;
             __forceFresh = true;
             // CRÍTICO: Limpiar el objeto 'last' para forzar re-pintado completo
@@ -1142,6 +1206,34 @@ let __greenHold = {};
       // Reforzar en interacciones típicas de tabs/listas
       const onClick = (ev)=>{
         if (ev.target.closest && ev.target.closest('.o_notebook .nav-tabs .nav-link')){
+          // Antes de cambiar, evaluar el tab activo saliente: limpiar memo si quedó vacío
+          try {
+            const prevActiveLink = nb.querySelector('.nav-tabs .nav-link.active');
+            if (prevActiveLink) {
+              let prevCode = linkCodeByAttrs(prevActiveLink) || codeFromLabel(prevActiveLink);
+              prevCode = canon(prevCode);
+              if (prevCode) {
+                const prevPage = nb.querySelector('.tab-pane.active');
+                const savedPage = countPageRowsStrict(prevPage);
+                const savedField = countRowsInFieldStrict(formRoot, prevCode);
+                const ds = readStatesFromDataset(formRoot);
+                const shouldClear = (!__ackOverrides[prevCode]) && (ds?.[prevCode] !== 1) && ((savedPage + savedField) === 0);
+                if (shouldClear) {
+                  delete __filledMemo[prevCode];
+                  delete __greenHold[prevCode];
+                  try { __persistStates[prevCode] = 0; } catch(_e) {}
+                  try {
+                    const holder = formRoot.closest('.o_form_view') || formRoot;
+                    const dsRaw = holder.dataset.ccnStates || '{}';
+                    const obj = JSON.parse(dsRaw);
+                    obj[prevCode] = 0;
+                    holder.dataset.ccnStates = JSON.stringify(obj);
+                  } catch(_e) {}
+                  try { applyTab(prevActiveLink, 0); last[prevCode] = 0; } catch(_e) {}
+                }
+              }
+            }
+          } catch(_e) {}
           checkRecordChange();
 
           // IMPORTANTE: Solo repintar al cambiar de tab, NO forzar rojo
@@ -1310,7 +1402,35 @@ let __greenHold = {};
 
       // Eventos de Bootstrap para tabs (si están presentes)
       document.body.addEventListener('shown.bs.tab', ()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, true);
-      document.body.addEventListener('hidden.bs.tab', ()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, true);
+      document.body.addEventListener('hidden.bs.tab', (ev)=>{
+        try{
+          const linkHidden = ev.target || null; // el <a.nav-link> que deja de ser visible
+          if (linkHidden && linkHidden.closest) {
+            let code = linkCodeByAttrs(linkHidden) || codeFromLabel(linkHidden);
+            code = canon(code);
+            if (code) {
+              const page = pageRootForLink(nb, linkHidden);
+              const savedPage = countPageRowsStrict(page);
+              const savedField = countRowsInFieldStrict(formRoot, code);
+              const ds = readStatesFromDataset(formRoot);
+              if (!__ackOverrides[code] && ds?.[code] !== 1 && (savedPage + savedField) === 0) {
+                delete __filledMemo[code];
+                delete __greenHold[code];
+                try { __persistStates[code] = 0; } catch(_e) {}
+                const holder = formRoot.closest('.o_form_view') || formRoot;
+                try {
+                  const dsRaw = holder.dataset.ccnStates || '{}';
+                  const obj = JSON.parse(dsRaw);
+                  obj[code] = 0;
+                  holder.dataset.ccnStates = JSON.stringify(obj);
+                } catch(_e) {}
+                // No necesitamos aplicar rojo aquí; el repintado lo hará
+              }
+            }
+          }
+        }catch(_e){}
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      }, true);
       // NO forzar rojo al salir de un tab - el backend es la fuente de verdad
     });
   }catch(_e){}
