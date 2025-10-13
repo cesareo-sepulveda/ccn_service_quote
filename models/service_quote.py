@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo import Command, api, fields, models, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import ValidationError, UserError
 import logging
 import time
 
@@ -449,6 +449,12 @@ class ServiceQuote(models.Model):
                 })
 
     def action_mark_rubro_empty(self):
+        self.ensure_one()
+        # Para registros nuevos, retornar True para que el JS lo maneje optimistamente
+        # (el ACK solo se guardará en BD cuando el usuario guarde la cotización)
+        if not self.id or isinstance(self.id, models.NewId):
+            return True
+
         code = (self.env.context or {}).get('rubro_code')
         if code:
             self._ensure_ack(code, True)

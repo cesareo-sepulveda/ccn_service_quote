@@ -94,10 +94,12 @@ function publishStates(controller) {
             const statesJson = JSON.stringify(states);
             const countsJson = JSON.stringify(counts);
 
-            // Solo log UNA VEZ cuando hay un problema
+            // Log detallado para debug (solo si hay estados)
             const hasStates = Object.keys(states).length > 0;
-            if (!hasStates || !fv) {
-                console.warn('[CCN] ⚠️ Publish issue - States empty?', hasStates, 'FormView found?', !!fv);
+            if (hasStates) {
+                console.log('[CCN] ✅ Publicando estados:', states);
+            } else {
+                console.warn('[CCN] ⚠️ Publish issue - States empty, FormView found?', !!fv);
             }
 
             if (fv) {
@@ -116,7 +118,7 @@ function publishStates(controller) {
             console.error('Error publishing states:', _e);
         }
     } catch (e) {
-        // silencioso
+        console.error('[CCN] Error in publishStates:', e);
     }
 }
 

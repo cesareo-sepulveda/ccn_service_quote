@@ -22,34 +22,8 @@ RUBRO_CODES = [
     ("capacitacion","Capacitación"),
 ]
 
-class ServiceQuoteAck(models.Model):
-    _name = "ccn.service.quote.ack"
-    _description = "ACK de 'No aplica' por Sitio/Servicio/Rubro"
-    _rec_name = "rubro_code"
-    _order = "id desc"
-
-    quote_id = fields.Many2one("ccn.service.quote", required=True, ondelete="cascade", index=True)
-    site_id = fields.Many2one("ccn.service.quote.site", required=True, ondelete="cascade", index=True)
-    service_type = fields.Selection(
-        selection=[
-            ('jardineria', 'Jardinería'),
-            ('limpieza', 'Limpieza'),
-            ('mantenimiento', 'Mantenimiento'),
-            ('materiales', 'Materiales'),
-            ('servicios_especiales', 'Servicios Especiales'),
-            ('almacenaje', 'Almacenaje'),
-            ('fletes', 'Fletes'),
-        ],
-        required=True,
-        index=True,
-    )
-    rubro_code = fields.Selection(RUBRO_CODES, required=True, index=True)
-    ack = fields.Boolean(default=True)
-
-    _sql_constraints = [
-        ("uniq_ack_scope", "unique(quote_id, site_id, service_type, rubro_code)",
-         "Solo puede existir un ACK por sitio, tipo de servicio y rubro."),
-    ]
+# NOTA: La clase ServiceQuoteAck se define en models/ack.py
+# Eliminada definición duplicada para evitar conflictos
 
 
 class ServiceQuote(models.Model):
@@ -158,7 +132,7 @@ class ServiceQuote(models.Model):
                 ('site_id', '=', rec.current_site_id.id if rec.current_site_id else False),
                 ('service_type', '=', rec.current_service_type or False),
                 ('rubro_code', '=', code),
-                ('ack', '=', True),
+                ('is_empty', '=', True),
             ]) > 0
             return 1 if cnt > 0 else (2 if ack else 0)
 
@@ -190,14 +164,14 @@ class ServiceQuote(models.Model):
                 ('rubro_code', '=', rubro_code),
             ], limit=1)
             if ack:
-                ack.write({'ack': bool(value)})
+                ack.write({'is_empty': bool(value)})
             else:
                 self.env['ccn.service.quote.ack'].create({
                     'quote_id': rec.id,
                     'site_id': rec.current_site_id.id,
                     'service_type': rec.current_service_type,
                     'rubro_code': rubro_code,
-                    'ack': True,
+                    'is_empty': True,
                 })
 
     def action_mark_rubro_empty(self):
