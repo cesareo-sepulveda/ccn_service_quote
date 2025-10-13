@@ -77,9 +77,15 @@ function publishStates(controller) {
         ];
         for (const code of CODES){
             let v = null;
-            if (suffix) v = readIntFieldDOM(`rubro_state_${code}${suffix}`);
-            if (v == null) v = readIntFieldDOM(`rubro_state_${code}`);
-            if (v != null) states[code] = v;
+            if (suffix) {
+                // Con servicio activo, usar solo el estado por servicio (sin fallback al genérico)
+                v = readIntFieldDOM(`rubro_state_${code}${suffix}`);
+                if (v != null) states[code] = v;
+            } else {
+                // Sin servicio activo, usar el estado genérico
+                v = readIntFieldDOM(`rubro_state_${code}`);
+                if (v != null) states[code] = v;
+            }
             const cnt = readIntFieldDOM(`rubro_count_${code}`);
             if (cnt != null) counts[code] = cnt;
         }

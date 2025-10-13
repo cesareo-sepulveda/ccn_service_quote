@@ -117,26 +117,23 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
   filter: brightness(0.97);
 }
 
-/* ESTADOS — cubre clase en <li> y/o en <a> */
-.ccn-quote .o_notebook .nav-tabs li.ccn-status-empty .nav-link,
-.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-empty,
-.ccn-quote .o_notebook .nav-tabs .nav-link.active.ccn-status-empty {
+/* ESTADOS — cubre clase en <li> y/o en <a> - SOLO TABS ACTIVOS */
+.ccn-quote .o_notebook .nav-tabs li.ccn-status-empty.active .nav-link,
+.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-empty.active {
   background: #e74c3c !important;
   color: #fff !important;
   border-color: #c0392b !important;
 }
 
-.ccn-quote .o_notebook .nav-tabs li.ccn-status-ack .nav-link,
-.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-ack,
-.ccn-quote .o_notebook .nav-tabs .nav-link.active.ccn-status-ack {
+.ccn-quote .o_notebook .nav-tabs li.ccn-status-ack.active .nav-link,
+.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-ack.active {
   background: #f1c40f !important;
   color: #4a3d00 !important;
   border-color: #d4ac0d !important;
 }
 
-.ccn-quote .o_notebook .nav-tabs li.ccn-status-filled .nav-link,
-.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-filled,
-.ccn-quote .o_notebook .nav-tabs .nav-link.active.ccn-status-filled {
+.ccn-quote .o_notebook .nav-tabs li.ccn-status-filled.active .nav-link,
+.ccn-quote .o_notebook .nav-tabs .nav-link.ccn-status-filled.active {
   background: #2ecc71 !important;
   color: #fff !important;
   border-color: #27ae60 !important;
@@ -153,11 +150,11 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
   --ccn-empty: #dc2626; /* rojo */
 }
 
-.o_notebook .nav-tabs {
+.ccn-quote .o_notebook .nav-tabs {
   /* OK */
   li.ccn-status-filled:not(.active) > .nav-link,
   .nav-link.ccn-status-filled:not(.active) {
-    background-color: var(--ccn-ok) !important;
+    background: var(--ccn-ok) !important; /* usar background para ganar al base */
     border-color: var(--ccn-ok) !important;
     color: #fff !important;
     background-image: none !important; /* neutraliza degradados del tema */
@@ -166,7 +163,7 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
   /* YELLOW */
   li.ccn-status-ack:not(.active) > .nav-link,
   .nav-link.ccn-status-ack:not(.active) {
-    background-color: var(--ccn-warn) !important;
+    background: var(--ccn-warn) !important;
     border-color: var(--ccn-warn) !important;
     color: #1f2937 !important; /* texto oscuro */
     background-image: none !important;
@@ -175,7 +172,7 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
   /* RED */
   li.ccn-status-empty:not(.active) > .nav-link,
   .nav-link.ccn-status-empty:not(.active) {
-    background-color: var(--ccn-empty) !important;
+    background: var(--ccn-empty) !important;
     border-color: var(--ccn-empty) !important;
     color: #fff !important;
     background-image: none !important;

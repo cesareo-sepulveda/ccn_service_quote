@@ -323,49 +323,49 @@
   }
   function countListRows(root){
     if (!root) return 0;
-    // Preferir filas OWL reales
+    // Preferir filas OWL reales y contar SOLO registros guardados (con id)
     const rows = root.querySelectorAll('.o_data_row');
-    console.log('[COUNT-DEBUG] v18.0.9.8.67 - .o_data_row found:', rows.length);
     if (rows.length){
       let cnt = 0;
-      rows.forEach((tr, idx)=>{
-        const rowId = tr.getAttribute('data-res-id') || tr.getAttribute('data-id') || tr.getAttribute('data-record-id') || tr.getAttribute('data-oe-id');
-        console.log(`[COUNT-DEBUG] Row ${idx}: rowId=${rowId}`);
-        if (rowId){ cnt += 1; return; }
-        const cell = tr.querySelector('td[data-name="product_id"], td[name="product_id"]');
-        console.log(`[COUNT-DEBUG] Row ${idx}: cell found?`, !!cell);
-        if (!cell) return;
-        const link = cell.querySelector('a[href], .o_m2o_chip, .o_m2o_tag');
-        console.log(`[COUNT-DEBUG] Row ${idx}: link found?`, !!link);
-        if (link){ cnt += 1; return; }
-        const inp = cell.querySelector('input[role="combobox"], input.o-autocomplete--input');
-        const inputValue = inp ? (inp.value || '').trim() : '';
-        console.log(`[COUNT-DEBUG] Row ${idx}: input found?`, !!inp, 'value:', inputValue);
-        if (inp && inputValue) { cnt += 1; return; }
+      rows.forEach((tr)=>{
+        // 1) Fila guardada (id numérico) cuenta inmediatamente
+        const idRaw = tr.getAttribute('data-res-id') || tr.getAttribute('data-id') || tr.getAttribute('data-record-id') || tr.getAttribute('data-oe-id');
+        const idNum = (idRaw == null) ? NaN : parseInt(String(idRaw).trim(), 10);
+        if (!Number.isNaN(idNum) && idNum > 0) { cnt += 1; return; }
+
+        // 2) Fila no guardada: contar si product_id tiene valor (chip, link, o texto)
+        const productCell = tr.querySelector('td[data-name="product_id"], td[name="product_id"]');
+        if (!productCell) return;
+
+        // Buscar chips/tags/links del many2one confirmado
+        if (productCell.querySelector('a[href], .o_m2o_chip, .o_m2o_tag, .o_m2o_value')) {
+          cnt += 1;
+          return;
+        }
+
+        // Buscar input con valor seleccionado (aunque aún esté visible)
+        const editInp = productCell.querySelector('input[role="combobox"], input.o-autocomplete--input');
+        if (editInp) {
+          const inputValue = (editInp.value || '').trim();
+          // Si el input tiene valor Y no está vacío, contar
+          // Esto permite contar inmediatamente después de seleccionar del autocompletado
+          if (inputValue && inputValue.length > 0) {
+            cnt += 1;
+            return;
+          }
+        }
+
+        // En algunos temas, el many2one muestra texto plano cuando está confirmado
+        const widget = productCell.querySelector('.o_field_widget') || productCell;
+        const txt = (widget.textContent || '').trim();
+        if (txt && txt.length > 0) { cnt += 1; return; }
+
+        // No contar filas completamente vacías
       });
-      console.log('[COUNT-DEBUG] Final count from .o_data_row:', cnt);
       return cnt;
     }
-    // Fallback conservador: no cuentes placeholder ni encabezados
-    console.log('[COUNT-DEBUG] No .o_data_row found, using tbody fallback');
-    const body = root.querySelector('tbody');
-    if (!body) { console.log('[COUNT-DEBUG] No tbody found'); return 0; }
-    let cnt = 0;
-    const trs = body.querySelectorAll('tr');
-    console.log('[COUNT-DEBUG] tbody tr count:', trs.length);
-    body.querySelectorAll('tr').forEach((tr, idx)=>{
-      if (tr.closest('thead')) { console.log(`[COUNT-DEBUG] TR ${idx}: inside thead`); return; }
-      if (tr.matches('.o_list_no_records, .o_empty_list')) { console.log(`[COUNT-DEBUG] TR ${idx}: empty list marker`); return; }
-      if (tr.querySelector('.o_field_x2many_list_row_add')) { console.log(`[COUNT-DEBUG] TR ${idx}: add row button`); return; }
-      const cell = tr.querySelector('td[data-name="product_id"], td[name="product_id"]');
-      if (!cell) { console.log(`[COUNT-DEBUG] TR ${idx}: no product_id cell`); return; }
-      if (cell.querySelector('a[href], .o_m2o_chip, .o_m2o_tag')) { console.log(`[COUNT-DEBUG] TR ${idx}: has link, counting`); cnt += 1; return; }
-      const inp = cell.querySelector('input[role="combobox"], input.o-autocomplete--input');
-      if (inp && (inp.value || '').trim()) { console.log(`[COUNT-DEBUG] TR ${idx}: has input with value, counting`); cnt += 1; return; }
-      console.log(`[COUNT-DEBUG] TR ${idx}: no valid product`);
-    });
-    console.log('[COUNT-DEBUG] Final count from tbody fallback:', cnt);
-    return cnt;
+    // Fallback conservador: sin .o_data_row, no asumir capturas temporales
+    return 0;
   }
   function countPageRows(page){ return countListRows(page); }
   function hasListContainer(page){
@@ -512,11 +512,39 @@ let __ctxChanged = false;
 let __activeCodeOptimistic = null;
 // Flag para forzar estados frescos en cambio de contexto
 let __forceFresh = false;
+// ID único para el registro actual (evita regenerar para registros nuevos)
+let __currentRecordUniqueId = null;
+  // Reset duro de contexto: limpiar memorias de verde persistente y colores aplicados
+  function hardContextReset(formRoot, nb){
+    try{
+      __filledMemo = {};
+      __filledMemoMap = {};
+      __persistStates = {};
+      __persistStatesMap = {};
+      __ackOverrides = {};
+      __ackOverridesMap = {};
+      __activeCodeOptimistic = null;
+      __currentRecordUniqueId = null;
+      __ctxChanged = true;
+      try { (nb ? getLinks(nb) : getLinks(getNotebook())).forEach((a)=> clearTab(a)); } catch(_e){}
+    }catch(_e){}
+  }
   function currentCtxKey(formRoot){
-    // Contexto por record y site, no por service_type para mantener __ackOverrides
-    const recordId = readIntField(formRoot, 'id') || 'new';
+    // Contexto por record, site y servicio (evita contaminación entre jard/limp)
+    let recordId = readIntField(formRoot, 'id');
+    // Para registros nuevos, generar ID único solo una vez
+    if (!recordId || recordId === 'new') {
+      if (!__currentRecordUniqueId) {
+        __currentRecordUniqueId = `new_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`;
+      }
+      recordId = __currentRecordUniqueId;
+    } else {
+      // Si ya tiene ID real, limpiar el ID temporal
+      __currentRecordUniqueId = null;
+    }
     const site = readIntField(formRoot, 'current_site_id');
-    return `${recordId}|${site||''}`;
+    const srv = readStrField(formRoot, 'current_service_type') || '';
+    return `${recordId}|${site||''}|${srv}`;
   }
   function ensureCtx(formRoot){
     const key = currentCtxKey(formRoot);
@@ -524,7 +552,7 @@ let __forceFresh = false;
       __ctxKey = key;
       const recordId = readIntField(formRoot, 'id') || 'new';
       const persisted = loadPersist(formRoot);
-      const persistedStates = persisted.states || {};
+      const persistedStates = (recordId === 'new') ? {} : (persisted.states || {});
       const persistedAcks = (recordId === 'new') ? {} : (persisted.acks || {});
       if (!__filledMemoMap[key]) __filledMemoMap[key] = {};
       if (!__ackOverridesMap[key]) __ackOverridesMap[key] = { ...persistedAcks };
@@ -538,13 +566,8 @@ let __forceFresh = false;
       __filledMemo = __filledMemoMap[key];
       __ackOverrides = __ackOverridesMap[key];
       __persistStates = __persistStatesMap[key];
-      // Cargar ackOverrides desde los campos del DOM si no hay persisted
-      if (!Object.keys(__ackOverrides).length) {
-        const domStates = fallbackStatesFromDOM(formRoot);
-        for (const [code, v] of Object.entries(domStates)) {
-          if (v === 2) __ackOverrides[code] = true;
-        }
-      }
+      // REMOVIDO: No cargar desde DOM en cambio de contexto para evitar contaminación
+      // Solo cargar persistedAcks que vienen del storage, no del DOM
       __ctxChanged = true;
     }
   }
@@ -565,6 +588,8 @@ let __forceFresh = false;
 
   // === Pintado (prioriza conteo inmediato; sincroniza rubro_state_* en DOM para persistir) ===
   function paintFromStates(formRoot, nb, byCode, last){
+    // Re-index links on every paint to survive OWL re-renders
+    const map = indexByCode(nb);
     ensureCtx(formRoot);
     let dsStates = readStatesFromDataset(formRoot);
     let dsCounts = readCountsFromDataset(formRoot);
@@ -593,39 +618,24 @@ let __forceFresh = false;
       }
     }
 
-    // Si encontramos tab activo, contar sus filas
+    // Si encontramos tab activo, contar sus filas (solo registros guardados)
     if (activeTabCode) {
       const activePage = nb.querySelector('.tab-pane.active');
       if (activePage) {
-        const table = activePage.querySelector('.o_list_table');
-        if (table) {
-          const rows = table.querySelectorAll('.o_data_row');
-          let count = 0;
-          rows.forEach((row) => {
-            const rowId = row.getAttribute('data-res-id') || row.getAttribute('data-id');
-            if (rowId) {
-              count++;
-              return;
-            }
-            const productCell = row.querySelector('td[data-name="product_id"], td[name="product_id"]');
-            if (productCell) {
-              const link = productCell.querySelector('a[href], .o_m2o_chip');
-              const input = productCell.querySelector('input[role="combobox"]');
-              if (link || (input && input.value.trim())) {
-                count++;
-              }
-            }
-          });
-          activeRowCount = count;
-        }
+        activeRowCount = countPageRows(activePage);
       }
     }
 
     // Ahora iterar sobre TODOS los tabs
-    for(const [code, link] of Object.entries(byCode)){
+    for(const [code, link] of Object.entries(map)){
       let sNorm;
       let rowCount = null;
       const stateValue = dsStates?.[code]; // Leer estado del backend
+      // Conteo desde el widget del campo (para cualquier tab, incluso inactivo)
+      // IMPORTANTE: Solo contar fieldCount si NO es un registro nuevo (evita contaminación DOM)
+      const isNewRecord = !readIntField(formRoot, 'id');
+      const fieldCountRaw = isNewRecord ? null : countRowsInField(formRoot, code);
+      const fieldCount = (fieldCountRaw == null) ? 0 : fieldCountRaw;
 
       // Si este es el tab activo, usar el conteo que ya hicimos
       if (code === activeTabCode && activeRowCount !== null) {
@@ -638,28 +648,53 @@ let __forceFresh = false;
         }
       }
 
+      // No refrescar memoria desde backend: solo actualizar memoria cuando el tab activo
+      // muestra conteo real (rowCount); así el verde persiste al cambiar de tab
+
       // Determinar estado normalizado (sNorm)
-      // Prioridad: override ámbar > conteo directo > memoria > backend
+      // Prioridad: override ámbar > conteo directo (tab activo) > conteo por campo (cualquier tab) > memoria > backend > persistido
+      let debugSource = '';
       if (__ackOverrides[code]) {
         // Override "No Aplica" (ámbar)
         sNorm = 2;
+        debugSource = 'ackOverride';
       } else if (rowCount !== null) {
         // Tab activo: usar conteo directo (SIEMPRE tiene prioridad)
         sNorm = rowCount > 0 ? 1 : 0;
-      } else if (__filledMemo[code]) {
-        // Tab inactivo: usar memoria (persiste el verde cuando cambias de tab)
+        debugSource = `rowCount(${rowCount})`;
+      } else if (fieldCount > 0) {
+        // Cualquier tab: el widget del campo tiene filas confirmadas/guardadas
         sNorm = 1;
+        debugSource = `fieldCount(${fieldCount})`;
+      } else if (__filledMemo[code]) {
+        // Memoria de verde cuando previamente se detectó contenido real
+        sNorm = 1;
+        debugSource = 'filledMemo';
       } else if (stateValue === 1) {
         // Backend dice que está lleno (registro guardado)
         sNorm = 1;
-        __filledMemo[code] = true;
+        debugSource = 'backend(1)';
       } else if (stateValue === 2) {
         // Backend dice "No Aplica"
         sNorm = 2;
+        debugSource = 'backend(2)';
+      } else if ((__persistStates && !readIntField(formRoot,'id')) ? false : (__persistStates && (__persistStates[code] === 1 || __persistStates[code] === 2 || __persistStates[code] === 0))) {
+        // Fallback a último estado persistido para tabs inactivos
+        sNorm = __persistStates[code];
+        debugSource = `persistStates(${sNorm})`;
       } else {
         // Sin información: vacío
         sNorm = 0;
+        debugSource = 'default(empty)';
       }
+
+      // Log solo para estados no vacíos (verde o ámbar) para debug
+      if (sNorm !== 0 && (fieldCount > 0 || __filledMemo[code] || stateValue || __persistStates[code])) {
+        console.log(`[CCN] ${code}: ${debugSource} → ${sNorm === 1 ? 'VERDE' : sNorm === 2 ? 'ÁMBAR' : 'ROJO'}`);
+      }
+
+      // Persistir último estado decidido por código/contexto
+      try { __persistStates[code] = sNorm; } catch(_e) {}
 
       // Limpiar override si ahora está verde
       if (sNorm === 1 && __ackOverrides[code] != null) {
@@ -679,7 +714,12 @@ let __forceFresh = false;
       if (!displayCount && stateValue === 1) displayCount = '✓';
       try{ setTabCount(link, displayCount); }catch(_e){}
 
-      if (last[code] !== sNorm){
+      // Asegurar que el DOM nuevo (tras re-render) tenga la clase correcta aunque el estado no cambie
+      const desiredClass = clsFor(sNorm);
+      const liNode = link.closest ? link.closest('li') : null;
+      const missingClass = !link.classList.contains(desiredClass) || (liNode && !liNode.classList.contains(desiredClass));
+
+      if (last[code] !== sNorm || missingClass){
         applyTab(link, sNorm);
         last[code] = sNorm;
         changed = true;
@@ -690,7 +730,12 @@ let __forceFresh = false;
       }
     }
     // Guardar persistencia por contexto (estados + overrides de ámbar)
-    try{ __ackOverridesMap[__ctxKey] = { ...__ackOverrides }; savePersist(formRoot, {}, __ackOverrides); }catch(_e){}
+    try{
+      const isNew = !readIntField(formRoot,'id');
+      __ackOverridesMap[__ctxKey] = { ...__ackOverrides };
+      __persistStatesMap[__ctxKey] = { ...__persistStates };
+      savePersist(formRoot, isNew ? {} : __persistStates, isNew ? {} : __ackOverrides);
+    }catch(_e){}
     // Limpiar optimismo: solo aplica a un ciclo de pintado
     __activeCodeOptimistic = null;
     __ctxChanged = false;
@@ -828,17 +873,50 @@ let __forceFresh = false;
       const byCode = indexByCode(nb);
       if (!Object.keys(byCode).length) return; // no tabs mapeadas; salir limpio
       const last = {};
+
+      // Detectar cambios de registro (cuando se abre otra cotización)
+      let lastRecordId = readIntField(formRoot, 'id');
+      const checkRecordChange = () => {
+        const currentRecordId = readIntField(formRoot, 'id');
+        if (currentRecordId !== lastRecordId) {
+          console.log(`[CCN] Record changed from ${lastRecordId} to ${currentRecordId} - resetting context`);
+          lastRecordId = currentRecordId;
+          // Reset completo cuando cambia el registro
+          __currentRecordUniqueId = null;
+          __ctxKey = null;
+          __filledMemo = {};
+          __filledMemoMap = {};
+          __persistStates = {};
+          __persistStatesMap = {};
+          __ackOverrides = {};
+          __ackOverridesMap = {};
+          __forceFresh = true;
+          for (const k in last) delete last[k];
+          try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
+          try { paintFromStates(formRoot, nb, byCode, last); } catch(_e){}
+        }
+      };
+
       // Pintado inicial (sin clics, inmediato)
       try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       // Observa cambios de los campos de estado
       watchStates(formRoot, nb, byCode, last);
       // Reintentos breves tras carga por si el DOM/render llega tarde
-      [50, 150, 350, 600].forEach((ms)=> setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, ms));
+      [50, 150, 350, 600].forEach((ms)=> setTimeout(()=>{
+        checkRecordChange();
+        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+      }, ms));
       // Repintar específico al cambiar sitio/servicio
       const onQuickRepaint = (ev)=>{
         const name = ev?.target?.getAttribute?.('name') || ev?.target?.getAttribute?.('data-name') || '';
         if (name === 'current_service_type' || name === 'current_site_id'){
           try{
+            // LIMPIAR sessionStorage para el nuevo contexto (evita fantasmas)
+            try {
+              const newKey = currentCtxKey(formRoot);
+              sessionStorage.removeItem(`ccnTabs:${newKey}`);
+            } catch(_e) {}
+
             // Reset completamente el contexto y LIMPIAR colores previos
             __ctxKey = null;
             __filledMemo = {};
@@ -846,8 +924,12 @@ let __forceFresh = false;
             __activeCodeOptimistic = null;
             __ackOverrides = {};
             __ackOverridesMap = {};
+            __persistStates = {};
+            __persistStatesMap = {};
             __ctxChanged = true;
             __forceFresh = true;
+            // CRÍTICO: Limpiar el objeto 'last' para forzar re-pintado completo
+            for (const k in last) delete last[k];
             try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
             paintFromStates(formRoot, nb, byCode, last);
           }catch(_e){}
@@ -860,6 +942,9 @@ let __forceFresh = false;
       document.body.addEventListener('click', (ev)=>{
         if (ev.target.closest && ev.target.closest('.o_notebook .o_list_renderer, .o_notebook .o_list_view, .o_notebook .o_list_table')){
           try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+          // Repintados adicionales para capturar la selección del autocompletado
+          setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 100);
+          setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 300);
         }
       }, true);
       document.body.addEventListener('keydown', (ev)=>{
@@ -887,34 +972,21 @@ let __forceFresh = false;
         }catch(_e){}
       }, true);
       // Reforzar en interacciones típicas de tabs/listas
-      const onClick = (ev)=>{ if (ev.target.closest && ev.target.closest('.o_notebook .nav-tabs .nav-link')){ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} } };
+      const onClick = (ev)=>{
+        if (ev.target.closest && ev.target.closest('.o_notebook .nav-tabs .nav-link')){
+          checkRecordChange();
+          try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+        }
+      };
       document.body.addEventListener('click', onClick, true);
       document.body.addEventListener('change', (ev)=>{
         if (ev.target.closest && ev.target.closest('.o_form_view')){
-          // Forzar publicación de estados para que otros servicios/colores reaccionen
+          checkRecordChange();
+          // Recalcular con datos actuales (dataset + DOM)
           try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e){}
           try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
-
-          // Pintado optimista SOLO si hay un valor REAL en product_id (no solo por abrir el formulario)
-          try{
-            const holder = ev.target.closest('td[name="product_id"], td[data-name="product_id"], [name="product_id"], [data-name="product_id"]');
-            if (holder && holder.closest){
-              // Verificar que realmente hay un producto seleccionado (no solo el formulario abierto)
-              const hasValue = holder.querySelector('a[href], .o_m2o_chip, .o_m2o_tag');
-              const input = holder.querySelector('input[role="combobox"], input.o-autocomplete--input');
-              const hasInputValue = input && (input.value || '').trim().length > 0;
-
-              if (hasValue || hasInputValue) {
-                let code = codeFromCell(holder) || codeFromPage(holder.closest('.o_notebook .tab-pane, .o_notebook [id^="page_"]'));
-                code = canon(code);
-                const link = code ? byCode[code] : null;
-                if (code && link){
-                  applyTab(link, 1);
-                  last[code] = 1;
-                }
-              }
-            }
-          }catch(_e){}
+          // Repintado adicional después de 50ms para dar tiempo al DOM
+          setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 50);
         }
       }, true);
       // REMOVIDO: optimisticPaint - causaba tabs verdes en cuanto se hacía click en "Agregar línea"
@@ -923,6 +995,8 @@ let __forceFresh = false;
         if (ev.target.closest && ev.target.closest('.o_form_view')){
           try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e){}
           try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
+          // Repintado adicional después de 50ms para dar tiempo al DOM
+          setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, 50);
         }
       }, true);
       // Pintado optimista al marcar "No Aplica": aplicar ámbar inmediatamente
@@ -933,7 +1007,7 @@ let __forceFresh = false;
           const page = btn.closest('.o_notebook .tab-pane, .o_notebook [id^="page_"]');
           let code = codeFromPage(page);
           code = canon(code);
-          const link = code ? byCode[code] : null;
+          const link = code ? (indexByCode(nb)[code] || null) : null;
           if (code && link){
             // Actualizar override para que persista al cambiar de tab
             __ackOverrides[code] = true;
