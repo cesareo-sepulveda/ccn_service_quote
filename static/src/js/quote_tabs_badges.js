@@ -803,29 +803,18 @@ let __greenHold = {};
       // muestra conteo real (rowCount); así el verde persiste al cambiar de tab
 
       // Determinar estado normalizado (sNorm)
-      // NUEVA PRIORIDAD: backend primero, luego conteos, luego memoria
-      // Prioridad: override ámbar > backend > conteo por campo > conteo directo (tab activo) > memoria > persistido
+      // NUEVA PRIORIDAD: VERDE gana a ÁMBAR. Si hay filas o backend=1, limpiar override y pintar VERDE.
+      // Luego: ÁMBAR (override o backend=2) > hold/memo > persistido > vacío
       let debugSource = '';
-      if (__ackOverrides[code]) {
-        // Override "No Aplica" (ámbar)
+      if (stateValue === 1 || fieldCount > 0 || (rowCount !== null && rowCount > 0)) {
+        // Hay contenido real o backend confirma: forzar verde y limpiar override
+        sNorm = 1;
+        debugSource = stateValue === 1 ? 'backend(1)' : (fieldCount > 0 ? `fieldCount(${fieldCount})` : `rowCount(${rowCount})`);
+        if (__ackOverrides[code]) { try { delete __ackOverrides[code]; } catch(_e){} }
+      } else if (__ackOverrides[code] || stateValue === 2) {
+        // Override "No Aplica" o backend=2
         sNorm = 2;
-        debugSource = 'ackOverride';
-      } else if (stateValue === 1) {
-        // Backend dice que está lleno (registro guardado) - MÁXIMA PRIORIDAD
-        sNorm = 1;
-        debugSource = 'backend(1)';
-      } else if (stateValue === 2) {
-        // Backend dice "No Aplica"
-        sNorm = 2;
-        debugSource = 'backend(2)';
-      } else if (fieldCount > 0) {
-        // Cualquier tab: el widget del campo tiene filas confirmadas/guardadas
-        sNorm = 1;
-        debugSource = `fieldCount(${fieldCount})`;
-      } else if (rowCount !== null && rowCount > 0) {
-        // Tab activo: usar conteo directo solo si es positivo
-        sNorm = 1;
-        debugSource = `rowCount(${rowCount})`;
+        debugSource = __ackOverrides[code] ? 'ackOverride' : 'backend(2)';
       } else if (holdActive) {
         // Sostener verde mientras OWL confirma el many2one (solo si no hay info del backend)
         sNorm = 1;
@@ -857,7 +846,7 @@ let __greenHold = {};
       // Persistir último estado decidido por código/contexto
       try { __persistStates[code] = sNorm; } catch(_e) {}
 
-      // Limpiar override si ahora está verde
+      // Limpiar override si ahora está verde (idempotente)
       if (sNorm === 1 && __ackOverrides[code] != null) {
         delete __ackOverrides[code];
       }
@@ -1126,7 +1115,7 @@ let __greenHold = {};
               if (activeLink) {
                 applyTab(activeLink, 1);
                 last[code] = 1;
-                // También actualizar rubro_state_* en DOM y dataset para evitar que otro pintado lo revierta
+                // También actualizar rubro_state_* en DOM y datasets (genérico y per-servicio)
                 const stype = readStrField(formRoot, 'current_service_type');
                 let fieldName = `rubro_state_${code}`;
                 if (stype === 'jardineria') fieldName = `rubro_state_${code}_jard`;
@@ -1138,6 +1127,17 @@ let __greenHold = {};
                   const obj = JSON.parse(dsRaw);
                   obj[code] = 1;
                   holder.dataset.ccnStates = JSON.stringify(obj);
+                }catch(_e){}
+                try{
+                  const holder = formRoot.closest('.o_form_view') || formRoot;
+                  const srv = readStrField(formRoot, 'current_service_type') || '';
+                  if (srv) {
+                    const key = `data-ccn-states-${srv}`;
+                    let raw = holder.getAttribute(key) || '{}';
+                    const pobj = JSON.parse(raw);
+                    pobj[code] = 1;
+                    holder.setAttribute(key, JSON.stringify(pobj));
+                  }
                 }catch(_e){}
               }
             } catch(_e) {}
@@ -1185,6 +1185,17 @@ let __greenHold = {};
             const obj = JSON.parse(dsRaw);
             obj[code] = 1;
             holder.dataset.ccnStates = JSON.stringify(obj);
+          }catch(_e){}
+          try{
+            const holder = formRoot.closest('.o_form_view') || formRoot;
+            const srv = readStrField(formRoot, 'current_service_type') || '';
+            if (srv) {
+              const key = `data-ccn-states-${srv}`;
+              let raw = holder.getAttribute(key) || '{}';
+              const pobj = JSON.parse(raw);
+              pobj[code] = 1;
+              holder.setAttribute(key, JSON.stringify(pobj));
+            }
           }catch(_e){}
         } else if (key === 'Escape') {
           try{
