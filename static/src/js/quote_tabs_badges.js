@@ -158,7 +158,18 @@
   function readStatesFromDataset(root){
     try{
       const holder = root?.closest?.('.o_form_view') || root;
-      const ds = holder?.dataset?.ccnStates || (holder?.querySelector?.('[data-ccn-states]')?.dataset?.ccnStates) || null;
+      const srv = readStrField(root, 'current_service_type') || '';
+      let ds = null;
+      if (holder) {
+        if (srv && typeof holder.getAttribute === 'function') {
+          const attr = holder.getAttribute(`data-ccn-states-${srv}`);
+          if (attr && attr.trim()) ds = attr;
+        }
+        // No caer al dataset genérico cuando hay servicio activo
+        if (!ds && !srv) {
+          ds = holder?.dataset?.ccnStates || (holder?.querySelector?.('[data-ccn-states]')?.dataset?.ccnStates) || null;
+        }
+      }
       if (!ds) return {};
       const obj = JSON.parse(ds);
       return obj && typeof obj === 'object' ? obj : {};
@@ -188,7 +199,18 @@
   function readCountsFromDataset(root){
     try{
       const holder = root?.closest?.('.o_form_view') || root;
-      const ds = holder?.dataset?.ccnCounts || (holder?.querySelector?.('[data-ccn-counts]')?.dataset?.ccnCounts) || null;
+      const srv = readStrField(root, 'current_service_type') || '';
+      let ds = null;
+      if (holder) {
+        if (srv && typeof holder.getAttribute === 'function') {
+          const attr = holder.getAttribute(`data-ccn-counts-${srv}`);
+          if (attr && attr.trim()) ds = attr;
+        }
+        // No usar counts genéricos cuando hay servicio activo
+        if (!ds && !srv) {
+          ds = holder?.dataset?.ccnCounts || (holder?.querySelector?.('[data-ccn-counts]')?.dataset?.ccnCounts) || null;
+        }
+      }
       if (!ds) return {};
       const obj = JSON.parse(ds);
       return obj && typeof obj === 'object' ? obj : {};
@@ -197,7 +219,16 @@
   function readCtxFromDataset(root){
     try{
       const holder = root?.closest?.('.o_form_view') || root;
-      return holder?.dataset?.ccnCtx || holder?.querySelector?.('[data-ccn-ctx]')?.dataset?.ccnCtx || '';
+      const srv = readStrField(root, 'current_service_type') || '';
+      if (holder && srv && typeof holder.getAttribute === 'function') {
+        const v = holder.getAttribute(`data-ccn-ctx-${srv}`);
+        if (v && v.trim()) return v;
+      }
+      // Solo retornar ctx genérico si no hay servicio activo
+      if (!srv) {
+        return holder?.dataset?.ccnCtx || holder?.querySelector?.('[data-ccn-ctx]')?.dataset?.ccnCtx || '';
+      }
+      return '';
     }catch(_e){ return ''; }
   }
   function fallbackCountsFromDOM(root){
@@ -242,12 +273,27 @@
     return map[code] || code;
   }
 
+  // Determinar code base a partir de un token que puede venir con sufijo
+  // Solo quitar _jardineria/_limpieza para rubros "split"; en el resto, el sufijo es parte del código
+  function baseCodeFromToken(tok){
+    try{
+      if (!tok) return tok;
+      const SPLIT_CODES = new Set(['mano_obra','uniforme','epp','comunicacion_computo','perfil_medico','capacitacion']);
+      const m = String(tok).match(/^(.+?)_(jardineria|limpieza)$/);
+      if (m){
+        const head = canon(m[1]);
+        return SPLIT_CODES.has(head) ? head : canon(tok);
+      }
+      return canon(tok);
+    }catch(_e){ return tok; }
+  }
+
   // === Extraer code desde atributos del link (name="page_CODE" o aria-controls="#page_CODE") ===
   function linkCodeByAttrs(link){
     try{
       const nameAttr = link.getAttribute("name") || link.dataset?.name || "";
       let m = nameAttr.match(/^page_(.+)$/);
-      if (m) return canon(m[1]);
+      if (m) return baseCodeFromToken(m[1]);
       const target = (
         link.getAttribute("aria-controls") ||
         link.getAttribute("data-bs-target") ||
@@ -256,7 +302,7 @@
         ""
       ).replace(/^#/, "");
       m = target.match(/^page_(.+)$/);
-      if (m) return canon(m[1]);
+      if (m) return baseCodeFromToken(m[1]);
     }catch(_e){}
     return null;
   }
@@ -681,6 +727,17 @@ let __greenHold = {};
     // Usar el índice inicial; evitar reindex en cada pintado
     const map = byCode;
     ensureCtx(formRoot);
+    // Ventana corta tras cambio de servicio: baseline rojo para evitar arrastre entre servicios
+    if (!window.__ccnServiceSwitchUntil) window.__ccnServiceSwitchUntil = 0;
+    try{
+      const now = Date.now();
+      if (now < window.__ccnServiceSwitchUntil) {
+        for (const [code, link] of Object.entries(map)){
+          try { applyTab(link, 0); if (last) last[code] = 0; } catch(_e){}
+        }
+        return true;
+      }
+    }catch(_e){}
     // Si el contexto acaba de cambiar (servicio/sitio), arrancar desde estado limpio
     if (__ctxChanged) {
       try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
@@ -702,8 +759,16 @@ let __greenHold = {};
     // - Ámbar solo si hay override local explícito (No Aplica) en este contexto
     // - En otro caso, rojo para todos
     if (!dsStates || !Object.keys(dsStates).length) {
+      // Sin estados publicados aún para este servicio: usar persistidos por contexto si existen,
+      // en su defecto, solo respetar overrides de ámbar, y el resto rojo.
+      const persist = __persistStates || {};
       for (const [code, link] of Object.entries(byCode)) {
-        const desired = __ackOverrides[code] ? 2 : 0;
+        let desired = 0;
+        if (Object.prototype.hasOwnProperty.call(persist, code)) {
+          desired = persist[code];
+        } else if (__ackOverrides[code]) {
+          desired = 2;
+        }
         const desiredClass = clsFor(desired);
         const liNode = link.closest ? link.closest('li') : null;
         const missingClass = !link.classList.contains(desiredClass) || (liNode && !liNode.classList.contains(desiredClass));
@@ -1073,6 +1138,8 @@ let __greenHold = {};
             __activeCodeOptimistic = null;
             __ctxChanged = true;
             __forceFresh = true;
+            // Activar ventana de switch ~700ms para baseline rojo
+            window.__ccnServiceSwitchUntil = Date.now() + 700;
             // CRÍTICO: Limpiar el objeto 'last' para forzar re-pintado completo
             for (const k in last) delete last[k];
             try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
