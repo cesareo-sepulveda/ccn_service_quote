@@ -222,9 +222,14 @@
       const holder = el.closest && el.closest('[name^="line_ids_"], [data-name^="line_ids_"]');
       if (!holder) return null;
       const fname = holder.getAttribute('name') || holder.getAttribute('data-name') || '';
-      const m = fname.match(/^line_ids_(.+?)(?:_(jardineria|limpieza))?$/);
-      if (!m) return null;
-      return canon(m[1]);
+      let tok = fname.replace(/^line_ids_/, '');
+      const m = tok.match(/^(.+)_(jardineria|limpieza)$/);
+      if (m){
+        const head = canon(m[1]);
+        const SPLIT_CODES = new Set(['mano_obra','uniforme','epp','comunicacion_computo','perfil_medico','capacitacion']);
+        return SPLIT_CODES.has(head) ? head : canon(tok);
+      }
+      return canon(tok);
     }catch(_e){ return null; }
   }
 
@@ -321,11 +326,14 @@
       const el = page.querySelector('[name^="line_ids_"], [data-name^="line_ids_"]');
       if (!el) return null;
       const fname = el.getAttribute('name') || el.getAttribute('data-name') || '';
-      const m = fname.match(/^line_ids_(.+?)(?:_(jardineria|limpieza))?$/);
-      if (!m) return null;
-      let code = m[1];
-      code = canon(code);
-      return code;
+      let tok = fname.replace(/^line_ids_/, '');
+      const m = tok.match(/^(.+)_(jardineria|limpieza)$/);
+      if (m){
+        const head = canon(m[1]);
+        const SPLIT_CODES = new Set(['mano_obra','uniforme','epp','comunicacion_computo','perfil_medico','capacitacion']);
+        return SPLIT_CODES.has(head) ? head : canon(tok);
+      }
+      return canon(tok);
     }catch(_e){ return null; }
   }
   function countListRows(root){
@@ -1273,7 +1281,9 @@ let __greenHold = {};
           const page = btn.closest('.o_notebook .tab-pane, .o_notebook [id^="page_"]');
           let code = codeFromPage(page);
           code = canon(code);
-          const link = code ? (indexByCode(nb)[code] || null) : null;
+          let link = code ? (indexByCode(nb)[code] || null) : null;
+          // Fallback: buscar el <a> por la propia página
+          if (!link) link = linkForPage(nb, page);
           if (code && link){
             // console.log(`[CCN] 🟡 Marcando "${code}" como No Aplica (ámbar)`);
 
@@ -1296,14 +1306,28 @@ let __greenHold = {};
             else if (stype === 'limpieza') fieldName = `rubro_state_${code}_limp`;
             try{ writeIntField(formRoot, fieldName, 2); }catch(_e){}
 
-            // Actualizar el dataset para que color_map lo use
+            // Actualizar el dataset para que pintado lo use (genérico y per-servicio)
             try{
               const holder = formRoot.closest('.o_form_view') || formRoot;
-              let ds = holder.dataset.ccnStates;
-              if (ds) {
-                const obj = JSON.parse(ds);
-                obj[code] = 2;
-                holder.dataset.ccnStates = JSON.stringify(obj);
+              // Genérico
+              try {
+                let ds = holder.dataset.ccnStates;
+                if (ds) {
+                  const obj = JSON.parse(ds);
+                  obj[code] = 2;
+                  holder.dataset.ccnStates = JSON.stringify(obj);
+                }
+              } catch(_e) {}
+              // Per-servicio
+              const srv = readStrField(formRoot, 'current_service_type') || '';
+              if (srv) {
+                try {
+                  const key = `data-ccn-states-${srv}`;
+                  let raw = holder.getAttribute(key) || '{}';
+                  const obj = JSON.parse(raw);
+                  obj[code] = 2;
+                  holder.setAttribute(key, JSON.stringify(obj));
+                } catch(_e) {}
               }
             }catch(_e){}
 

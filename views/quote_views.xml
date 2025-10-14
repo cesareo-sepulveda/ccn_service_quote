@@ -286,7 +286,7 @@
               <page string="EPP Alturas" name="page_epp_alturas"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
-                        context="{'rubro_code': 'epp_alturas'}" invisible="rubro_state_epp_alturas != 0"/>
+                        context="{'rubro_code': 'epp_alturas'}" invisible="rubro_state_epp_alturas_jard != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'epp_alturas'}"/>
                 <field name="line_ids_epp_alturas" mode="list"
@@ -310,7 +310,7 @@
               <page string="Equipo Especial de Limpieza" name="page_equipo_especial_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
-                        context="{'rubro_code': 'equipo_especial_limpieza'}" invisible="rubro_state_equipo_especial_limpieza != 0"/>
+                        context="{'rubro_code': 'equipo_especial_limpieza'}" invisible="rubro_state_equipo_especial_limpieza_limp != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'equipo_especial_limpieza'}"/>
                 <field name="line_ids_equipo_especial_limpieza" mode="list"
@@ -373,7 +373,7 @@
               <page string="Herr. Menor Jardinería" name="page_herr_menor_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
-                        context="{'rubro_code': 'herramienta_menor_jardineria'}" invisible="rubro_state_herramienta_menor_jardineria != 0"/>
+                        context="{'rubro_code': 'herramienta_menor_jardineria'}" invisible="rubro_state_herramienta_menor_jardineria_jard != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
                 <field name="line_ids_herramienta_menor_jardineria" mode="list"
@@ -398,7 +398,7 @@
               <page string="Material de Limpieza" name="page_material_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
-                        context="{'rubro_code': 'material_limpieza'}" invisible="rubro_state_material_limpieza != 0"/>
+                        context="{'rubro_code': 'material_limpieza'}" invisible="rubro_state_material_limpieza_limp != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'material_limpieza'}"/>
                 <field name="line_ids_material_limpieza" mode="list"
@@ -462,7 +462,7 @@
               <page string="Maquinaria de Limpieza" name="page_maquinaria_limpieza"
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
-                        context="{'rubro_code': 'maquinaria_limpieza'}" invisible="rubro_state_maquinaria_limpieza != 0"/>
+                        context="{'rubro_code': 'maquinaria_limpieza'}" invisible="rubro_state_maquinaria_limpieza_limp != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_limpieza'}"/>
                 <field name="line_ids_maquinaria_limpieza" mode="list"
@@ -487,7 +487,7 @@
               <page string="Maquinaria de Jardinería" name="page_maquinaria_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
-                        context="{'rubro_code': 'maquinaria_jardineria'}" invisible="rubro_state_maquinaria_jardineria != 0"/>
+                        context="{'rubro_code': 'maquinaria_jardineria'}" invisible="rubro_state_maquinaria_jardineria_jard != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_jardineria'}"/>
                 <field name="line_ids_maquinaria_jardineria" mode="list"
@@ -512,7 +512,7 @@
               <page string="Fertilizantes y Tierra Lama" name="page_fertilizantes_tierra_lama"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
-                        context="{'rubro_code': 'fertilizantes_tierra_lama'}" invisible="rubro_state_fertilizantes_tierra_lama != 0"/>
+                        context="{'rubro_code': 'fertilizantes_tierra_lama'}" invisible="rubro_state_fertilizantes_tierra_lama_jard != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
                 <field name="line_ids_fertilizantes_tierra_lama" mode="list"
@@ -537,7 +537,7 @@
               <page string="Consumibles de Jardinería" name="page_consumibles_jardineria"
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
-                        context="{'rubro_code': 'consumibles_jardineria'}" invisible="rubro_state_consumibles_jardineria != 0"/>
+                        context="{'rubro_code': 'consumibles_jardineria'}" invisible="rubro_state_consumibles_jardineria_jard != 0"/>
                 <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
                         context="{'rubro_code': 'consumibles_jardineria'}"/>
                 <field name="line_ids_consumibles_jardineria" mode="list"
