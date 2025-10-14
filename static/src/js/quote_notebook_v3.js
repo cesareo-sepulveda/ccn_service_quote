@@ -112,12 +112,23 @@ function publishStates(controller) {
                 fv.dataset.ccnStates = statesJson;
                 fv.dataset.ccnCounts = countsJson;
                 fv.dataset.ccnCtx = ctxStr;
+                // También publicar atributos por servicio para consumo directo
+                if (currentService) {
+                    try { fv.setAttribute(`data-ccn-states-${currentService}`, statesJson); } catch(_e) {}
+                    try { fv.setAttribute(`data-ccn-counts-${currentService}`, countsJson); } catch(_e) {}
+                    try { fv.setAttribute(`data-ccn-ctx-${currentService}`, ctxStr); } catch(_e) {}
+                }
             }
             const notebook = document.querySelector(".o_notebook");
             if (notebook) {
                 notebook.dataset.ccnStates = statesJson;
                 notebook.dataset.ccnCounts = countsJson;
                 notebook.dataset.ccnCtx = ctxStr;
+                if (currentService) {
+                    try { notebook.setAttribute(`data-ccn-states-${currentService}`, statesJson); } catch(_e) {}
+                    try { notebook.setAttribute(`data-ccn-counts-${currentService}`, countsJson); } catch(_e) {}
+                    try { notebook.setAttribute(`data-ccn-ctx-${currentService}`, ctxStr); } catch(_e) {}
+                }
             }
             try { sessionStorage.setItem(`ccnTabs:${ctxStr}`, JSON.stringify({states, acks: {}})); } catch(_e) {}
         } catch (_e) {
