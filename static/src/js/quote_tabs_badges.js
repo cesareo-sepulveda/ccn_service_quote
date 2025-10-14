@@ -95,6 +95,35 @@
     // Visibilidad del botón se controla en servidor (XML). No tocar desde JS.
   }
 
+  // Limpia completamente estilos/clases de tabs y sus <li> asociados
+  function hardResetTabs(nb){
+    try{
+      const links = nb ? getLinks(nb) : [];
+      links.forEach((a)=>{
+        try{
+          clearTab(a);
+          a.removeAttribute('data-ccn-dyed');
+          a.style.removeProperty('--ccn-tab-bg');
+          a.style.removeProperty('--ccn-tab-fg');
+          a.style.removeProperty('background');
+          a.style.removeProperty('background-color');
+          a.style.removeProperty('border-color');
+          a.style.removeProperty('background-image');
+          const li = a.closest && a.closest('li');
+          if (li){
+            li.removeAttribute('data-ccn-dyed');
+            li.style.removeProperty('--ccn-tab-bg');
+            li.style.removeProperty('--ccn-tab-fg');
+            li.style.removeProperty('background');
+            li.style.removeProperty('background-color');
+            li.style.removeProperty('border-color');
+            li.style.removeProperty('background-image');
+          }
+        }catch(_e){}
+      });
+    }catch(_e){}
+  }
+
   // === Lee el valor del campo de estado desde el DOM (invisible/visible) ===
   function readIntField(root, fieldName){
     // Probar selectores comunes de form OWL:
@@ -138,9 +167,22 @@
     }catch(_e){ return false; }
   }
 
-  // === Encuentra notebook y tabs ===
+  // === Encuentra notebook y tabs (aislado por servicio) ===
   function getNotebook(){
-    return document.querySelector(".o_form_view .o_notebook");
+    try{
+      const form = document.querySelector('.o_form_view');
+      if (!form) return null;
+      const srv = readStrField(form, 'current_service_type') || '';
+      if (srv) {
+        // Notebook etiquetado por servicio
+        const nbSrv = form.querySelector(`.o_notebook[data-ccn-service="${srv}"]`) || form.querySelector(`.ccn-srv[data-ccn-service="${srv}"] .o_notebook`);
+        if (nbSrv) return nbSrv;
+      }
+      // Fallback: el notebook visible
+      const all = [...form.querySelectorAll('.o_notebook')];
+      const vis = all.find(nb => nb.offsetParent !== null);
+      return vis || all[0] || null;
+    }catch(_e){ return document.querySelector('.o_form_view .o_notebook'); }
   }
   function getLinks(nb){
     return nb ? [...nb.querySelectorAll(".nav-tabs .nav-link")] : [];
@@ -727,17 +769,21 @@ let __greenHold = {};
     // Usar el índice inicial; evitar reindex en cada pintado
     const map = byCode;
     ensureCtx(formRoot);
-    // Ventana corta tras cambio de servicio: baseline rojo para evitar arrastre entre servicios
+    // Ventana corta tras cambio de servicio: baseline rojo solo si aún no hay estados por servicio
     if (!window.__ccnServiceSwitchUntil) window.__ccnServiceSwitchUntil = 0;
-    try{
+    try {
       const now = Date.now();
       if (now < window.__ccnServiceSwitchUntil) {
-        for (const [code, link] of Object.entries(map)){
-          try { applyTab(link, 0); if (last) last[code] = 0; } catch(_e){}
+        const dsProbe = readStatesFromDataset(formRoot) || {};
+        if (!Object.keys(dsProbe).length) {
+          try { hardResetTabs(nb); } catch(_e){}
+          for (const [code, link] of Object.entries(map)) {
+            try { applyTab(link, 0); if (last) last[code] = 0; } catch(_e) {}
+          }
+          return true;
         }
-        return true;
       }
-    }catch(_e){}
+    } catch(_e) {}
     // Si el contexto acaba de cambiar (servicio/sitio), arrancar desde estado limpio
     if (__ctxChanged) {
       try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
@@ -745,40 +791,30 @@ let __greenHold = {};
     }
     let dsStates = readStatesFromDataset(formRoot);
     let dsCounts = readCountsFromDataset(formRoot);
-    // Si no hay dataset, usar DOM
+    // Si no hay dataset por servicio, intentar fallback desde DOM per-servicio
     if (!dsStates || !Object.keys(dsStates).length){
-      dsStates = fallbackStatesFromDOM(formRoot);
+      const fb = fallbackStatesFromDOM(formRoot) || {};
+      if (Object.keys(fb).length) {
+        dsStates = fb;
+      }
     }
     // Forzar estados frescos en cambio de contexto
     if (__forceFresh) { dsStates = {}; dsCounts = {}; __forceFresh = false; }
     if (!dsCounts || !Object.keys(dsCounts).length) dsCounts = {};
     let changed = false;
     const activeCode = __activeCodeOptimistic; // snapshot y limpiar al final
+    const hasStates = !!dsStates && Object.keys(dsStates).length > 0;
 
-    // Si no hay estados aún publicados para este contexto, inicializar colores determinísticamente:
-    // - Ámbar solo si hay override local explícito (No Aplica) en este contexto
-    // - En otro caso, rojo para todos
+    // Si aún no hay estados (ni fallback), baseline rojo y no considerar overrides/persistidos
     if (!dsStates || !Object.keys(dsStates).length) {
-      // Sin estados publicados aún para este servicio: usar persistidos por contexto si existen,
-      // en su defecto, solo respetar overrides de ámbar, y el resto rojo.
-      const persist = __persistStates || {};
       for (const [code, link] of Object.entries(byCode)) {
-        let desired = 0;
-        if (Object.prototype.hasOwnProperty.call(persist, code)) {
-          desired = persist[code];
-        } else if (__ackOverrides[code]) {
-          desired = 2;
-        }
-        const desiredClass = clsFor(desired);
         const liNode = link.closest ? link.closest('li') : null;
-        const missingClass = !link.classList.contains(desiredClass) || (liNode && !liNode.classList.contains(desiredClass));
-        if (missingClass) {
-          applyTab(link, desired);
-          if (last) last[code] = desired;
-          changed = true;
+        const desiredClass = clsFor(0);
+        const missing = !link.classList.contains(desiredClass) || (liNode && !liNode.classList.contains(desiredClass));
+        if (missing) {
+          try { applyTab(link, 0); if (last) last[code] = 0; changed = true; } catch(_e){}
         }
       }
-      // No continuar con lógica normal hasta que el backend publique estados para este contexto
       return changed;
     }
 
@@ -876,7 +912,7 @@ let __greenHold = {};
         sNorm = 1;
         debugSource = stateValue === 1 ? 'backend(1)' : (fieldCount > 0 ? `fieldCount(${fieldCount})` : `rowCount(${rowCount})`);
         if (__ackOverrides[code]) { try { delete __ackOverrides[code]; } catch(_e){} }
-      } else if (__ackOverrides[code] || stateValue === 2) {
+      } else if ((hasStates && __ackOverrides[code]) || stateValue === 2) {
         // Override "No Aplica" o backend=2
         sNorm = 2;
         debugSource = __ackOverrides[code] ? 'ackOverride' : 'backend(2)';
@@ -1129,6 +1165,8 @@ let __greenHold = {};
             try {
               const newKey = currentCtxKey(formRoot);
               sessionStorage.removeItem(`ccnTabs:${newKey}`);
+              // Limpiar overrides locales del nuevo contexto para evitar arrastre de ámbar
+              try { __ackOverridesMap[newKey] = {}; } catch(_e){}
             } catch(_e) {}
 
             // Reset completamente el contexto y LIMPIAR colores previos
@@ -1142,10 +1180,15 @@ let __greenHold = {};
             window.__ccnServiceSwitchUntil = Date.now() + 700;
             // CRÍTICO: Limpiar el objeto 'last' para forzar re-pintado completo
             for (const k in last) delete last[k];
-            try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
+            try { hardResetTabs(nb); } catch(_e){}
             paintFromStates(formRoot, nb, byCode, last);
           }catch(_e){}
-          [80, 180, 360].forEach((ms)=> setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, ms));
+          // Publicar pronto y repintar al final de la ventana de switch
+          const now = Date.now();
+          const until = now + 250;
+          window.__ccnServiceSwitchUntil = until;
+          setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 120);
+          setTimeout(()=>{ try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){} }, (until - now) + 10);
         }
       };
       document.body.addEventListener('change', onQuickRepaint, true);
