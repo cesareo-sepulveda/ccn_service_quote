@@ -1068,13 +1068,20 @@ let __greenHold = {};
       }catch(_e){}
     });
 
-    mo.observe(formRoot, {
-      childList: true,
-      subtree: true,
-      characterData: true,
-      attributes: true,
-      attributeFilter: ["data-value", "value", "class"],
-    });
+    // Observar únicamente el tab activo del notebook, reduciendo ruido
+    try{
+      const activePane = nb && nb.querySelector ? (nb.querySelector('.tab-pane.active') || nb) : formRoot;
+      mo.observe(activePane, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        // Solo cambios de datos; evitar 'class' y 'value' para no disparar repaints masivos
+        attributeFilter: ["data-value"],
+      });
+    }catch(_e){
+      // Fallback conservador
+      mo.observe(formRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-value"] });
+    }
 
     // Exponer para debug opcional
     window.__ccnTabsWatch = {
@@ -1192,7 +1199,6 @@ let __greenHold = {};
         }
       };
       document.body.addEventListener('change', onQuickRepaint, true);
-      document.body.addEventListener('input', onQuickRepaint, true);
       // Interacciones dentro de listas (click o edición por teclado) → recalcular
       document.body.addEventListener('click', (ev)=>{
         if (ev.target.closest && ev.target.closest('.o_notebook .o_list_renderer, .o_notebook .o_list_view, .o_notebook .o_list_table')){

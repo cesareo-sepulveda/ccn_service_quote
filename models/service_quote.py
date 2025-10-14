@@ -293,48 +293,51 @@ class ServiceQuote(models.Model):
                 sid = (gen[:1].id if gen else rec.site_ids[:1].id) or False
             return sid
 
-        def state_for(rec, code):
-            site_id = _site_for_compute(rec)
-            # Considerar líneas del rubro en el sitio, independientemente del tipo de servicio
-            # IMPORTANTE: Solo contar líneas GUARDADAS (con id), ignorar líneas temporales en memoria
-            lines = rec.line_ids.filtered(lambda l:
-                # Filtro ESTRICTO: Solo líneas con ID entero Y que existan en BD
-                l.id and
-                isinstance(l.id, int) and
-                l.id > 0 and  # IDs positivos (extra validación)
-                l._origin.id and  # El registro original existe
-                (not site_id or (l.site_id and l.site_id.id == site_id)) and
-                ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
-            )
-            cnt = len(lines)
-            # ACK en cualquier tipo de servicio para ese sitio/rubro
-            # IMPORTANTE: Si no hay site_id válido, NO buscar ACKs (devolver False para evitar falsos positivos)
-            ack = False
-            if site_id:
-                ack = self.env['ccn.service.quote.ack'].search_count([
-                    ('quote_id', '=', rec.id),
-                    ('site_id', '=', site_id),
-                    ('service_type', 'in', ['jardineria','limpieza','mantenimiento','materiales','servicios_especiales','almacenaje','fletes']),
-                    ('rubro_code', '=', code),
-                    ('is_empty', '=', True),
-                ]) > 0
-            return 1 if cnt > 0 else (2 if ack else 0)
-
         for rec in self:
-            rec.rubro_state_mano_obra                 = state_for(rec, 'mano_obra')
-            rec.rubro_state_uniforme                  = state_for(rec, 'uniforme')
-            rec.rubro_state_epp                       = state_for(rec, 'epp')
-            rec.rubro_state_epp_alturas               = state_for(rec, 'epp_alturas')
-            rec.rubro_state_equipo_especial_limpieza  = state_for(rec, 'equipo_especial_limpieza')
-            rec.rubro_state_comunicacion_computo      = state_for(rec, 'comunicacion_computo')
-            rec.rubro_state_herramienta_menor_jardineria = state_for(rec, 'herramienta_menor_jardineria')
-            rec.rubro_state_material_limpieza         = state_for(rec, 'material_limpieza')
-            rec.rubro_state_perfil_medico             = state_for(rec, 'perfil_medico')
-            rec.rubro_state_maquinaria_limpieza       = state_for(rec, 'maquinaria_limpieza')
-            rec.rubro_state_maquinaria_jardineria     = state_for(rec, 'maquinaria_jardineria')
-            rec.rubro_state_fertilizantes_tierra_lama = state_for(rec, 'fertilizantes_tierra_lama')
-            rec.rubro_state_consumibles_jardineria    = state_for(rec, 'consumibles_jardineria')
-            rec.rubro_state_capacitacion              = state_for(rec, 'capacitacion')
+            site_id = _site_for_compute(rec)
+
+            # Conjuntos de códigos por líneas guardadas en el sitio
+            line_codes_site = set()
+            if rec.line_ids:
+                for l in rec.line_ids:
+                    try:
+                        if not (l.id and isinstance(l.id, int) and l.id > 0 and l._origin.id):
+                            continue
+                        if site_id and (not l.site_id or l.site_id.id != site_id):
+                            continue
+                        code = getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)
+                        if code:
+                            line_codes_site.add(code)
+                    except Exception:
+                        continue
+
+            # Conjunto de ACKs por código (cualquier servicio) en el sitio
+            ack_codes_any = set()
+            if site_id and rec.ack_ids:
+                for a in rec.ack_ids:
+                    try:
+                        if a.site_id and a.site_id.id == site_id and a.is_empty and a.rubro_code:
+                            ack_codes_any.add(a.rubro_code)
+                    except Exception:
+                        continue
+
+            def state_for_code(code):
+                return 1 if code in line_codes_site else (2 if code in ack_codes_any else 0)
+
+            rec.rubro_state_mano_obra                 = state_for_code('mano_obra')
+            rec.rubro_state_uniforme                  = state_for_code('uniforme')
+            rec.rubro_state_epp                       = state_for_code('epp')
+            rec.rubro_state_epp_alturas               = state_for_code('epp_alturas')
+            rec.rubro_state_equipo_especial_limpieza  = state_for_code('equipo_especial_limpieza')
+            rec.rubro_state_comunicacion_computo      = state_for_code('comunicacion_computo')
+            rec.rubro_state_herramienta_menor_jardineria = state_for_code('herramienta_menor_jardineria')
+            rec.rubro_state_material_limpieza         = state_for_code('material_limpieza')
+            rec.rubro_state_perfil_medico             = state_for_code('perfil_medico')
+            rec.rubro_state_maquinaria_limpieza       = state_for_code('maquinaria_limpieza')
+            rec.rubro_state_maquinaria_jardineria     = state_for_code('maquinaria_jardineria')
+            rec.rubro_state_fertilizantes_tierra_lama = state_for_code('fertilizantes_tierra_lama')
+            rec.rubro_state_consumibles_jardineria    = state_for_code('consumibles_jardineria')
+            rec.rubro_state_capacitacion              = state_for_code('capacitacion')
 
     @api.depends(
         'line_ids', 'line_ids.rubro_id', 'line_ids.rubro_code',
@@ -350,68 +353,71 @@ class ServiceQuote(models.Model):
                 sid = (gen[:1].id if gen else rec.site_ids[:1].id) or False
             return sid
 
-        def state_for_service(rec, code, service_type):
-            site_id = _site_for_compute(rec)
-            # Buscar líneas del rubro en el sitio actual del servicio
-            # IMPORTANTE: Solo contar líneas GUARDADAS (con id), ignorar líneas temporales en memoria
-            lines = rec.line_ids.filtered(lambda l:
-                # Filtro ESTRICTO: Solo líneas con ID entero Y que existan en BD
-                l.id and
-                isinstance(l.id, int) and
-                l.id > 0 and  # IDs positivos (extra validación)
-                l._origin.id and  # El registro original existe
-                (not site_id or (l.site_id and l.site_id.id == site_id)) and
-                l.service_type == service_type and
-                ((getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)) == code)
-            )
-            cnt = len(lines)
-
-            # Buscar ACKs para este sitio, servicio y rubro
-            # IMPORTANTE: Si no hay site_id válido, NO buscar ACKs (devolver False para evitar falsos positivos)
-            ack = False
-            if site_id:
-                ack = self.env['ccn.service.quote.ack'].search_count([
-                    ('quote_id', '=', rec.id),
-                    ('site_id', '=', site_id),
-                    ('service_type', '=', service_type),
-                    ('rubro_code', '=', code),
-                    ('is_empty', '=', True),
-                ]) > 0
-
-            return 1 if cnt > 0 else (2 if ack else 0)
-
         for rec in self:
+            site_id = _site_for_compute(rec)
+
+            # Conjuntos de códigos por servicio con líneas guardadas en el sitio
+            line_codes_by_srv = {'jardineria': set(), 'limpieza': set()}
+            if rec.line_ids:
+                for l in rec.line_ids:
+                    try:
+                        if not (l.id and isinstance(l.id, int) and l.id > 0 and l._origin.id):
+                            continue
+                        if site_id and (not l.site_id or l.site_id.id != site_id):
+                            continue
+                        code = getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)
+                        st = getattr(l, 'service_type', False)
+                        if code and st in line_codes_by_srv:
+                            line_codes_by_srv[st].add(code)
+                    except Exception:
+                        continue
+
+            # Conjuntos de ACKs por servicio en el sitio
+            ack_codes_by_srv = {'jardineria': set(), 'limpieza': set()}
+            if site_id and rec.ack_ids:
+                for a in rec.ack_ids:
+                    try:
+                        if a.site_id and a.site_id.id == site_id and a.is_empty and a.service_type in ack_codes_by_srv and a.rubro_code:
+                            ack_codes_by_srv[a.service_type].add(a.rubro_code)
+                    except Exception:
+                        continue
+
+            def state_for_service(code, service_type):
+                has_lines = code in line_codes_by_srv.get(service_type, set())
+                has_ack = code in ack_codes_by_srv.get(service_type, set())
+                return 1 if has_lines else (2 if has_ack else 0)
+
             # Jardinería
-            rec.rubro_state_mano_obra_jard                 = state_for_service(rec, 'mano_obra', 'jardineria')
-            rec.rubro_state_uniforme_jard                  = state_for_service(rec, 'uniforme', 'jardineria')
-            rec.rubro_state_epp_jard                       = state_for_service(rec, 'epp', 'jardineria')
-            rec.rubro_state_epp_alturas_jard               = state_for_service(rec, 'epp_alturas', 'jardineria')
-            rec.rubro_state_equipo_especial_limpieza_jard  = state_for_service(rec, 'equipo_especial_limpieza', 'jardineria')
-            rec.rubro_state_comunicacion_computo_jard      = state_for_service(rec, 'comunicacion_computo', 'jardineria')
-            rec.rubro_state_herramienta_menor_jardineria_jard = state_for_service(rec, 'herramienta_menor_jardineria', 'jardineria')
-            rec.rubro_state_material_limpieza_jard         = state_for_service(rec, 'material_limpieza', 'jardineria')
-            rec.rubro_state_perfil_medico_jard             = state_for_service(rec, 'perfil_medico', 'jardineria')
-            rec.rubro_state_maquinaria_limpieza_jard       = state_for_service(rec, 'maquinaria_limpieza', 'jardineria')
-            rec.rubro_state_maquinaria_jardineria_jard     = state_for_service(rec, 'maquinaria_jardineria', 'jardineria')
-            rec.rubro_state_fertilizantes_tierra_lama_jard = state_for_service(rec, 'fertilizantes_tierra_lama', 'jardineria')
-            rec.rubro_state_consumibles_jardineria_jard    = state_for_service(rec, 'consumibles_jardineria', 'jardineria')
-            rec.rubro_state_capacitacion_jard              = state_for_service(rec, 'capacitacion', 'jardineria')
+            rec.rubro_state_mano_obra_jard                 = state_for_service('mano_obra', 'jardineria')
+            rec.rubro_state_uniforme_jard                  = state_for_service('uniforme', 'jardineria')
+            rec.rubro_state_epp_jard                       = state_for_service('epp', 'jardineria')
+            rec.rubro_state_epp_alturas_jard               = state_for_service('epp_alturas', 'jardineria')
+            rec.rubro_state_equipo_especial_limpieza_jard  = state_for_service('equipo_especial_limpieza', 'jardineria')
+            rec.rubro_state_comunicacion_computo_jard      = state_for_service('comunicacion_computo', 'jardineria')
+            rec.rubro_state_herramienta_menor_jardineria_jard = state_for_service('herramienta_menor_jardineria', 'jardineria')
+            rec.rubro_state_material_limpieza_jard         = state_for_service('material_limpieza', 'jardineria')
+            rec.rubro_state_perfil_medico_jard             = state_for_service('perfil_medico', 'jardineria')
+            rec.rubro_state_maquinaria_limpieza_jard       = state_for_service('maquinaria_limpieza', 'jardineria')
+            rec.rubro_state_maquinaria_jardineria_jard     = state_for_service('maquinaria_jardineria', 'jardineria')
+            rec.rubro_state_fertilizantes_tierra_lama_jard = state_for_service('fertilizantes_tierra_lama', 'jardineria')
+            rec.rubro_state_consumibles_jardineria_jard    = state_for_service('consumibles_jardineria', 'jardineria')
+            rec.rubro_state_capacitacion_jard              = state_for_service('capacitacion', 'jardineria')
 
             # Limpieza
-            rec.rubro_state_mano_obra_limp                 = state_for_service(rec, 'mano_obra', 'limpieza')
-            rec.rubro_state_uniforme_limp                  = state_for_service(rec, 'uniforme', 'limpieza')
-            rec.rubro_state_epp_limp                       = state_for_service(rec, 'epp', 'limpieza')
-            rec.rubro_state_epp_alturas_limp               = state_for_service(rec, 'epp_alturas', 'limpieza')
-            rec.rubro_state_equipo_especial_limpieza_limp  = state_for_service(rec, 'equipo_especial_limpieza', 'limpieza')
-            rec.rubro_state_comunicacion_computo_limp      = state_for_service(rec, 'comunicacion_computo', 'limpieza')
-            rec.rubro_state_herramienta_menor_jardineria_limp = state_for_service(rec, 'herramienta_menor_jardineria', 'limpieza')
-            rec.rubro_state_material_limpieza_limp         = state_for_service(rec, 'material_limpieza', 'limpieza')
-            rec.rubro_state_perfil_medico_limp             = state_for_service(rec, 'perfil_medico', 'limpieza')
-            rec.rubro_state_maquinaria_limpieza_limp       = state_for_service(rec, 'maquinaria_limpieza', 'limpieza')
-            rec.rubro_state_maquinaria_jardineria_limp     = state_for_service(rec, 'maquinaria_jardineria', 'limpieza')
-            rec.rubro_state_fertilizantes_tierra_lama_limp = state_for_service(rec, 'fertilizantes_tierra_lama', 'limpieza')
-            rec.rubro_state_consumibles_jardineria_limp    = state_for_service(rec, 'consumibles_jardineria', 'limpieza')
-            rec.rubro_state_capacitacion_limp              = state_for_service(rec, 'capacitacion', 'limpieza')
+            rec.rubro_state_mano_obra_limp                 = state_for_service('mano_obra', 'limpieza')
+            rec.rubro_state_uniforme_limp                  = state_for_service('uniforme', 'limpieza')
+            rec.rubro_state_epp_limp                       = state_for_service('epp', 'limpieza')
+            rec.rubro_state_epp_alturas_limp               = state_for_service('epp_alturas', 'limpieza')
+            rec.rubro_state_equipo_especial_limpieza_limp  = state_for_service('equipo_especial_limpieza', 'limpieza')
+            rec.rubro_state_comunicacion_computo_limp      = state_for_service('comunicacion_computo', 'limpieza')
+            rec.rubro_state_herramienta_menor_jardineria_limp = state_for_service('herramienta_menor_jardineria', 'limpieza')
+            rec.rubro_state_material_limpieza_limp         = state_for_service('material_limpieza', 'limpieza')
+            rec.rubro_state_perfil_medico_limp             = state_for_service('perfil_medico', 'limpieza')
+            rec.rubro_state_maquinaria_limpieza_limp       = state_for_service('maquinaria_limpieza', 'limpieza')
+            rec.rubro_state_maquinaria_jardineria_limp     = state_for_service('maquinaria_jardineria', 'limpieza')
+            rec.rubro_state_fertilizantes_tierra_lama_limp = state_for_service('fertilizantes_tierra_lama', 'limpieza')
+            rec.rubro_state_consumibles_jardineria_limp    = state_for_service('consumibles_jardineria', 'limpieza')
+            rec.rubro_state_capacitacion_limp              = state_for_service('capacitacion', 'limpieza')
 
     # ACK granular
     def _ensure_ack(self, rubro_code, value):

@@ -3,6 +3,8 @@
 import { patch } from "@web/core/utils/patch";
 import { FormController } from "@web/views/form/form_controller";
 
+const DEBUG = false;
+
 function normalizeCode(code) {
     return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
 }
@@ -96,10 +98,14 @@ function publishStates(controller) {
 
             // Log detallado para debug (solo si hay estados)
             const hasStates = Object.keys(states).length > 0;
-            if (hasStates) {
-                console.log('[CCN] ✅ Publicando estados:', states);
-            } else {
-                console.warn('[CCN] ⚠️ Publish issue - States empty, FormView found?', !!fv);
+            if (DEBUG) {
+                if (hasStates) {
+                    // eslint-disable-next-line no-console
+                    console.log('[CCN] ✅ Publicando estados:', states);
+                } else {
+                    // eslint-disable-next-line no-console
+                    console.warn('[CCN] ⚠️ Publish issue - States empty, FormView found?', !!fv);
+                }
             }
 
             if (fv) {
@@ -115,10 +121,16 @@ function publishStates(controller) {
             }
             try { sessionStorage.setItem(`ccnTabs:${ctxStr}`, JSON.stringify({states, acks: {}})); } catch(_e) {}
         } catch (_e) {
-            console.error('Error publishing states:', _e);
+            if (DEBUG) {
+                // eslint-disable-next-line no-console
+                console.error('Error publishing states:', _e);
+            }
         }
     } catch (e) {
-        console.error('[CCN] Error in publishStates:', e);
+        if (DEBUG) {
+            // eslint-disable-next-line no-console
+            console.error('[CCN] Error in publishStates:', e);
+        }
     }
 }
 
