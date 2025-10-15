@@ -5,6 +5,47 @@ import { FormController } from "@web/views/form/form_controller";
 
 const DEBUG = false;
 
+// Ejecuta en el siguiente ciclo de rendering (2 rAF) para asegurar DOM listo,
+// sin introducir retrasos perceptibles como 50-100ms.
+function asap(fn){
+    try{ requestAnimationFrame(()=>requestAnimationFrame(fn)); }
+    catch(_e){ setTimeout(fn, 0); }
+}
+
+// Overlay de actividad (spinner) mínimo y no intrusivo
+function showBusyOverlay(message){
+    try{
+        let el = document.querySelector('.o_ccn_busy');
+        if (!el){
+            el = document.createElement('div');
+            el.className = 'o_ccn_busy';
+            el.setAttribute('role', 'status');
+            el.style.position = 'fixed';
+            el.style.inset = '0';
+            el.style.zIndex = '9999';
+            el.style.display = 'flex';
+            el.style.alignItems = 'center';
+            el.style.justifyContent = 'center';
+            el.style.background = 'rgba(255,255,255,0.35)';
+            el.style.backdropFilter = 'blur(1px)';
+            el.innerHTML = `
+              <div class="text-center">
+                <div class="spinner-border text-primary" style="width: 2.75rem; height: 2.75rem;" aria-hidden="true"></div>
+                <div class="mt-2 small text-muted o_ccn_busy_msg"></div>
+              </div>`;
+            document.body.appendChild(el);
+        }
+        const msg = el.querySelector('.o_ccn_busy_msg');
+        if (msg) msg.textContent = String(message || 'Procesando…');
+    }catch(_e){}
+}
+function hideBusyOverlay(){
+    try{
+        const el = document.querySelector('.o_ccn_busy');
+        if (el && el.parentNode) el.parentNode.removeChild(el);
+    }catch(_e){}
+}
+
 function normalizeCode(code) {
     return code === "herr_menor_jardineria" ? "herramienta_menor_jardineria" : code;
 }
@@ -149,12 +190,67 @@ function initQuoteNotebook(controller) {
     if (!controller?.model || controller.model.name !== "ccn.service.quote") return;
     const el = controller.el || document.querySelector('.o_form_view');
     ensureCurrentSite(controller);
+    // Si quedó un overlay de una acción previa (p.ej. cambio de servicio), ocultarlo ahora
+    hideBusyOverlay();
 
-    // Publicar estados con delay
-    setTimeout(() => {
+    // Publicar estados en el siguiente tick (rápido)
+    asap(() => {
         publishStates(controller);
         try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
-    }, 50);
+        // Intentar restaurar el tab activo solicitado (p.ej., tras cerrar Catálogo)
+        try {
+            const root = document.querySelector('.o_form_view');
+            const data = controller?.model?.root?.data || {};
+            const rid = controller?.model?.root?.resId || data.id || 'new';
+            const currentService = readStrFieldDOM('current_service_type') || '';
+            const currentSite = readIntFieldDOM('current_site_id') || '';
+            const ctxStr = `${rid}|${currentSite||''}|${currentService||''}`;
+            const key = `ccnGoTab:${ctxStr}`;
+            const raw = sessionStorage.getItem(key);
+            if (raw) {
+                let payload = null;
+                try { payload = JSON.parse(raw) || {}; } catch(_e) { payload = {}; }
+                const codeRaw = (payload && payload.code) || '';
+                const candidates = [];
+                const normalized = normalizeCode(codeRaw);
+                if (codeRaw) candidates.push(codeRaw);
+                if (normalized && normalized !== codeRaw) candidates.push(normalized);
+
+                const tryActivate = (remaining) => {
+                    const nb = root ? (root.querySelector('.o_notebook') || root.querySelector('.o_content .o_notebook')) : document.querySelector('.o_notebook');
+                    if (!nb) {
+                        if (remaining > 0) return asap(() => tryActivate(remaining - 1));
+                        const tooOld = (Date.now() - (payload.ts || 0)) > 10000;
+                        if (tooOld) { try { sessionStorage.removeItem(key); } catch(_e){} }
+                        return;
+                    }
+                    for (const code of candidates){
+                        if (!code) continue;
+                        const pageId = `page_${code}`;
+                        const sel = [
+                            `.nav-tabs .nav-link[name="page_${code}"]`,
+                            `.nav-tabs .nav-link[aria-controls="${pageId}"]`,
+                            `.nav-tabs .nav-link[data-bs-target="#${pageId}"]`,
+                            `.nav-tabs .nav-link[href="#${pageId}"]`,
+                        ].join(', ');
+                        const link = nb.querySelector(sel);
+                        if (link) {
+                            try { link.click(); } catch(_e){}
+                            try { sessionStorage.removeItem(key); } catch(_e){}
+                            return;
+                        }
+                    }
+                    if (remaining > 0) {
+                        asap(() => tryActivate(remaining - 1));
+                    } else {
+                        const tooOld = (Date.now() - (payload.ts || 0)) > 10000;
+                        if (tooOld) { try { sessionStorage.removeItem(key); } catch(_e){} }
+                    }
+                };
+                tryActivate(20);
+            }
+        } catch(_e) {}
+    });
 }
 
 // Exponer un helper global para forzar la publicación de estados desde otros scripts
@@ -169,17 +265,17 @@ function exposePublisher(ctrl){
 patch(FormController.prototype, {
     setup() {
         super.setup();
-        // Publicar con delay en setup inicial
-        setTimeout(() => initQuoteNotebook(this), 100);
+        // Publicar rápido en setup inicial
+        asap(() => initQuoteNotebook(this));
         exposePublisher(this);
 
         const requestRepaint = () => {
             try { publishStates(this); } catch(_e) {}
             try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
-            setTimeout(() => {
+            asap(() => {
                 try { publishStates(this); } catch(_e) {}
                 try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
-            }, 40);
+            });
         };
 
         // Agregar listener para cambios en el formulario
@@ -194,11 +290,11 @@ patch(FormController.prototype, {
                 }
             }
             if (hasServiceTypeChange) requestRepaint();
-            setTimeout(() => initQuoteNotebook(self), 100);
+            asap(() => initQuoteNotebook(self));
         });
 
         // Observar cambios en el form, pero no en datasets para evitar loop
-        setTimeout(() => {
+        asap(() => {
             const form = document.querySelector('.o_form_view');
             if (form) {
                 observer.observe(form, {
@@ -208,7 +304,7 @@ patch(FormController.prototype, {
                     attributeFilter: ['class', 'data-value', 'value']  // evitar data-ccn-* para no loop
                 });
             }
-        }, 150);
+        });
 
         // Listener explícito al cambio del campo de servicio → repintado inmediato (sin recarga)
         document.body.addEventListener('change', (ev) => {
@@ -216,14 +312,108 @@ patch(FormController.prototype, {
             if (!t) return;
             try {
                 const holder = t.closest?.('[name="current_service_type"], [data-name="current_service_type"]');
-                if (holder) requestRepaint();
+                if (holder) {
+                    requestRepaint();
+
+                    // 1) Guardar el tab activo actual para restaurarlo después del reload
+                    try {
+                        const formRoot = document.querySelector('.o_form_view');
+                        const nb = formRoot ? formRoot.querySelector('.o_notebook') : document.querySelector('.o_notebook');
+                        const activeLink = nb ? nb.querySelector('.nav-tabs .nav-link.active') : null;
+                        let codeRaw = null;
+                        if (activeLink) {
+                            const name = activeLink.getAttribute('name') || '';
+                            const target = activeLink.getAttribute('aria-controls') || activeLink.getAttribute('data-bs-target') || activeLink.getAttribute('href') || '';
+                            let m = (name || '').match(/^page_(.+)$/);
+                            if (m) codeRaw = m[1];
+                            if (!codeRaw && target) {
+                                const id = String(target).replace(/^#/, '');
+                                const mm = id.match(/^page_(.+)$/);
+                                if (mm) codeRaw = mm[1];
+                            }
+                        }
+                        const rid = this?.model?.root?.resId || this?.model?.root?.data?.id || 'new';
+                        const currentSite = readIntFieldDOM('current_site_id') || '';
+                        const newSrv = readStrFieldDOM('current_service_type') || '';
+                        const ctxStr = `${rid}|${currentSite||''}|${newSrv||''}`;
+                        if (codeRaw) {
+                            try { sessionStorage.setItem(`ccnGoTab:${ctxStr}`, JSON.stringify({ code: normalizeCode(codeRaw), ts: Date.now() })); } catch(_e){}
+                        }
+                    } catch(_e) {}
+
+                    // 1.b) Si el registro aún es nuevo (sin id), NO recargar ni guardar para evitar perder datos
+                    try {
+                        const ridRaw = this?.model?.root?.resId || this?.model?.root?.data?.id || null;
+                        const ridNum = parseInt(String(ridRaw||'').trim(), 10);
+                        const isNew = !ridRaw || !Number.isFinite(ridNum) || ridNum <= 0;
+                        if (isNew) {
+                            // Solo repintar estados; no mostrar spinner ni forzar reload
+                            return;
+                        }
+                    } catch(_e) {}
+
+                    // 2) Intentar GUARDAR cambios solo si el formulario está sucio (sin delays fijos)
+                    try {
+                        const formView = document.querySelector('.o_form_view');
+                        const saveBtn = document.querySelector('.o_form_button_save');
+                        const saveBtnDisabled = !saveBtn || saveBtn.disabled || saveBtn.classList?.contains('o_button_disabled');
+                        const isDirty = !!(
+                            formView?.classList?.contains('o_isDirty') ||
+                            formView?.classList?.contains('o_form_dirty') ||
+                            formView?.querySelector?.('.o_modified, .o_dirty, [data-dirty="1"], .o_has_unsaved_changes') ||
+                            (saveBtn && !saveBtnDisabled)
+                        );
+
+                        const reloadNow = () => {
+                            try { this.env.services.action.doAction({ type: 'ir.actions.client', tag: 'reload' }); } catch(_e) {}
+                        };
+
+                        if (isDirty && saveBtn && !saveBtnDisabled) {
+                            // Click guardar y esperar a que deje de estar sucio (sin tiempo fijo)
+                            showBusyOverlay('Guardando cambios…');
+                            try { saveBtn.click(); } catch(_e){}
+                            const start = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+                            const maxWait = 4000; // límite duro por si el commit tarda
+                            const check = () => {
+                                try {
+                                    const fv = document.querySelector('.o_form_view');
+                                    const sb = document.querySelector('.o_form_button_save');
+                                    const sbDisabled = !sb || sb.disabled || sb.classList?.contains('o_button_disabled');
+                                    const dirty = !!(
+                                        fv?.classList?.contains('o_isDirty') ||
+                                        fv?.classList?.contains('o_form_dirty') ||
+                                        fv?.querySelector?.('.o_modified, .o_dirty, [data-dirty="1"], .o_has_unsaved_changes') ||
+                                        (sb && !sbDisabled)
+                                    );
+                                    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
+                                    if (!dirty) {
+                                        reloadNow();
+                                    } else if ((now - start) > maxWait) {
+                                        // No se pudo confirmar el guardado (validaciones, etc.). No recargar; ocultar overlay.
+                                        hideBusyOverlay();
+                                    } else {
+                                        requestAnimationFrame(check);
+                                    }
+                                } catch(_e) { hideBusyOverlay(); }
+                            };
+                            requestAnimationFrame(check);
+                        } else {
+                            // No hay cambios → recargar inmediatamente (siguiente tick)
+                            showBusyOverlay('Actualizando vista…');
+                            asap(reloadNow);
+                        }
+                    } catch(_e) {
+                        // En caso de error, recargar pronto sin bloquear
+                        hideBusyOverlay();
+                    }
+                }
             } catch (_e) {}
         }, true);
     },
     onWillUpdateProps() {
         super.onWillUpdateProps(...arguments);
-        // En updates, publicar con delay
-        setTimeout(() => initQuoteNotebook(this), 50);
+        // En updates, publicar rápido
+        asap(() => initQuoteNotebook(this));
         exposePublisher(this);
     },
 });

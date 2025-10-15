@@ -34,13 +34,13 @@ class CCNCatalogDialog extends Component {
   static components = { Dialog };
   static template = xml`
     <Dialog title="'Agregar: Productos'" size="'lg'">
-      <t t-slot="body">
+      <t t-set-slot="default">
         <div class="o_ccn_catalog_dialog">
           <div class="o_ccn_catalog_header">
             <div class="o_ccn_catalog_tools">
               <input t-model="state.search" t-on-input="onSearch" placeholder="Buscar..."/>
               <button t-on-click="toggleView" class="btn btn-secondary">
-                <t t-if="state.view === 'kanban'">Lista</t>
+                <t t-if="state.view === 'kanban'">Muy lista</t>
                 <t t-else="">Imágenes</t>
               </button>
             </div>
@@ -58,13 +58,14 @@ class CCNCatalogDialog extends Component {
                       <div t-if="it.list_price !== undefined &amp;&amp; it.list_price !== null">$ <t t-esc="it.list_price"/></div>
                     </div>
                     <div class="o_ccn_card_footer">
-                      <input type="number" min="1" step="1" class="o_ccn_qty_input"
+                      <input type="number" min="0" step="1" class="o_ccn_qty_input"
                              t-att-data-id="it.id"
                              t-att-value="getQty(it.id)"
                              t-on-click="stopBubble"
                              t-on-input="onQtyInput"/>
                       <button class="btn btn-primary btn-sm"
                               t-att-data-id="it.id"
+                              t-att-disabled="getQty(it.id) &lt;= 0"
                               t-on-click="onAddOne">Agregar</button>
                     </div>
                   </div>
@@ -79,7 +80,7 @@ class CCNCatalogDialog extends Component {
                       <td><t t-esc="it.default_code || ''"/></td>
                       <td><t t-esc="(it.list_price ?? '')"/></td>
                       <td>
-                        <input type="number" min="1" step="1" class="o_ccn_qty_input"
+                        <input type="number" min="0" step="1" class="o_ccn_qty_input"
                                t-att-data-id="it.id"
                                t-att-value="getQty(it.id)"
                                t-on-input="onQtyInput"/>
@@ -87,6 +88,7 @@ class CCNCatalogDialog extends Component {
                       <td>
                         <button class="btn btn-primary btn-sm"
                                 t-att-data-id="it.id"
+                                t-att-disabled="getQty(it.id) &lt;= 0"
                                 t-on-click="onAddOne">Agregar</button>
                       </td>
                     </tr>
@@ -97,11 +99,12 @@ class CCNCatalogDialog extends Component {
           </div>
         </div>
       </t>
-      <t t-slot="footer">
-        <button class="btn btn-secondary" t-on-click="onClose">Cerrar</button>
+      <t t-set-slot="footer">
+        <button class="btn btn-primary" t-on-click="onAddMany" t-att-disabled="!canAddMany()">Seleccionar todo</button>
+        <button class="btn btn-secondary ms-2" t-on-click="onClose">Cerrar</button>
       </t>
-    </Dialog>
-  `;
+      </Dialog>
+    `;
 
   setup(){
     this.orm = useService('orm');
@@ -118,19 +121,57 @@ class CCNCatalogDialog extends Component {
   onClose(){ this.env.services.dialog.close(); }
   onToggle(){ /* no-op */ }
 
+  showBusyOverlay(message){
+    try{
+      let el = document.querySelector('.o_ccn_busy');
+      if (!el){
+        el = document.createElement('div');
+        el.className = 'o_ccn_busy';
+        el.setAttribute('role', 'status');
+        el.style.position = 'fixed';
+        el.style.inset = '0';
+        el.style.zIndex = '9999';
+        el.style.display = 'flex';
+        el.style.alignItems = 'center';
+        el.style.justifyContent = 'center';
+        el.style.background = 'rgba(255,255,255,0.35)';
+        el.style.backdropFilter = 'blur(1px)';
+        el.innerHTML = `
+          <div class="text-center">
+            <div class="spinner-border text-primary" style="width: 2.75rem; height: 2.75rem;" aria-hidden="true"></div>
+            <div class="mt-2 small text-muted o_ccn_busy_msg"></div>
+          </div>`;
+        document.body.appendChild(el);
+      }
+      const msg = el.querySelector('.o_ccn_busy_msg');
+      if (msg) msg.textContent = String(message || 'Procesando…');
+    }catch(_e){}
+  }
+  hideBusyOverlay(){
+    try{ const el = document.querySelector('.o_ccn_busy'); if (el && el.parentNode) el.parentNode.removeChild(el); }catch(_e){}
+  }
+  _reloadSoon(){
+    try {
+      setTimeout(() => {
+        try { this.action.doAction({ type: 'ir.actions.client', tag: 'reload' }); }
+        catch(_e){}
+      }, 0);
+    } catch(_e) {}
+  }
+
   stopBubble(ev){ try{ ev.stopPropagation(); }catch(_e){} }
   onCheckboxToggle(){ /* no-op */ }
   getQty(id){
-    const raw = (this.state.qty && this.state.qty[id] != null) ? this.state.qty[id] : 1;
+    const raw = (this.state.qty && this.state.qty[id] != null) ? this.state.qty[id] : 0;
     const n = parseInt(String(raw), 10);
-    return Number.isFinite(n) && n > 0 ? n : 1;
+    return Number.isFinite(n) && n > 0 ? n : 0;
   }
   onQtyInput(ev){
     try{
       const id = parseInt(ev.currentTarget?.dataset?.id || '0', 10);
       if (!id) return;
-      const v = parseInt(String(ev.currentTarget.value || '1'), 10);
-      const n = Number.isFinite(v) && v > 0 ? v : 1;
+      const v = parseInt(String(ev.currentTarget.value || '0'), 10);
+      const n = Number.isFinite(v) && v >= 0 ? v : 0;
       const q = Object.assign({}, this.state.qty || {});
       q[id] = n;
       this.state.qty = q;
@@ -143,7 +184,7 @@ class CCNCatalogDialog extends Component {
       for (const k of Object.keys(q)){
         const n = parseInt(String(q[k]||0),10);
         if (Number.isFinite(n) && n > 0) cnt++;
-        if (cnt >= 2) return true;
+        if (cnt >= 1) return true;
       }
       return false;
     }catch(_e){ return false; }
@@ -152,6 +193,7 @@ class CCNCatalogDialog extends Component {
     const q = this.state.qty || {};
     const ids = Object.keys(q).map((k)=> parseInt(k,10)).filter((id)=> id && (parseInt(String(q[id]||0),10) > 0));
     if (!ids.length) return;
+    this.showBusyOverlay('Guardando productos seleccionados…');
     const rubros = await this.orm.searchRead('ccn.service.rubro', [['code', '=', this.props.rubro]], ['id']);
     const rubroId = (rubros && rubros[0] && rubros[0].id) || false;
     const type = this.props.serviceType === 'materiales' ? 'material' : 'servicio';
@@ -165,8 +207,15 @@ class CCNCatalogDialog extends Component {
       quantity: this.getQty(pid),
     }));
     try{ await this.orm.create('ccn.service.quote.line', values); }
-    catch(e){ throw e; }
-    await this.action.doAction({ type: 'ir.actions.client', tag: 'reload' });
+    catch(e){ try{ this.hideBusyOverlay(); }catch(_e){}; throw e; }
+    // Persistir el tab de retorno (por contexto: quote|site|service)
+    try {
+      const ctxKey = `${this.props.quoteId}|${this.props.siteId||''}|${this.props.serviceType||''}`;
+      const code = (this.props.rubro === 'herr_menor_jardineria') ? 'herramienta_menor_jardineria' : this.props.rubro;
+      sessionStorage.setItem(`ccnGoTab:${ctxKey}`, JSON.stringify({ code, ts: Date.now() }));
+    } catch(_e) {}
+    try{ this.env.services.dialog.close(); }catch(_e){}
+    this._reloadSoon();
   }
 
   async load(){
@@ -196,10 +245,12 @@ class CCNCatalogDialog extends Component {
     try{ ev.stopPropagation(); }catch(_e){}
     const id = parseInt(ev.currentTarget?.dataset?.id || '0', 10);
     if (!id) return;
+    this.showBusyOverlay('Guardando producto…');
     const rubros = await this.orm.searchRead('ccn.service.rubro', [['code', '=', this.props.rubro]], ['id']);
     const rubroId = (rubros && rubros[0] && rubros[0].id) || false;
     const type = this.props.serviceType === 'materiales' ? 'material' : 'servicio';
     const qty = this.getQty(id);
+    if (!qty || qty <= 0) return;
     const vals = {
       quote_id: this.props.quoteId,
       site_id: this.props.siteId || false,
@@ -210,8 +261,15 @@ class CCNCatalogDialog extends Component {
       quantity: qty,
     };
     try{ await this.orm.create('ccn.service.quote.line', [vals]); }
-    catch(e){ throw e; }
-    await this.action.doAction({ type: 'ir.actions.client', tag: 'reload' });
+    catch(e){ try{ this.hideBusyOverlay(); }catch(_e){}; throw e; }
+    // Persistir el tab de retorno (por contexto: quote|site|service)
+    try {
+      const ctxKey = `${this.props.quoteId}|${this.props.siteId||''}|${this.props.serviceType||''}`;
+      const code = (this.props.rubro === 'herr_menor_jardineria') ? 'herramienta_menor_jardineria' : this.props.rubro;
+      sessionStorage.setItem(`ccnGoTab:${ctxKey}`, JSON.stringify({ code, ts: Date.now() }));
+    } catch(_e) {}
+    try{ this.env.services.dialog.close(); }catch(_e){}
+    this._reloadSoon();
   }
 }
 
