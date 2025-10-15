@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from . import models
+from . import wizard
 
 # Hook inline para que Odoo lo encuentre sin archivo extra
 from odoo import api, SUPERUSER_ID

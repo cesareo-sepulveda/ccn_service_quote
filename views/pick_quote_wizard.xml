@@ -13,7 +13,7 @@
                    options="{'no_create_edit': True, 'no_quick_create': True}"/>
           </group>
           <footer>
-            <button string="Confirmar" type="object" name="action_confirm" class="btn-primary"/>
+            <button string="Confirmar" type="object" name="action_apply" class="btn-primary"/>
             <button string="Cancelar" special="cancel" class="btn-secondary"/>
           </footer>
         </form>
@@ -22,6 +22,15 @@
 
     <!-- Acción para abrir el wizard (útil si luego la llamas desde un botón) -->
     <record id="action_pick_quote_wizard" model="ir.actions.act_window">
+      <field name="name">Agregar cotización CCN</field>
+      <field name="res_model">ccn.service.quote.pick.wizard</field>
+      <field name="view_mode">form</field>
+      <field name="target">new</field>
+      <field name="view_id" ref="view_pick_quote_wizard"/>
+    </record>
+
+    <!-- Alias esperado por sale_order.py -->
+    <record id="action_ccn_pick_quote" model="ir.actions.act_window">
       <field name="name">Agregar cotización CCN</field>
       <field name="res_model">ccn.service.quote.pick.wizard</field>
       <field name="view_mode">form</field>

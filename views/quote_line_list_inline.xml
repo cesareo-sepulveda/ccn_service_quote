@@ -33,7 +33,7 @@
           <!-- Precio Ajustado (resultado de tabulador) -->
           <field name="price_unit_final" string="Precio Ajustado" readonly="1"/>
 
-          <!-- Frecuencia -->
+          <!-- Frecuencia (genérica) -->
           <field name="frequency" string="Frecuencia"/>
 
           <!-- Subtotal (unitario mensual) -->

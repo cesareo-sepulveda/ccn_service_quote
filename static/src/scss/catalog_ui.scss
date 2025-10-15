@@ -41,6 +41,16 @@
   flex-direction: column;
   gap: 4px;
 }
+.o_ccn_card_footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px 10px;
+  border-top: 1px solid var(--o-gray-200, #eee);
+}
+.o_ccn_qty_input {
+  width: 80px;
+}
 .o_ccn_catalog_body table.table-sm td, .o_ccn_catalog_body table.table-sm th {
   vertical-align: middle;
 }

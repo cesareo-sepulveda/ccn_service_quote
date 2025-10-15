@@ -548,11 +548,31 @@ class ServiceQuote(models.Model):
             except Exception:
                 rec.site_count = len(rec.site_ids)
 
+    def _make_unique_name(self, partner_id, desired_name):
+        """Return a name unique per partner by appending a numeric suffix if needed."""
+        base = (desired_name or '').strip() or self.env._('Nueva Cotización')
+        name = base
+        i = 1
+        while self.search_count([('partner_id', '=', partner_id), ('name', '=', name)]):
+            i += 1
+            name = f"{base} ({i})"
+        return name
+
     @api.model_create_multi
     def create(self, vals_list):
+        # Asegurar sitio por defecto y nombre único por cliente para evitar fallos de constraint
         for vals in vals_list:
             if not vals.get('site_ids'):
                 vals['site_ids'] = self._default_site_ids()
+            try:
+                pid = vals.get('partner_id') or None
+                nm = vals.get('name')
+                if pid:
+                    vals['name'] = self._make_unique_name(pid, nm)
+            except Exception:
+                # En caso de no poder garantizar unicidad aquí, dejar que el constraint actúe
+                pass
+
         quotes = super().create(vals_list)
         for quote in quotes:
             if not quote.current_site_id and quote.site_ids:
@@ -597,6 +617,18 @@ class ServiceQuote(models.Model):
                 if 'name' in vals and vals['name'] == self.name:
                     vals = dict(vals)
                     del vals['name']
+                # Si intentan escribir un nombre que colisiona, ajustar automáticamente
+                if 'name' in vals and 'partner_id' not in vals:
+                    # asegurar que el nuevo nombre sea único para el partner actual
+                    vals = dict(vals)
+                    vals['name'] = self._make_unique_name(self.partner_id.id, vals['name'])
+                elif 'partner_id' in vals and 'name' not in vals:
+                    # mover de partner: garantizar nombre único en el nuevo partner
+                    vals = dict(vals)
+                    vals['name'] = self._make_unique_name(vals['partner_id'], self.name)
+                elif 'partner_id' in vals and 'name' in vals:
+                    vals = dict(vals)
+                    vals['name'] = self._make_unique_name(vals['partner_id'], vals['name'])
 
         res = super().write(vals)
         # Si se cambió current_site_id y el sitio no tiene quote_id, enlazarlo
@@ -763,18 +795,31 @@ class CCNServiceQuoteLine(models.Model):
     )
 
     # Frecuencia y subtotal mensual
-    frequency = fields.Selection([
-        ('weekly', 'Semanal'),
-        ('fortnight_14', 'Catorcenal'),
-        ('biweekly', 'Quincenal'),
-        ('monthly', 'Mensual'),
-        ('bimonthly', 'Bimestral'),
-        ('quarterly', 'Trimestral'),
-        ('semiannual', 'Semestral'),
-        ('annual', 'Anual'),
-        ('18m', '18 Meses'),
-        ('24m', '24 Meses'),
-    ], string='Frecuencia', default='monthly', required=True)
+    def _frequency_selection(self):
+        base = [
+            ('weekly', 'Semanal'),
+            ('fortnight_14', 'Catorcenal'),
+            ('biweekly', 'Quincenal'),
+            ('monthly', 'Mensual'),
+            ('bimonthly', 'Bimestral'),
+            ('quarterly', 'Trimestral'),
+            ('semiannual', 'Semestral'),
+            ('annual', 'Anual'),
+            ('18m', '18 Meses'),
+            ('24m', '24 Meses'),
+        ]
+        if self.env.context.get('ccn_mo_freq_only'):
+            return [
+                ('weekly', 'Semanal'),
+                ('biweekly', 'Quincenal'),
+                ('monthly', 'Mensual'),
+            ]
+        return base
+
+    frequency = fields.Selection(
+        selection=_frequency_selection,
+        string='Frecuencia', default='monthly', required=True
+    )
 
     monthly_subtotal = fields.Monetary(
         string='Subtotal Mensual',

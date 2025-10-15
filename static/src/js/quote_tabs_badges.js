@@ -759,11 +759,9 @@ let __greenHold = {};
   function hardContextReset(formRoot, nb){
     try{
       __filledMemo = {};
-      __filledMemoMap = {};
       __persistStates = {};
       __persistStatesMap = {};
       __ackOverrides = {};
-      __ackOverridesMap = {};
       __activeCodeOptimistic = null;
       __currentRecordUniqueId = null;
       __ctxChanged = true;
@@ -831,21 +829,7 @@ let __greenHold = {};
     // Usar el índice inicial; evitar reindex en cada pintado
     const map = byCode;
     ensureCtx(formRoot);
-    // Ventana corta tras cambio de servicio: baseline rojo solo si aún no hay estados por servicio
-    if (!window.__ccnServiceSwitchUntil) window.__ccnServiceSwitchUntil = 0;
-    try {
-      const now = Date.now();
-      if (now < window.__ccnServiceSwitchUntil) {
-        const dsProbe = readStatesFromDataset(formRoot) || {};
-        if (!Object.keys(dsProbe).length) {
-          try { hardResetTabs(nb); } catch(_e){}
-          for (const [code, link] of Object.entries(map)) {
-            try { applyTab(link, 0); if (last) last[code] = 0; } catch(_e) {}
-          }
-          return true;
-        }
-      }
-    } catch(_e) {}
+    // Sin ventana de baseline rojo: repintar siempre con estados actuales/memos
     // Forzar ROJO total una vez (p. ej., tras cambiar servicio en una cotización nueva)
     if (__forceAllRed) {
       try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
@@ -869,8 +853,7 @@ let __greenHold = {};
     // Salvaguarda SOLO durante ventana de cambio de servicio: si TODOS los estados son 0, no hay overrides
     // ni filas guardadas en este servicio, aplicar baseline ROJO (evita arrastre visual entre servicios)
     try {
-      const now2 = Date.now();
-      const inSwitchWindow = now2 < (window.__ccnServiceSwitchUntil || 0);
+      const inSwitchWindow = false; // deshabilitado: repintado inmediato
       const codesAll = Object.keys(byCode || {});
       const allZero = Object.keys(dsStates).length && Object.values(dsStates).every(v => (parseInt(v || 0, 10) === 0));
       const hasOverride = !!__ackOverrides && Object.keys(__ackOverrides).some(k => !!__ackOverrides[k]);
@@ -952,8 +935,8 @@ let __greenHold = {};
           // Tab activo sin filas reales y backend no confirma verde: limpiar memoria
           delete __filledMemo[code];
         }
-        // Solo marcar memoria verde si el backend LO CONFIRMA (stateValue === 1)
-        if (stateValue === 1) {
+        // Marcar memoria verde si hay contenido (filas visibles) o backend confirma
+        if ((rowCount > 0) || (fieldCount > 0) || stateValue === 1) {
           __filledMemo[code] = true;
         }
       }
@@ -1242,8 +1225,7 @@ let __greenHold = {};
           __currentRecordUniqueId = null;
           __ctxKey = null;
           __filledMemo = {};
-          // Limpiar solo memorias efímeras; preservar overrides/persistidos por contexto
-          __filledMemoMap = {};
+          // Preservar memorias por contexto (no resetear __filledMemoMap)
           __forceFresh = true;
           for (const k in last) delete last[k];
           try {
@@ -1269,7 +1251,7 @@ let __greenHold = {};
         const name = ev?.target?.getAttribute?.('name') || ev?.target?.getAttribute?.('data-name') || '';
         if (name === 'current_service_type' || name === 'current_site_id'){
           try{
-            // LIMPIAR sessionStorage para el nuevo contexto (evita fantasmas)
+            // LIMPIAR sessionStorage del nuevo contexto (solo estados publicados, no memos)
             try {
               const newKey = currentCtxKey(formRoot);
               sessionStorage.removeItem(`ccnTabs:${newKey}`);
@@ -1289,17 +1271,12 @@ let __greenHold = {};
               }
             } catch(_e) {}
 
-            // Reset completamente el contexto y LIMPIAR colores previos
+            // Reset mínimo del contexto (sin baseline rojo)
             __ctxKey = null;
             __filledMemo = {};
-            __filledMemoMap = {};
             __activeCodeOptimistic = null;
             __ctxChanged = true;
             __forceFresh = true;
-            __ackOverrides = {};
-            __forceAllRed = true;
-            // Activar ventana de switch ~700ms para baseline rojo
-            window.__ccnServiceSwitchUntil = Date.now() + 700;
             // CRÍTICO: Limpiar el objeto 'last' para forzar re-pintado completo
             for (const k in last) delete last[k];
             try {
@@ -1311,19 +1288,10 @@ let __greenHold = {};
               try { if (__dbgEnabled()) __dumpStates(formRoot); } catch(_e){}
             } catch(_e){}
           }catch(_e){}
-          // Publicar pronto y repintar al final de la ventana de switch
-          const now = Date.now();
-          const until = now + 250;
-          window.__ccnServiceSwitchUntil = until;
-          setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 120);
-          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, (until - now) + 10);
-          // Debug segundo/tercer chequeo si está activo
-          setTimeout(()=>{ try{ if (__dbgEnabled()) __dumpStates(formRoot); }catch(_e){} }, 300);
-          // Segunda oportunidad de repintado un poco después por si los compute llegan tarde
-          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 500);
-          setTimeout(()=>{ try{ if (__dbgEnabled()) __dumpStates(formRoot); }catch(_e){} }, 600);
-          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 900);
-          setTimeout(()=>{ try{ if (__dbgEnabled()) __dumpStates(formRoot); }catch(_e){} }, 950);
+          // Publicar pronto y repintar de inmediato con reintentos breves
+          setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 10);
+          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 20);
+          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 60);
         }
       };
       document.body.addEventListener('change', onQuickRepaint, true);
@@ -1502,13 +1470,13 @@ let __greenHold = {};
                 // Esperar más para que el backend publique los nuevos estados
                 setTimeout(()=>{
                   try{
-                const activePage = (getNotebook() || nb).querySelector('.tab-pane.active');
+                    const activePage = (getNotebook() || nb).querySelector('.tab-pane.active');
                     const realCount = activePage ? countPageRows(activePage) : 0;
                     const fieldCount = countRowsInField(formRoot, code) || 0;
 
                     // if (DEBUG) { /* eslint-disable-next-line no-console */ console.log(`[CCN-CHANGE] ${code}: realCount=${realCount}, fieldCount=${fieldCount}`); }
 
-                    if (realCount === 0 && fieldCount === 0) {
+                    if (realCount === 0 && fieldCount === 0 && !__filledMemo[code]) {
                       // if (DEBUG) { /* eslint-disable-next-line no-console */ console.log(`[CCN-CHANGE] ❌ forceRed ${code} (sin líneas guardadas)`); }
                       forceRed(formRoot, getNotebook() || nb, code, last);
                     } else if (realCount > 0) {
@@ -1621,9 +1589,9 @@ let __greenHold = {};
 
               // if (false) console.log(`[CCN-BLUR] ${code}: realCount=${realCount}, fieldCount=${fieldCount}, memo=${!!__filledMemo[code]}`);
 
-              // Solo limpiar memoria si NO hay filas guardadas
+              // Solo limpiar memoria si NO hay filas guardadas Y no tenemos memo verde
               // NO marcar memoria verde - solo el backend puede hacerlo
-              if (realCount === 0 && fieldCount === 0) {
+              if (realCount === 0 && fieldCount === 0 && !__filledMemo[code]) {
                 // if (false) console.log(`[CCN-BLUR] ❌ Limpiando memoria de ${code} (sin líneas guardadas)`);
                 delete __filledMemo[code];
                 // Limpiar hold también si existe
@@ -1642,31 +1610,10 @@ let __greenHold = {};
       document.body.addEventListener('shown.bs.tab', ()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, true);
       document.body.addEventListener('hidden.bs.tab', (ev)=>{
         try{
-          const linkHidden = ev.target || null; // el <a.nav-link> que deja de ser visible
-          if (linkHidden && linkHidden.closest) {
-            let code = linkCodeByAttrs(linkHidden) || codeFromLabel(linkHidden);
-            code = canon(code);
-            if (code) {
-              const page = pageRootForLink(nb, linkHidden);
-              const savedPage = countPageRowsStrict(page);
-              const savedField = countRowsInFieldStrict(formRoot, code);
-          const ds = fallbackStatesFromDOM(formRoot);
-              if (!__ackOverrides[code] && ds?.[code] !== 1 && (savedPage + savedField) === 0) {
-                delete __filledMemo[code];
-                delete __greenHold[code];
-                const holder = formRoot.closest('.o_form_view') || formRoot;
-                try {
-                  const dsRaw = holder.dataset.ccnStates || '{}';
-                  const obj = JSON.parse(dsRaw);
-                  obj[code] = 0;
-                  holder.dataset.ccnStates = JSON.stringify(obj);
-                } catch(_e) {}
-                // No necesitamos aplicar rojo aquí; el repintado lo hará
-              }
-            }
-          }
+          // NO limpiar memorias ni datasets al salir de un tab; dejar que el backend/DOM sea la fuente
+          // Únicamente repintar con el estado actual conocido
+          paintFromStates(formRoot, nb, byCode, last);
         }catch(_e){}
-        try{ paintFromStates(formRoot, nb, byCode, last); }catch(_e){}
       }, true);
       // NO forzar rojo al salir de un tab - el backend es la fuente de verdad
     });

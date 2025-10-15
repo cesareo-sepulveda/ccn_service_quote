@@ -34,8 +34,8 @@
           <!-- Percepción Ajustada (antes: Precio Ajustado) -->
           <field name="price_unit_final" string="Ajuste" readonly="1"/>
 
-          <!-- Frecuencia -->
-          <field name="frequency" string="Frecuencia"/>
+          <!-- Frecuencia (solo Semanal/Quincenal/Mensual en Mano de Obra) -->
+          <field name="frequency" string="Frecuencia" context="{'ccn_mo_freq_only': True}"/>
 
           <!-- Percepción Mensual (antes: Subtotal Mensual) -->
           <field name="monthly_subtotal" string="Mensual" readonly="1"/>
@@ -78,7 +78,7 @@
             <field name="product_base_price" string="Percepción" readonly="1"/>
             <field name="tabulator_percent" string="Tabulador"/>
             <field name="price_unit_final" string="Ajuste" readonly="1"/>
-            <field name="frequency" string="Frecuencia"/>
+            <field name="frequency" string="Frecuencia" context="{'ccn_mo_freq_only': True}"/>
             <field name="monthly_subtotal" string="Mensual" readonly="1"/>
             <field name="mo_prestaciones" string="Prestaciones" readonly="1"/>
             <field name="total_price" string="Total Mensual" readonly="1"/>

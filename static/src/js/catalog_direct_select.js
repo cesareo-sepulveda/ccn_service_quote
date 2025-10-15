@@ -50,26 +50,45 @@ class CCNCatalogDialog extends Component {
             <t t-else="">
               <div t-if="state.view === 'kanban'" class="o_ccn_catalog_grid">
                 <t t-foreach="state.items" t-as="it" t-key="it.id">
-                  <div class="o_ccn_card" t-att-class="isSelected(it.id) ? 'selected' : ''" t-att-data-id="it.id" t-on-click="onToggle">
+                  <div class="o_ccn_card">
                     <img t-if="it.image_128" t-att-src="'data:image/png;base64,' + it.image_128"/>
                     <div class="o_ccn_card_body">
                       <strong t-esc="it.name"/>
                       <div t-if="it.default_code">[<t t-esc="it.default_code"/>]</div>
                       <div t-if="it.list_price !== undefined &amp;&amp; it.list_price !== null">$ <t t-esc="it.list_price"/></div>
                     </div>
-                    <input type="checkbox" t-att-checked="isSelected(it.id)"/>
+                    <div class="o_ccn_card_footer">
+                      <input type="number" min="1" step="1" class="o_ccn_qty_input"
+                             t-att-data-id="it.id"
+                             t-att-value="getQty(it.id)"
+                             t-on-click="stopBubble"
+                             t-on-input="onQtyInput"/>
+                      <button class="btn btn-primary btn-sm"
+                              t-att-data-id="it.id"
+                              t-on-click="onAddOne">Agregar</button>
+                    </div>
                   </div>
                 </t>
               </div>
               <table t-if="state.view !== 'kanban'" class="table table-sm">
-                <thead><tr><th></th><th>Nombre</th><th>Código</th><th>Precio</th></tr></thead>
+                <thead><tr><th>Nombre</th><th>Código</th><th>Precio</th><th style="width:9rem">Cantidad</th><th style="width:8rem"></th></tr></thead>
                 <tbody>
                   <t t-foreach="state.items" t-as="it" t-key="it.id">
                     <tr>
-                      <td><input type="checkbox" t-att-checked="isSelected(it.id)" t-att-data-id="it.id" t-on-change="onToggle"/></td>
                       <td><t t-esc="it.name"/></td>
                       <td><t t-esc="it.default_code || ''"/></td>
                       <td><t t-esc="(it.list_price ?? '')"/></td>
+                      <td>
+                        <input type="number" min="1" step="1" class="o_ccn_qty_input"
+                               t-att-data-id="it.id"
+                               t-att-value="getQty(it.id)"
+                               t-on-input="onQtyInput"/>
+                      </td>
+                      <td>
+                        <button class="btn btn-primary btn-sm"
+                                t-att-data-id="it.id"
+                                t-on-click="onAddOne">Agregar</button>
+                      </td>
                     </tr>
                   </t>
                 </tbody>
@@ -79,7 +98,6 @@ class CCNCatalogDialog extends Component {
         </div>
       </t>
       <t t-slot="footer">
-        <button class="btn btn-primary" t-on-click="onAdd">Agregar</button>
         <button class="btn btn-secondary" t-on-click="onClose">Cerrar</button>
       </t>
     </Dialog>
@@ -89,26 +107,66 @@ class CCNCatalogDialog extends Component {
     this.orm = useService('orm');
     this.action = useService('action');
     this.notification = useService('notification');
-    this.state = useState({ items: [], selected: new Set(), search: '', view: 'kanban', loading: true });
+    this.state = useState({ items: [], qty: {}, search: '', view: 'kanban', loading: true });
     onWillStart(async () => { await this.load(); });
   }
 
-  isSelected(id){ return this.state.selected.has(id); }
-  toggleSel(id){
-    if (!this || !this.state) return;
-    const s = new Set(this.state.selected || []);
-    if (s.has(id)) s.delete(id); else s.add(id);
-    this.state.selected = s;
-  }
+  isSelected(){ return false; }
+  toggleSel(){ /* no-op */ }
   toggleView(){ this.state.view = this.state.view === 'kanban' ? 'list' : 'kanban'; }
   onSearch(){ this.load(); }
   onClose(){ this.env.services.dialog.close(); }
-  onToggle(ev){
+  onToggle(){ /* no-op */ }
+
+  stopBubble(ev){ try{ ev.stopPropagation(); }catch(_e){} }
+  onCheckboxToggle(){ /* no-op */ }
+  getQty(id){
+    const raw = (this.state.qty && this.state.qty[id] != null) ? this.state.qty[id] : 1;
+    const n = parseInt(String(raw), 10);
+    return Number.isFinite(n) && n > 0 ? n : 1;
+  }
+  onQtyInput(ev){
     try{
       const id = parseInt(ev.currentTarget?.dataset?.id || '0', 10);
-      if (!id || !this?.state) return;
-      this.toggleSel(id);
+      if (!id) return;
+      const v = parseInt(String(ev.currentTarget.value || '1'), 10);
+      const n = Number.isFinite(v) && v > 0 ? v : 1;
+      const q = Object.assign({}, this.state.qty || {});
+      q[id] = n;
+      this.state.qty = q;
     }catch(_e){}
+  }
+  canAddMany(){
+    try{
+      const q = this.state.qty || {};
+      let cnt = 0;
+      for (const k of Object.keys(q)){
+        const n = parseInt(String(q[k]||0),10);
+        if (Number.isFinite(n) && n > 0) cnt++;
+        if (cnt >= 2) return true;
+      }
+      return false;
+    }catch(_e){ return false; }
+  }
+  async onAddMany(){
+    const q = this.state.qty || {};
+    const ids = Object.keys(q).map((k)=> parseInt(k,10)).filter((id)=> id && (parseInt(String(q[id]||0),10) > 0));
+    if (!ids.length) return;
+    const rubros = await this.orm.searchRead('ccn.service.rubro', [['code', '=', this.props.rubro]], ['id']);
+    const rubroId = (rubros && rubros[0] && rubros[0].id) || false;
+    const type = this.props.serviceType === 'materiales' ? 'material' : 'servicio';
+    const values = ids.map((pid)=>({
+      quote_id: this.props.quoteId,
+      site_id: this.props.siteId || false,
+      service_type: this.props.serviceType || false,
+      type,
+      rubro_id: rubroId,
+      product_id: pid,
+      quantity: this.getQty(pid),
+    }));
+    try{ await this.orm.create('ccn.service.quote.line', values); }
+    catch(e){ throw e; }
+    await this.action.doAction({ type: 'ir.actions.client', tag: 'reload' });
   }
 
   async load(){
@@ -132,31 +190,28 @@ class CCNCatalogDialog extends Component {
     this.state.loading = false;
   }
 
-  async onAdd(){
-    const ids = Array.from(this.state.selected.values());
-    if (!ids.length) return;
+  async onAdd(){ /* no-op: bulk add deshabilitado */ }
+
+  async onAddOne(ev){
+    try{ ev.stopPropagation(); }catch(_e){}
+    const id = parseInt(ev.currentTarget?.dataset?.id || '0', 10);
+    if (!id) return;
     const rubros = await this.orm.searchRead('ccn.service.rubro', [['code', '=', this.props.rubro]], ['id']);
     const rubroId = (rubros && rubros[0] && rubros[0].id) || false;
     const type = this.props.serviceType === 'materiales' ? 'material' : 'servicio';
-    const values = ids.map((pid) => ({
+    const qty = this.getQty(id);
+    const vals = {
       quote_id: this.props.quoteId,
       site_id: this.props.siteId || false,
       service_type: this.props.serviceType || false,
       type,
       rubro_id: rubroId,
-      product_id: pid,
-      quantity: 1.0,
-    }));
-    try{
-      await this.orm.create('ccn.service.quote.line', values);
-    }catch(e){
-      this.notification.add('No se pudieron agregar productos', { type: 'danger' });
-      throw e;
-    }
-    this.notification.add('Productos agregados', { type: 'success' });
+      product_id: id,
+      quantity: qty,
+    };
+    try{ await this.orm.create('ccn.service.quote.line', [vals]); }
+    catch(e){ throw e; }
     await this.action.doAction({ type: 'ir.actions.client', tag: 'reload' });
-    // Mantener abierto para seguir eligiendo; limpiar selección
-    this.state.selected = new Set();
   }
 }
 
@@ -177,7 +232,7 @@ registry.category("actions").add("ccn_catalog_direct_select", async (env, action
     ['product_tmpl_id.sale_ok', '=', true],
     ['product_tmpl_id.ccn_rubro_ids.code', '=', rubro],
   ];
-  notification?.add('Abriendo Catálogo…', { type: 'info', sticky: false });
+  // sin notificaciones ni delays
   // Si no viene siteId en el contexto, resolver al 'General' del quote
   try {
     if (!siteId && quoteId) {

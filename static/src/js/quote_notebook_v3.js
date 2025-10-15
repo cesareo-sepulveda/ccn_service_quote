@@ -173,6 +173,15 @@ patch(FormController.prototype, {
         setTimeout(() => initQuoteNotebook(this), 100);
         exposePublisher(this);
 
+        const requestRepaint = () => {
+            try { publishStates(this); } catch(_e) {}
+            try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
+            setTimeout(() => {
+                try { publishStates(this); } catch(_e) {}
+                try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
+            }, 40);
+        };
+
         // Agregar listener para cambios en el formulario
         const self = this;
         const observer = new MutationObserver((muts) => {
@@ -184,9 +193,7 @@ patch(FormController.prototype, {
                     break;
                 }
             }
-            if (hasServiceTypeChange) {
-                setTimeout(() => publishStates(self), 10);
-            }
+            if (hasServiceTypeChange) requestRepaint();
             setTimeout(() => initQuoteNotebook(self), 100);
         });
 
@@ -202,6 +209,16 @@ patch(FormController.prototype, {
                 });
             }
         }, 150);
+
+        // Listener explícito al cambio del campo de servicio → repintado inmediato (sin recarga)
+        document.body.addEventListener('change', (ev) => {
+            const t = ev.target;
+            if (!t) return;
+            try {
+                const holder = t.closest?.('[name="current_service_type"], [data-name="current_service_type"]');
+                if (holder) requestRepaint();
+            } catch (_e) {}
+        }, true);
     },
     onWillUpdateProps() {
         super.onWillUpdateProps(...arguments);
