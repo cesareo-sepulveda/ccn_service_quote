@@ -125,108 +125,136 @@ class SaleOrder(models.Model):
 
         mode = quote.display_mode
 
-        if mode == "itemized":
-            # 1) Sección de SITIO (si hay)
-            if getattr(quote, 'site_label', False):
-                self.order_line.create({
-                    "order_id": self.id,
-                    "display_type": "line_section",
-                    "name": f"SITIO: {quote.site_label}",
-                    "sequence": seq,
-                })
-                seq += STEP
+        # ¿Hay múltiples sitios? Solo en ese caso añadimos la sección "SITIO: ..."
+        site_ids_set = set(l.site_id.id for l in quote.line_ids if l.site_id)
+        multiple_sites = len(site_ids_set) > 1
 
-            # 2) Agrupar por rubro y ordenar
-            grp = defaultdict(list)
-            for l in quote.line_ids:
-                grp[l.rubro_id].append(l)
+        # Helper: etiqueta de tipo de servicio
+        def _srv_label(srv):
+            return {
+                'jardineria': _('Jardinería'),
+                'limpieza': _('Limpieza'),
+                'mantenimiento': _('Mantenimiento'),
+                'materiales': _('Materiales'),
+                'servicios_especiales': _('Servicios Especiales'),
+                'almacenaje': _('Almacenaje'),
+                'fletes': _('Fletes'),
+            }.get(srv or '', srv or '')
 
-            for rubro in sorted(grp.keys(), key=lambda r: (r.sequence, r.name or '')):
-                lines = grp[rubro]
+        # Agrupar por sitio
+        by_site = defaultdict(list)
+        for l in quote.line_ids:
+            by_site[l.site_id].append(l)
 
-                # 2a) Rubro como sección (Odoo lo muestra en negritas)
-                self.order_line.create({
-                    "order_id": self.id,
-                    "display_type": "line_section",
-                    "name": rubro.name,
-                    "sequence": seq,
-                })
-                seq += STEP
+        if mode == "itemized":  # Resumen → 1 partida por sitio con total global del sitio
+            for site, lines in by_site.items():
+                total_site = sum(x.total_price for x in lines)
+                # tipos presentes en el sitio
+                types = []
+                seen = set()
+                for x in lines:
+                    if x.service_type and x.service_type not in seen:
+                        seen.add(x.service_type)
+                        types.append(_srv_label(x.service_type))
+                tipos_txt = " y ".join(types) if types else _("Servicio")
 
-                # 2b) Productos normales (una línea)
-                for l in lines:
-                    taxes = l.product_id.taxes_id.filtered(lambda t: t.company_id == self.company_id)
-                    desc = (l.product_id.get_product_multiline_description_sale()
-                            or l.product_id.display_name)
-                    name_one_line = " ".join((desc or "").splitlines()).strip() or l.product_id.display_name
+                label = _("Servicio de %s") % (tipos_txt,)
+                product = self._ccn_get_named_service_product(label)
+                taxes = product.taxes_id.filtered(lambda t: t.company_id == self.company_id)
+
+                # Sección por sitio solo si hay múltiples sitios
+                if site and multiple_sites:
                     self.order_line.create({
                         "order_id": self.id,
-                        "product_id": l.product_id.id,
-                        "name": name_one_line,
-                        "product_uom": l.product_id.uom_id.id,
-                        "product_uom_qty": l.quantity,
-                        "price_unit": l.price_unit_final,
-                        "tax_id": [(6, 0, taxes.ids)],
+                        "display_type": "line_section",
+                        "name": _("SITIO: %s") % (site.name,),
                         "sequence": seq,
                     })
                     seq += STEP
 
-        elif mode == "by_rubro":
-            grp = defaultdict(list)
-            for l in quote.line_ids:
-                grp[l.rubro_id].append(l)
-
-            for rubro in sorted(grp.keys(), key=lambda r: (r.sequence, r.name or '')):
-                lines = grp[rubro]
-                total = sum(x.total_price for x in lines)
-
-                # Línea con precio cuyo "producto" es el nombre del rubro (sin código)
-                rubro_product = self._ccn_get_named_service_product(rubro.name)
-                taxes = rubro_product.taxes_id.filtered(lambda t: t.company_id == self.company_id)
                 self.order_line.create({
                     "order_id": self.id,
-                    "product_id": rubro_product.id,
-                    "name": rubro_product.name,
+                    "product_id": product.id,
+                    "name": product.name,
                     "product_uom_qty": 1.0,
-                    "price_unit": total,
+                    "price_unit": total_site,
                     "tax_id": [(6, 0, taxes.ids)],
                     "sequence": seq,
                 })
                 seq += STEP
 
-                # Detalle como nota (sin precios)
-                txt = ", ".join(f"{x.product_id.display_name} x{x.quantity:g}" for x in lines)
-                if txt:
+        elif mode == "total_only":  # Acumulado General → 1 partida por tipo de servicio en cada sitio
+            for site, lines in by_site.items():
+                if site and multiple_sites:
                     self.order_line.create({
                         "order_id": self.id,
-                        "display_type": "line_note",
-                        "name": txt,
+                        "display_type": "line_section",
+                        "name": _("SITIO: %s") % (site.name,),
                         "sequence": seq,
                     })
                     seq += STEP
 
-        else:  # total_only
-            cat_product = self._ccn_get_category_product(quote.category)
-            taxes = cat_product.taxes_id.filtered(lambda t: t.company_id == self.company_id)
-            total = sum(quote.line_ids.mapped("total_price"))
+                by_type = defaultdict(list)
+                for x in lines:
+                    by_type[x.service_type].append(x)
 
-            self.order_line.create({
-                "order_id": self.id,
-                "product_id": cat_product.id,
-                "name": cat_product.name,
-                "product_uom_qty": 1.0,
-                "price_unit": total,
-                "tax_id": [(6, 0, taxes.ids)],
-                "sequence": seq,
-            })
-            seq += STEP
+                for srv, lst in by_type.items():
+                    total_srv = sum(x.total_price for x in lst)
+                    label = _("Servicio de %s") % (_srv_label(srv),)
+                    product = self._ccn_get_named_service_product(label)
+                    taxes = product.taxes_id.filtered(lambda t: t.company_id == self.company_id)
+                    self.order_line.create({
+                        "order_id": self.id,
+                        "product_id": product.id,
+                        "name": product.name,
+                        "product_uom_qty": 1.0,
+                        "price_unit": total_srv,
+                        "tax_id": [(6, 0, taxes.ids)],
+                        "sequence": seq,
+                    })
+                    seq += STEP
 
-            detail_txt = ", ".join(f"{l.product_id.display_name} x{l.quantity:g}" for l in quote.line_ids)
-            if detail_txt:
-                self.order_line.create({
-                    "order_id": self.id,
-                    "display_type": "line_note",
-                    "name": detail_txt,
-                    "sequence": seq,
-                })
-                seq += STEP
+        else:  # by_rubro → partidas por rubro, separadas por sitio y tipo de servicio
+            for site, lines in by_site.items():
+                if site and multiple_sites:
+                    self.order_line.create({
+                        "order_id": self.id,
+                        "display_type": "line_section",
+                        "name": _("SITIO: %s") % (site.name,),
+                        "sequence": seq,
+                    })
+                    seq += STEP
+
+                by_type = defaultdict(list)
+                for x in lines:
+                    by_type[x.service_type].append(x)
+
+                for srv, lst in by_type.items():
+                    # Sub-sección por tipo de servicio
+                    self.order_line.create({
+                        "order_id": self.id,
+                        "display_type": "line_section",
+                        "name": _("Servicio: %s") % (_srv_label(srv),),
+                        "sequence": seq,
+                    })
+                    seq += STEP
+
+                    by_rubro = defaultdict(list)
+                    for x in lst:
+                        by_rubro[x.rubro_id].append(x)
+
+                    for rubro in sorted(by_rubro.keys(), key=lambda r: (getattr(r, 'sequence', 0), getattr(r, 'name', '') or '')):
+                        r_lines = by_rubro[rubro]
+                        total_rubro = sum(x.total_price for x in r_lines)
+                        rubro_product = self._ccn_get_named_service_product(rubro.name)
+                        taxes = rubro_product.taxes_id.filtered(lambda t: t.company_id == self.company_id)
+                        self.order_line.create({
+                            "order_id": self.id,
+                            "product_id": rubro_product.id,
+                            "name": rubro_product.name,
+                            "product_uom_qty": 1.0,
+                            "price_unit": total_rubro,
+                            "tax_id": [(6, 0, taxes.ids)],
+                            "sequence": seq,
+                        })
+                        seq += STEP

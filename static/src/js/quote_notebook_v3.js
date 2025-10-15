@@ -315,97 +315,23 @@ patch(FormController.prototype, {
                 if (holder) {
                     requestRepaint();
 
-                    // 1) Guardar el tab activo actual para restaurarlo después del reload
-                    try {
-                        const formRoot = document.querySelector('.o_form_view');
-                        const nb = formRoot ? formRoot.querySelector('.o_notebook') : document.querySelector('.o_notebook');
-                        const activeLink = nb ? nb.querySelector('.nav-tabs .nav-link.active') : null;
-                        let codeRaw = null;
-                        if (activeLink) {
-                            const name = activeLink.getAttribute('name') || '';
-                            const target = activeLink.getAttribute('aria-controls') || activeLink.getAttribute('data-bs-target') || activeLink.getAttribute('href') || '';
-                            let m = (name || '').match(/^page_(.+)$/);
-                            if (m) codeRaw = m[1];
-                            if (!codeRaw && target) {
-                                const id = String(target).replace(/^#/, '');
-                                const mm = id.match(/^page_(.+)$/);
-                                if (mm) codeRaw = mm[1];
-                            }
-                        }
-                        const rid = this?.model?.root?.resId || this?.model?.root?.data?.id || 'new';
-                        const currentSite = readIntFieldDOM('current_site_id') || '';
-                        const newSrv = readStrFieldDOM('current_service_type') || '';
-                        const ctxStr = `${rid}|${currentSite||''}|${newSrv||''}`;
-                        if (codeRaw) {
-                            try { sessionStorage.setItem(`ccnGoTab:${ctxStr}`, JSON.stringify({ code: normalizeCode(codeRaw), ts: Date.now() })); } catch(_e){}
-                        }
-                    } catch(_e) {}
-
-                    // 1.b) Si el registro aún es nuevo (sin id), NO recargar ni guardar para evitar perder datos
-                    try {
-                        const ridRaw = this?.model?.root?.resId || this?.model?.root?.data?.id || null;
-                        const ridNum = parseInt(String(ridRaw||'').trim(), 10);
-                        const isNew = !ridRaw || !Number.isFinite(ridNum) || ridNum <= 0;
-                        if (isNew) {
-                            // Solo repintar estados; no mostrar spinner ni forzar reload
-                            return;
-                        }
-                    } catch(_e) {}
-
-                    // 2) Intentar GUARDAR cambios solo si el formulario está sucio (sin delays fijos)
-                    try {
-                        const formView = document.querySelector('.o_form_view');
-                        const saveBtn = document.querySelector('.o_form_button_save');
-                        const saveBtnDisabled = !saveBtn || saveBtn.disabled || saveBtn.classList?.contains('o_button_disabled');
-                        const isDirty = !!(
-                            formView?.classList?.contains('o_isDirty') ||
-                            formView?.classList?.contains('o_form_dirty') ||
-                            formView?.querySelector?.('.o_modified, .o_dirty, [data-dirty="1"], .o_has_unsaved_changes') ||
-                            (saveBtn && !saveBtnDisabled)
-                        );
-
-                        const reloadNow = () => {
-                            try { this.env.services.action.doAction({ type: 'ir.actions.client', tag: 'reload' }); } catch(_e) {}
-                        };
-
-                        if (isDirty && saveBtn && !saveBtnDisabled) {
-                            // Click guardar y esperar a que deje de estar sucio (sin tiempo fijo)
-                            showBusyOverlay('Guardando cambios…');
-                            try { saveBtn.click(); } catch(_e){}
-                            const start = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-                            const maxWait = 4000; // límite duro por si el commit tarda
-                            const check = () => {
-                                try {
-                                    const fv = document.querySelector('.o_form_view');
-                                    const sb = document.querySelector('.o_form_button_save');
-                                    const sbDisabled = !sb || sb.disabled || sb.classList?.contains('o_button_disabled');
-                                    const dirty = !!(
-                                        fv?.classList?.contains('o_isDirty') ||
-                                        fv?.classList?.contains('o_form_dirty') ||
-                                        fv?.querySelector?.('.o_modified, .o_dirty, [data-dirty="1"], .o_has_unsaved_changes') ||
-                                        (sb && !sbDisabled)
-                                    );
-                                    const now = (typeof performance !== 'undefined' ? performance.now() : Date.now());
-                                    if (!dirty) {
-                                        reloadNow();
-                                    } else if ((now - start) > maxWait) {
-                                        // No se pudo confirmar el guardado (validaciones, etc.). No recargar; ocultar overlay.
-                                        hideBusyOverlay();
-                                    } else {
-                                        requestAnimationFrame(check);
-                                    }
-                                } catch(_e) { hideBusyOverlay(); }
-                            };
-                            requestAnimationFrame(check);
-                        } else {
-                            // No hay cambios → recargar inmediatamente (siguiente tick)
-                            showBusyOverlay('Actualizando vista…');
-                            asap(reloadNow);
-                        }
-                    } catch(_e) {
-                        // En caso de error, recargar pronto sin bloquear
-                        hideBusyOverlay();
-                    }
+                    // Fast path: NO recargar la vista ni forzar guardado.
+                    // Publicar estados y repintar inmediatamente con dos reintentos cortos.
+                    try { publishStates(this); } catch(_e) {}
+                    try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
+                    try { (window.__ccnTabsColorV2 && typeof window.__ccnTabsColorV2.apply === 'function') && window.__ccnTabsColorV2.apply(); } catch (_e) {}
+                    setTimeout(() => {
+                        try { publishStates(this); } catch(_e) {}
+                        try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
+                        try { (window.__ccnTabsColorV2 && typeof window.__ccnTabsColorV2.apply === 'function') && window.__ccnTabsColorV2.apply(); } catch (_e) {}
+                    }, 20);
+                    setTimeout(() => {
+                        try { publishStates(this); } catch(_e) {}
+                        try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
+                        try { (window.__ccnTabsColorV2 && typeof window.__ccnTabsColorV2.apply === 'function') && window.__ccnTabsColorV2.apply(); } catch (_e) {}
+                    }, 120);
+                    try { hideBusyOverlay(); } catch(_e) {}
+                    return;
                 }
             } catch (_e) {}
         }, true);

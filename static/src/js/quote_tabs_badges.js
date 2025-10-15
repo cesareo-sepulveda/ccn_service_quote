@@ -1111,7 +1111,11 @@ let __greenHold = {};
             // Reset duro si el cambio ocurrió por script (sin evento change)
             __forceFresh = true;
             try{ hardContextReset(formRoot, nb); }catch(_e){}
-            // No pintar aquí, esperar a que publishStates actualice el dataset
+            // Re-pintar inmediatamente usando los rubro_state_* del DOM (fallback)
+            // y publicar estados pronto para actualizar datasets por servicio.
+            schedule();
+            try { setTimeout(() => { try { window.__ccnPublishLastStates && window.__ccnPublishLastStates(); } catch(_e) {} }, 10); } catch(_e) {}
+            try { setTimeout(() => schedule(), 20); } catch(_e) {}
             return;
           }
           if (name.startsWith("rubro_state_") || name.startsWith("rubro_count_")){
@@ -1143,12 +1147,12 @@ let __greenHold = {};
         childList: true,
         subtree: true,
         attributes: true,
-        // Solo cambios de datos; evitar 'class' y 'value' para no disparar repaints masivos
-        attributeFilter: ["data-value"],
+        // Solo cambios de datos; evitar 'class'. Incluir 'value' para selects.
+        attributeFilter: ["data-value", "value"],
       });
     }catch(_e){
       // Fallback conservador
-      mo.observe(formRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-value"] });
+      mo.observe(formRoot, { childList: true, subtree: true, attributes: true, attributeFilter: ["data-value", "value"] });
     }
 
     // OBSERVAR también el contenedor oculto de estados (.o_ccn_rubro_states)

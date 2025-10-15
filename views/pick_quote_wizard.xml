@@ -10,6 +10,7 @@
           <group>
             <field name="order_id" invisible="1"/>
             <field name="quote_id" required="1"
+                   domain="[('partner_id', '=', partner_id)]"
                    options="{'no_create_edit': True, 'no_quick_create': True}"/>
           </group>
           <footer>
