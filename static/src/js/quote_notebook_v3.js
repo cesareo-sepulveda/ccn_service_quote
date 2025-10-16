@@ -250,6 +250,140 @@ function initQuoteNotebook(controller) {
                 tryActivate(20);
             }
         } catch(_e) {}
+
+        // Marcar el tab placeholder en su <li> para poder estilizarlo (ocultar marca activa)
+        try {
+            const nb2 = document.querySelector('.o_form_view .o_notebook');
+            const ph = nb2 && nb2.querySelector(
+                '.nav-tabs .nav-link[name*="page__placeholder"],\
+                 .nav-tabs .nav-link[aria-controls*="page__placeholder"],\
+                 .nav-tabs .nav-link[href*="#page__placeholder"]'
+            );
+            if (ph && ph.parentElement) {
+                ph.parentElement.classList.add('ccn-placeholder-tab');
+            }
+        } catch(_e) {}
+
+        // Marcar el <li> activo con clase dedicada para evitar depender de :has
+        try {
+            const nb = document.querySelector('.o_form_view .o_notebook');
+            if (nb) {
+                const markActive = () => {
+                    try {
+                        const activeLink = nb.querySelector('.nav-tabs .nav-link.active');
+                        const lis = nb.querySelectorAll('.nav-tabs li');
+                        lis.forEach(li => li.classList.remove('ccn-active-tab'));
+                        if (activeLink) {
+                            const li = activeLink.closest('li');
+                            if (li) li.classList.add('ccn-active-tab');
+                        }
+                    } catch(_e) {}
+                };
+                markActive();
+                // Bootstrap tab events
+                const onShown = (ev) => { try { if (ev && ev.target && nb.contains(ev.target)) markActive(); } catch(_e) {} };
+                document.body.addEventListener('shown.bs.tab', onShown, true);
+                // Fallback por mutaciones de clase
+                try {
+                    const mo = new MutationObserver(() => markActive());
+                    mo.observe(nb, { subtree: true, attributes: true, attributeFilter: ['class'] });
+                } catch(_e) {}
+
+                // Inyectar/eliminar un span de marca visible en el <li> activo (más robusto que ::after)
+                const updateActiveDot = () => {
+                    try {
+                        // eliminar puntos previos
+                        nb.querySelectorAll('.nav-tabs li .ccn-active-dot').forEach((el)=> el.remove());
+                        const activeLink = nb.querySelector('.nav-tabs .nav-link.active');
+                        if (!activeLink) return;
+                        const li = activeLink.closest('li');
+                        if (!li) return;
+                        if (li.classList.contains('ccn-placeholder-tab')) return; // no dibujar en placeholder
+                        const dot = document.createElement('span');
+                        dot.className = 'ccn-active-dot';
+                        li.appendChild(dot);
+                    } catch(_e) {}
+                };
+                // Llamar junto con markActive
+                const markBoth = () => { markActive(); updateActiveDot(); };
+                markBoth();
+                document.body.addEventListener('shown.bs.tab', (ev)=>{ try{ if (ev && ev.target && nb.contains(ev.target)) markBoth(); }catch(_e){} }, true);
+                try { const mo2 = new MutationObserver(()=> markBoth()); mo2.observe(nb, {subtree:true, attributes:true, attributeFilter:['class']}); } catch(_e){}
+            }
+        } catch(_e) {}
+
+        // Modo "sin pestaña activa" al mostrar el notebook por primera vez.
+        // Oculta el contenido hasta que el usuario seleccione una pestaña.
+        try {
+            const root2 = document.querySelector('.o_form_view');
+            const formEl = root2 ? (root2.querySelector('form.ccn-quote') || root2) : document.querySelector('form.ccn-quote');
+            const nb = root2 ? (root2.querySelector('.o_notebook') || root2.querySelector('.o_content .o_notebook')) : document.querySelector('.o_notebook');
+            if (nb && formEl && formEl.getAttribute('data-ccn-noactive-applied') !== '1') {
+                // Evitar aplicar si hay una navegación pendiente a un tab (ccnGoTab)
+                const data2 = controller?.model?.root?.data || {};
+                const rid2 = controller?.model?.root?.resId || data2.id || 'new';
+                const currentService2 = readStrFieldDOM('current_service_type') || '';
+                const currentSite2 = readIntFieldDOM('current_site_id') || '';
+                const ctxStr2 = `${rid2}|${currentSite2||''}|${currentService2||''}`;
+                const goTabKey = `ccnGoTab:${ctxStr2}`;
+                const pendingGo = !!sessionStorage.getItem(goTabKey);
+                if (!pendingGo) {
+                    formEl.setAttribute('data-ccn-noactive-applied', '1');
+                    formEl.setAttribute('data-ccn-noactive', '1');
+                    const link = nb.querySelector('.nav-tabs .nav-link.active');
+                    const pane = nb.querySelector('.tab-pane.active');
+                    if (link) { try { link.classList.remove('active'); } catch(_e) {} }
+                    if (pane) { try { pane.classList.remove('show'); pane.classList.remove('active'); } catch(_e) {} }
+                    // Guard: mientras esté en modo noactivo, eliminar cualquier activación automática
+                    try {
+                        const cleanNoActive = () => {
+                            try {
+                                if (!formEl || formEl.getAttribute('data-ccn-noactive') !== '1') return;
+                                nb.querySelectorAll('.nav-tabs .nav-link.active').forEach(a => { try { a.classList.remove('active'); } catch(_e) {} });
+                                nb.querySelectorAll('.tab-pane.show, .tab-pane.active').forEach(p => { try { p.classList.remove('show'); p.classList.remove('active'); } catch(_e) {} });
+                            } catch(_e) {}
+                        };
+                        cleanNoActive();
+                        const mo = new MutationObserver(() => cleanNoActive());
+                        mo.observe(nb, { subtree: true, childList: true, attributes: true, attributeFilter: ['class'] });
+                        // Solo salir del modo noactivo con PRIMER click del usuario
+                        const onFirstClick = (ev) => {
+                            try {
+                                const a = ev.target && ev.target.closest && ev.target.closest('.o_notebook .nav-tabs .nav-link');
+                                if (!a || !nb.contains(a)) return;
+                                formEl.removeAttribute('data-ccn-noactive');
+                                try { mo.disconnect(); } catch(_e) {}
+                                document.removeEventListener('click', onFirstClick, true);
+                            } catch(_e) {}
+                        };
+                        document.addEventListener('click', onFirstClick, true);
+
+                        // Bloquear activaciones programáticas mientras esté en noactivo
+                        const onShowPre = (ev) => {
+                            try {
+                                if (!formEl || formEl.getAttribute('data-ccn-noactive') !== '1') return;
+                                const link = ev.target;
+                                if (link && nb.contains(link)) {
+                                    ev.preventDefault();
+                                    ev.stopImmediatePropagation();
+                                }
+                            } catch(_e) {}
+                        };
+                        document.addEventListener('show.bs.tab', onShowPre, true);
+                        // Al salir del modo noactivo, quitar el listener
+                        const offNoActive = () => {
+                            try { document.removeEventListener('show.bs.tab', onShowPre, true); } catch(_e) {}
+                        };
+                        document.addEventListener('click', function _tmp(ev){
+                            const a = ev.target && ev.target.closest && ev.target.closest('.o_notebook .nav-tabs .nav-link');
+                            if (!a || !nb.contains(a)) return;
+                            try { offNoActive(); } catch(_e) {}
+                            document.removeEventListener('click', _tmp, true);
+                        }, true);
+                    } catch(_e) {}
+                }
+            }
+        } catch(_e) {}
     });
 }
 

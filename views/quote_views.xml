@@ -161,6 +161,12 @@
 
             <!-- ===== Tabs por rubro (solo visibles con tipo de servicio) ===== -->
             <notebook invisible="not current_service_type">
+              <!-- Placeholder inicial: evita que se abra un tab con líneas por defecto -->
+              <page string="Selecciona un rubro" name="page__placeholder">
+                <div class="p-3 text-center text-muted">
+                  Selecciona un rubro para ver sus líneas.
+                </div>
+              </page>
 
               <!-- Mano de Obra -->
               <page string="Mano de Obra" name="page_mano_obra"

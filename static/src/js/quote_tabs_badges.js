@@ -687,14 +687,24 @@
   function indexByCode(nb){
     const byCode = {};
     if(!nb) return byCode;
+    // Lista blanca de códigos válidos de rubro para ignorar placeholders/tab ajenos
+    const ALLOWED = new Set([
+      'mano_obra','uniforme','epp','epp_alturas','equipo_especial_limpieza','comunicacion_computo',
+      'herramienta_menor_jardineria','material_limpieza','perfil_medico','maquinaria_limpieza',
+      'maquinaria_jardineria','fertilizantes_tierra_lama','consumibles_jardineria','capacitacion'
+    ]);
     for(const a of getLinks(nb)){
+      // Permitir marcar explícitamente placeholders para ignorar
+      if (a.hasAttribute && (a.hasAttribute('data-ccn-placeholder') || a.getAttribute('name') === 'page__placeholder')) {
+        continue;
+      }
       // 1) Preferir code por atributos del link (no depende del texto visible)
       let code = linkCodeByAttrs(a);
       // 2) Si no hay atributos, intenta por etiqueta visible (nombres exactos)
       if (!code){ code = codeFromLabel(a); }
       // Importante: NO usar pageRoot/page fallback aquí para evitar mapear al tab vecino por índice
       code = canon(code);
-      if(code) byCode[code] = a;
+      if(code && ALLOWED.has(code)) byCode[code] = a;
     }
     return byCode;
   }
