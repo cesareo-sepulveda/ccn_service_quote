@@ -237,7 +237,12 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
 
 /* Estado ACTIVO: sin box-shadow ni marcos rectangulares; solo contorno SVG */
 .ccn-quote .o_notebook .nav-tabs .nav-link.active,
-.ccn-quote .o_notebook .nav-tabs li.active > .nav-link { box-shadow: none !important; }
+.ccn-quote .o_notebook .nav-tabs li.active > .nav-link {
+  box-shadow: none !important;
+  /* Outline negro para destacar el tab activo */
+  outline: 2px solid #000 !important;
+  outline-offset: -2px !important;
+}
 
 /* Placeholder: no mostrar outline aunque esté activo */
 .ccn-quote .o_notebook .nav-tabs .nav-link[name*="page__placeholder"].active::before,

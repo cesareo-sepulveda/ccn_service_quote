@@ -277,15 +277,100 @@ function initQuoteNotebook(controller) {
                             const li = activeLink.closest('li');
                             if (li) li.classList.add('ccn-active-tab');
                         }
+
+                        // No modificar texto de tabs - usar CSS para outline
                     } catch(_e) {}
                 };
-                markActive();
+
+                // Función para disparar catálogo automáticamente en tabs rojos
+                const triggerCatalogForRedTab = (activeLink) => {
+                    try {
+                        if (!activeLink) return;
+
+                        // Verificar si el tab está vacío/rojo (ccn-status-empty)
+                        const li = activeLink.closest('li');
+                        if (!li) return;
+
+                        // Verificar si tiene la clase de estado vacío
+                        const hasEmptyStatus = li.classList.contains('ccn-status-empty') ||
+                                              activeLink.classList.contains('ccn-status-empty');
+
+                        if (DEBUG) {
+                            // eslint-disable-next-line no-console
+                            console.log('[CCN] Checking tab for auto-catalog:', {
+                                tabName: activeLink.getAttribute('name') || activeLink.textContent.trim(),
+                                hasEmptyStatus,
+                                liClasses: li.className,
+                                linkClasses: activeLink.className
+                            });
+                        }
+
+                        if (!hasEmptyStatus) return;
+
+                        // Evitar loops infinitos: verificar si ya se disparó recientemente
+                        const now = Date.now();
+                        const lastTrigger = parseInt(activeLink.dataset.lastCatalogTrigger || '0');
+                        if (now - lastTrigger < 2000) {
+                            if (DEBUG) {
+                                // eslint-disable-next-line no-console
+                                console.log('[CCN] Skipping catalog trigger - too soon since last trigger');
+                            }
+                            return; // Máximo 1 vez cada 2 segundos
+                        }
+
+                        activeLink.dataset.lastCatalogTrigger = now.toString();
+
+                        // Buscar el botón de catálogo en el tab activo
+                        const catalogButton = activeLink.closest('.tab-pane')?.querySelector('button[name="action_open_catalog_wizard"]') ||
+                                             nb.querySelector('.tab-pane.active button[name="action_open_catalog_wizard"]');
+
+                        if (DEBUG) {
+                            // eslint-disable-next-line no-console
+                            console.log('[CCN] Catalog button found:', !!catalogButton, catalogButton?.disabled);
+                        }
+
+                        if (catalogButton && !catalogButton.disabled) {
+                            if (DEBUG) {
+                                // eslint-disable-next-line no-console
+                                console.log('[CCN] Triggering catalog for red tab');
+                            }
+                            // Simular click en el botón de catálogo
+                            catalogButton.click();
+                        } else if (DEBUG) {
+                            // eslint-disable-next-line no-console
+                            console.log('[CCN] Catalog button not found or disabled');
+                        }
+                    } catch(_e) {
+                        if (DEBUG) {
+                            // eslint-disable-next-line no-console
+                            console.error('[CCN] Error triggering catalog for red tab:', _e);
+                        }
+                    }
+                };
+
+                const markActiveAndTrigger = () => {
+                    markActive();
+                    // Después de marcar activo, verificar si es un tab rojo y disparar catálogo
+                    const activeLink = nb.querySelector('.nav-tabs .nav-link.active');
+                    if (activeLink) {
+                        // Pequeño delay para asegurar que el DOM esté actualizado
+                        setTimeout(() => triggerCatalogForRedTab(activeLink), 100);
+                    }
+                };
+
+                markActiveAndTrigger();
                 // Bootstrap tab events
-                const onShown = (ev) => { try { if (ev && ev.target && nb.contains(ev.target)) markActive(); } catch(_e) {} };
+                const onShown = (ev) => {
+                    try {
+                        if (ev && ev.target && nb.contains(ev.target)) {
+                            markActiveAndTrigger();
+                        }
+                    } catch(_e) {}
+                };
                 document.body.addEventListener('shown.bs.tab', onShown, true);
                 // Fallback por mutaciones de clase
                 try {
-                    const mo = new MutationObserver(() => markActive());
+                    const mo = new MutationObserver(() => markActiveAndTrigger());
                     mo.observe(nb, { subtree: true, attributes: true, attributeFilter: ['class'] });
                 } catch(_e) {}
 
