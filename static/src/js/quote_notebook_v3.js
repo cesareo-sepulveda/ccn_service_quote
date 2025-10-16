@@ -330,6 +330,16 @@ patch(FormController.prototype, {
                         try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
                         try { (window.__ccnTabsColorV2 && typeof window.__ccnTabsColorV2.apply === 'function') && window.__ccnTabsColorV2.apply(); } catch (_e) {}
                     }, 120);
+                    setTimeout(() => {
+                        try { publishStates(this); } catch(_e) {}
+                        try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
+                        try { (window.__ccnTabsColorV2 && typeof window.__ccnTabsColorV2.apply === 'function') && window.__ccnTabsColorV2.apply(); } catch (_e) {}
+                    }, 300);
+                    setTimeout(() => {
+                        try { publishStates(this); } catch(_e) {}
+                        try { (window.__ccnTabsWatch && typeof window.__ccnTabsWatch.repaint === 'function') && window.__ccnTabsWatch.repaint(); } catch (_e) {}
+                        try { (window.__ccnTabsColorV2 && typeof window.__ccnTabsColorV2.apply === 'function') && window.__ccnTabsColorV2.apply(); } catch (_e) {}
+                    }, 500);
                     try { hideBusyOverlay(); } catch(_e) {}
                     return;
                 }

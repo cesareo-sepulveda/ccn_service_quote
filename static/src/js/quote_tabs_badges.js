@@ -844,8 +844,11 @@ let __greenHold = {};
       try { getLinks(nb).forEach((a)=> clearTab(a)); } catch(_e){}
       __ctxChanged = false;
     }
-    // Preferir SIEMPRE los estados del DOM (fuente de verdad: campos invisibles por servicio)
-    let dsStates = fallbackStatesFromDOM(formRoot, nb) || {};
+    // Preferir SIEMPRE el dataset per-servicio publicado por el FormController; si no hay, usar DOM
+    let dsStates = readStatesFromDataset(formRoot) || {};
+    if (!Object.keys(dsStates).length) {
+      dsStates = fallbackStatesFromDOM(formRoot, nb) || {};
+    }
     // Counts del backend (si existen) solo para mostrar contadores, no para colores
     let dsCounts = readCountsFromDataset(formRoot) || {};
     // Forzar estados frescos en cambio de contexto
@@ -976,7 +979,10 @@ let __greenHold = {};
       // PRIORIDAD: VERDE gana a ÁMBAR si hay contenido real o backend=1.
       // Luego: ÁMBAR (override explícito o backend=2) > hold/memo > persistido > vacío.
       let debugSource = '';
-      const hasContent = (stateValue === 1) || (code === activeTabCode && ((fieldCount > 0) || (rowCount !== null && rowCount > 0)));
+      const countForCode = (()=>{ try{ return parseInt(dsCounts?.[code] || 0, 10) || 0; }catch(_e){ return 0; } })();
+      const hasContent = (stateValue === 1)
+                      || (countForCode > 0) // conteos publicados por backend (por servicio)
+                      || (code === activeTabCode && ((fieldCount > 0) || (rowCount !== null && rowCount > 0)));
       if (hasContent) {
         // Hay contenido real o backend confirma: forzar verde y limpiar override
         sNorm = 1;
@@ -1058,6 +1064,27 @@ let __greenHold = {};
     __activeCodeOptimistic = null;
     __ctxChanged = false;
     return changed;
+  }
+
+  // Repaint estricto desde dataset per-servicio (ignora memos/actividad)
+  function repaintStrictFromDataset(formRoot, nb){
+    try{
+      const dsStates = readStatesFromDataset(formRoot) || {};
+      const dsCounts = readCountsFromDataset(formRoot) || {};
+      const by = indexByCode(nb);
+      for (const [code, link] of Object.entries(by)){
+        let st = 0;
+        const v = dsStates?.[code];
+        if (v === 1 || v === '1') st = 1;
+        else if (v === 2 || v === '2') st = 2;
+        else {
+          const c = parseInt(dsCounts?.[code] || 0, 10) || 0;
+          st = c > 0 ? 1 : 0;
+        }
+        try { applyTab(link, st); } catch(_e){}
+      }
+      return true;
+    }catch(_e){ return false; }
   }
 
   // === Observa cambios en el form para re-pintar cuando cambien rubro_state_* ===
@@ -1288,6 +1315,8 @@ let __greenHold = {};
               hardContextReset(formRoot, curNb);
               const curBy = indexByCode(curNb);
               paintFromStates(formRoot, curNb, curBy, last);
+              // Re-enganchar observadores en el nuevo DOM (crítico tras re-render)
+              try { watchStates(formRoot, curNb, curBy, last); } catch(_e) {}
               // Debug inmediato al cambiar servicio/sitio
               try { if (__dbgEnabled()) __dumpStates(formRoot); } catch(_e){}
             } catch(_e){}
@@ -1296,6 +1325,9 @@ let __greenHold = {};
           setTimeout(()=>{ try{ window.__ccnPublishLastStates && window.__ccnPublishLastStates(); }catch(_e){} }, 10);
           setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 20);
           setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 60);
+          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 180);
+          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 350);
+          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; repaintStrictFromDataset(formRoot, curNb); }catch(_e){} }, 500);
         }
       };
       document.body.addEventListener('change', onQuickRepaint, true);

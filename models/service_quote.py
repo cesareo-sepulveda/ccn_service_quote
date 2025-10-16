@@ -301,8 +301,8 @@ class ServiceQuote(models.Model):
             if rec.line_ids:
                 for l in rec.line_ids:
                     try:
-                        if not (l.id and isinstance(l.id, int) and l.id > 0 and l._origin.id):
-                            continue
+                        # Considerar también líneas en memoria (no guardadas) para reflejar
+                        # estado VERDE inmediatamente en UI tras cambiar de servicio.
                         if site_id and (not l.site_id or l.site_id.id != site_id):
                             continue
                         code = getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)
@@ -361,8 +361,8 @@ class ServiceQuote(models.Model):
             if rec.line_ids:
                 for l in rec.line_ids:
                     try:
-                        if not (l.id and isinstance(l.id, int) and l.id > 0 and l._origin.id):
-                            continue
+                        # Incluir también líneas no guardadas para que el pintado sea inmediato
+                        # al alternar de servicio sin necesidad de visitar cada pestaña.
                         if site_id and (not l.site_id or l.site_id.id != site_id):
                             continue
                         code = getattr(l, 'rubro_code', False) or getattr(l.rubro_id, 'code', False)
@@ -944,6 +944,28 @@ class CCNServiceQuoteLine(models.Model):
             if line.quote_id.currency_id:
                 val = line.quote_id.currency_id.round(val)
             line.monthly_subtotal = val
+
+    # Asegurar opciones de frecuencia válidas por rubro
+    @api.onchange('rubro_id', 'rubro_code', 'frequency')
+    def _onchange_frequency_by_rubro(self):
+        for line in self:
+            code = (line.rubro_code or '').strip()
+            if code == 'mano_obra':
+                allowed = {'weekly', 'biweekly', 'monthly'}
+                if line.frequency not in allowed:
+                    line.frequency = 'monthly'
+
+    @api.constrains('rubro_id', 'rubro_code', 'frequency')
+    def _check_frequency_by_rubro(self):
+        from odoo.exceptions import ValidationError
+        for line in self:
+            code = (line.rubro_code or '').strip()
+            if code == 'mano_obra':
+                allowed = {'weekly', 'biweekly', 'monthly'}
+                if line.frequency not in allowed:
+                    raise ValidationError(
+                        _("En Mano de Obra la frecuencia debe ser Semanal, Quincenal o Mensual.")
+                    )
 
     # ===== Defaults desde contexto =====
     @api.model
