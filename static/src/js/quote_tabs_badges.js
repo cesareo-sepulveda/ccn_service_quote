@@ -725,6 +725,31 @@ let __greenHold = {};
     try{
       code = canon(code);
       if (!code) return;
+      // Si el backend/DOM indica ACK (ámbar), NO forzar rojo
+      try {
+        const ds = readStatesFromDataset(formRoot) || {};
+        const dsVal = ds?.[code];
+        if (dsVal === 2 || dsVal === '2') {
+          const curNbAck = getNotebook() || nb;
+          const byAck = indexByCode(curNbAck);
+          const linkAck = byAck[code] || null;
+          if (linkAck) { applyTab(linkAck, 2); if (last) last[code] = 2; }
+          return;
+        }
+        // Revisión adicional: leer campo per-servicio del DOM
+        const stypeChk = readStrField(formRoot, 'current_service_type');
+        let fChk = `rubro_state_${code}`;
+        if (stypeChk === 'jardineria') fChk = `rubro_state_${code}_jard`;
+        else if (stypeChk === 'limpieza') fChk = `rubro_state_${code}_limp`;
+        const vChk = readIntField(formRoot, fChk);
+        if (vChk === 2) {
+          const curNbAck2 = getNotebook() || nb;
+          const byAck2 = indexByCode(curNbAck2);
+          const linkAck2 = byAck2[code] || null;
+          if (linkAck2) { applyTab(linkAck2, 2); if (last) last[code] = 2; }
+          return;
+        }
+      } catch(_e) {}
       // Reindex para obtener el nodo actual del tab
       const curNb = getNotebook() || nb;
       const byNow = indexByCode(curNb);
@@ -919,6 +944,7 @@ let __greenHold = {};
       let sNorm;
       let rowCount = null;
       let stateValue = dsStates?.[code]; // Leer estado del backend (mutable)
+      const stateValueOriginal = stateValue; // snapshot para decisiones (evitar pisar ACK)
       // Conteos desde el widget del campo (solo usamos para el tab ACTIVO)
       const isNewRecord = !readIntField(formRoot, 'id');
       const fieldCountRaw = (code === activeTabCode) ? countRowsInField(formRoot, code) : 0;
@@ -948,7 +974,8 @@ let __greenHold = {};
       // (prioriza conteos locales sobre backend transitorio)
       if (code === activeTabCode) {
         const noRows = (fieldCount === 0) && (rowCount === null || rowCount === 0);
-        if (noRows && !__ackOverrides[code]) {
+        // No forzar rojo si el backend/DOM indica ACK (ámbar)
+        if (noRows && !__ackOverrides[code] && stateValueOriginal !== 2) {
           // limpiar memorias optimistas y marcar backend local a 0
           delete __filledMemo[code];
           delete __greenHold[code];
