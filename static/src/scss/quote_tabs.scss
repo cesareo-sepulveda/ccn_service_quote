@@ -235,14 +235,12 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
   color: var(--ccn-placeholder-fg) !important;
 }
 
-/* Estado ACTIVO: sin box-shadow ni marcos rectangulares; solo contorno SVG */
-.ccn-quote .o_notebook .nav-tabs .nav-link.active,
-.ccn-quote .o_notebook .nav-tabs li.active > .nav-link { box-shadow: none !important; }
+/* Estado ACTIVO: el box-shadow se usa para el outline (ver regla más abajo) */
 
-/* Placeholder: no mostrar outline aunque esté activo */
-.ccn-quote .o_notebook .nav-tabs .nav-link[name*="page__placeholder"].active::before,
-.ccn-quote .o_notebook .nav-tabs .nav-link[aria-controls*="page__placeholder"].active::before,
-.ccn-quote .o_notebook .nav-tabs .nav-link[href*="#page__placeholder"].active::before {
+/* Placeholder: SIN outline (ocultar completamente) */
+.ccn-quote .o_notebook .nav-tabs li:first-child > .nav-link[name*="page__placeholder"].active::before,
+.ccn-quote .o_notebook .nav-tabs li:first-child > .nav-link[aria-controls*="page__placeholder"].active::before,
+.ccn-quote .o_notebook .nav-tabs li:first-child > .nav-link[href*="#page__placeholder"].active::before {
   display: none !important;
 }
 
@@ -253,122 +251,43 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
 .o_form_view .o_notebook[data-ccn-noactive='1'] .nav-tabs .nav-link.active {
   background-image: none !important;
 }
-.ccn-quote .o_notebook .nav-tabs .nav-link[name*="page__placeholder"].active,
-.ccn-quote .o_notebook .nav-tabs .nav-link[aria-controls*="page__placeholder"].active,
-.ccn-quote .o_notebook .nav-tabs .nav-link[href*="#page__placeholder"].active {
-  background-image: none !important;
+
+/* ===== Contorno del ACTIVO: border más grueso (visible arriba/abajo) ===== */
+/* Todos los tabs activos (excepto placeholder) */
+.ccn-quote .o_notebook .nav-tabs li:not(:first-child) > .nav-link.active {
+  border-top: 3px solid #000 !important;
+  border-bottom: 3px solid #000 !important;
+  /* Compensar el border más grueso para evitar que el contenido se mueva */
+  padding-top: calc(0.5rem - 2px) !important;
+  padding-bottom: calc(0.5rem - 2px) !important;
 }
 
-/* ===== Contorno del ACTIVO con forma de chevron usando SVG en overlay (::before) ===== */
-/* Primer tab (sin muesca izquierda) */
-.ccn-quote .o_notebook .nav-tabs li:first-child > .nav-link.active::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0; /* por detrás del texto */
-  background-color: #000; /* color del contorno */
-  /* Ring por máscara: outer chevron menos inner chevron (fill-rule evenodd) */
-  -webkit-mask: url("data:image/svg+xml;utf8,\
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>\
-<path fill='black' fill-rule='evenodd' d='\
-M1,1 L90,1 L99,50 L90,99 L1,99 Z\
- M7,7 L86,7 L95,50 L86,93 L7,93 Z'/>\
-</svg>") no-repeat 0 0 / 100% 100%;
-  mask: url("data:image/svg+xml;utf8,\
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>\
-<path fill='black' fill-rule='evenodd' d='\
-M1,1 L90,1 L99,50 L90,99 L1,99 Z\
- M7,7 L86,7 L95,50 L86,93 L7,93 Z'/>\
-</svg>") no-repeat 0 0 / 100% 100%;
-}
-
-/* Resto de tabs (con muesca izquierda) */
-.ccn-quote .o_notebook .nav-tabs li:not(:first-child) > .nav-link.active::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  z-index: 0; /* por detrás del texto */
-  background-color: #000; /* color del contorno */
-  -webkit-mask: url("data:image/svg+xml;utf8,\
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>\
-<path fill='black' fill-rule='evenodd' d='\
-M1,1 L90,1 L99,50 L90,99 L1,99 L9,50 Z\
- M7,7 L86,7 L95,50 L86,93 L7,93 L13,50 Z'/>\
-</svg>") no-repeat 0 0 / 100% 100%;
-  mask: url("data:image/svg+xml;utf8,\
-<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'>\
-<path fill='black' fill-rule='evenodd' d='\
-M1,1 L90,1 L99,50 L90,99 L1,99 L9,50 Z\
- M7,7 L86,7 L95,50 L86,93 L7,93 L13,50 Z'/>\
-</svg>") no-repeat 0 0 / 100% 100%;
-}
-
-/* Asegurar que el contenido (texto/badges) quede por encima del overlay */
+/* Asegurar que el contenido (texto/badges) quede visible */
 .ccn-quote .o_notebook .nav-tabs .nav-link > *,
 .ccn-quote .o_notebook .nav-tabs li > .nav-link > * {
   position: relative;
   z-index: 2;
 }
 
-/* Desactivar por completo cualquier contorno previo del activo (máscaras/SVG) */
-.ccn-quote .o_notebook .nav-tabs li > .nav-link.active::before {
-  content: none !important;
-  -webkit-mask: none !important;
-  mask: none !important;
-  background: none !important;
-}
-
+/* DESHABILITADO: Ya no usamos punto negro, ahora usamos outline */
 /* Indicador minimalista del ACTIVO: punto negro en el vértice derecho */
-$ccn-active-dot: 11px !default; /* diámetro del punto */
-/* Elevar el li activo para que su marca quede por encima de tabs vecinos */
-.ccn-quote .o_notebook .nav-tabs li.active,
-.ccn-quote .o_notebook .nav-tabs li.ccn-active-tab { position: relative; z-index: 999 !important; }
+/* $ccn-active-dot: 11px !default; */
+
+/* DESHABILITAR todos los puntos negros ::after - ahora usamos outline con ::before */
 .ccn-quote .o_notebook .nav-tabs li.active::after,
 .ccn-quote .o_notebook .nav-tabs li.ccn-active-tab::after,
-/* Soporta cuando el activo está solo en el <a> (Chrome/Edge soportan :has) */
-.ccn-quote .o_notebook .nav-tabs li:has(> .nav-link.active)::after {
-  content: '';
-  position: absolute;
-  width: $ccn-active-dot;
-  height: $ccn-active-dot;
-  border-radius: 50%;
-  background: #000; /* sólido para evitar cortes ópticos */
-  top: 50%;
-  transform: translateY(-50%);
-  /* Balance: cercano a la punta sin entrar en zonas recortadas */
-  right: calc(#{$ccn-tab-chevron} + 8px);
-  pointer-events: none;
-  z-index: 5000; /* por encima del link y de tabs vecinos */
-}
-
-/* Alternativa robusta: span inyectado por JS (no dependemos de ::after) */
-.ccn-quote .o_notebook .nav-tabs li .ccn-active-dot {
-  position: absolute;
-  width: $ccn-active-dot;
-  height: $ccn-active-dot;
-  border-radius: 50%;
-  background: #000;
-  top: 50%;
-  transform: translateY(-50%);
-  right: calc(#{$ccn-tab-chevron} + 8px);
-  pointer-events: none;
-  z-index: 5000;
-}
-
-/* No dibujar el punto en el <a> para evitar recortes por clip-path */
-.ccn-quote .o_notebook .nav-tabs .nav-link.active::after { content: none !important; }
-/* Y explícitamente ocultarlo en el placeholder azul por si algún tema lo agrega */
-.ccn-quote .o_notebook .nav-tabs .nav-link[name*="page__placeholder"].active::after { content: none !important; }
-/* No mostrar la marca en el primer tab (placeholder azul) */
+.ccn-quote .o_notebook .nav-tabs li:has(> .nav-link.active)::after,
+.ccn-quote .o_notebook .nav-tabs .nav-link.active::after,
+.ccn-quote .o_notebook .nav-tabs .nav-link[name*="page__placeholder"].active::after,
 .ccn-quote .o_notebook .nav-tabs li:first-child.active::after,
-.ccn-quote .o_notebook .nav-tabs li.ccn-placeholder-tab.active::after { display: none !important; }
-/* Ocultar también el span inyectado cuando es placeholder */
-.ccn-quote .o_notebook .nav-tabs li:first-child .ccn-active-dot,
-.ccn-quote .o_notebook .nav-tabs li.ccn-placeholder-tab .ccn-active-dot { display: none !important; }
-/* Y si el placeholder azul está activo en el <a>, usar :has para ocultar */
-.ccn-quote .o_notebook .nav-tabs li:has(> .nav-link[name*="page__placeholder"].active)::after { display: none !important; }
+.ccn-quote .o_notebook .nav-tabs li.ccn-placeholder-tab.active::after {
+  content: none !important;
+  display: none !important;
+}
+/* Ocultar span inyectado por JS */
+.ccn-quote .o_notebook .nav-tabs li .ccn-active-dot {
+  display: none !important;
+}
 
 /* Elevar la pestaña activa por encima del stacking por índice para asegurar visibilidad */
 .ccn-quote .o_notebook .nav-tabs .nav-link.active,
@@ -376,27 +295,11 @@ $ccn-active-dot: 11px !default; /* diámetro del punto */
   z-index: 100 !important;
 }
 
-/* Punto como background (radial-gradient) dentro del área segura del chevron */
-.ccn-quote .o_notebook .nav-tabs .nav-link.active {
-  background-image:
-    radial-gradient(circle, #000 0, #000 5.5px, transparent 6px) !important;
-  background-repeat: no-repeat !important;
-  /* Centro del punto: a la izquierda del borde del chevron derecho */
-  background-position: calc(100% - (#{$ccn-tab-chevron} + 8px)) 50% !important;
-  background-size: 11px 11px !important;
-}
-/* Nunca mostrar el punto en el tab placeholder (azul) */
-.ccn-quote .o_notebook .nav-tabs .nav-link[name*="page__placeholder"].active,
-.ccn-quote .o_notebook .nav-tabs li.ccn-placeholder-tab > .nav-link.active {
-  background-image: none !important;
-}
+/* Ya no usamos punto negro - ahora usamos outline con box-shadow */
 
-/* Ocultar overlay en modo noactivo y en placeholder */
+/* Ocultar overlay en modo noactivo (pero NO en placeholder, que usa outline azul) */
 .o_form_view form.ccn-quote[data-ccn-noactive='1'] .o_notebook .nav-tabs .nav-link.active::before,
-.o_form_view .o_notebook[data-ccn-noactive='1'] .nav-tabs .nav-link.active::before,
-.ccn-quote .o_notebook .nav-tabs .nav-link[name*="page__placeholder"].active::before,
-.ccn-quote .o_notebook .nav-tabs .nav-link[aria-controls*="page__placeholder"].active::before,
-.ccn-quote .o_notebook .nav-tabs .nav-link[href*="#page__placeholder"].active::before {
+.o_form_view .o_notebook[data-ccn-noactive='1'] .nav-tabs .nav-link.active::before {
   display: none !important;
 }
 

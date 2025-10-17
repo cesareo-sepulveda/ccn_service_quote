@@ -118,7 +118,7 @@ class CCNCatalogDialog extends Component {
   toggleSel(){ /* no-op */ }
   toggleView(){ this.state.view = this.state.view === 'kanban' ? 'list' : 'kanban'; }
   onSearch(){ this.load(); }
-  onClose(){ this.env.services.dialog.close(); }
+  onClose(){ this.props.close(); }
   onToggle(){ /* no-op */ }
 
   showBusyOverlay(message){
@@ -214,7 +214,7 @@ class CCNCatalogDialog extends Component {
       const code = (this.props.rubro === 'herr_menor_jardineria') ? 'herramienta_menor_jardineria' : this.props.rubro;
       sessionStorage.setItem(`ccnGoTab:${ctxKey}`, JSON.stringify({ code, ts: Date.now() }));
     } catch(_e) {}
-    try{ this.env.services.dialog.close(); }catch(_e){}
+    try{ this.props.close(); }catch(_e){}
     this._reloadSoon();
   }
 
@@ -268,7 +268,7 @@ class CCNCatalogDialog extends Component {
       const code = (this.props.rubro === 'herr_menor_jardineria') ? 'herramienta_menor_jardineria' : this.props.rubro;
       sessionStorage.setItem(`ccnGoTab:${ctxKey}`, JSON.stringify({ code, ts: Date.now() }));
     } catch(_e) {}
-    try{ this.env.services.dialog.close(); }catch(_e){}
+    try{ this.props.close(); }catch(_e){}
     this._reloadSoon();
   }
 }

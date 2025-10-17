@@ -1680,12 +1680,18 @@ let __greenHold = {};
       }, true);
 
       // Eventos de Bootstrap para tabs (si están presentes)
-      document.body.addEventListener('shown.bs.tab', ()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, true);
+      document.body.addEventListener('shown.bs.tab', ()=>{
+        try{
+          // Al mostrar un tab nuevo, forzar publicación de estados y repintar con delay
+          window.__ccnPublishLastStates && window.__ccnPublishLastStates();
+          setTimeout(()=>{ try{ const curNb = getNotebook() || nb; const curBy = indexByCode(curNb); paintFromStates(formRoot, curNb, curBy, last); }catch(_e){} }, 100);
+        }catch(_e){}
+      }, true);
       document.body.addEventListener('hidden.bs.tab', (ev)=>{
         try{
-          // NO limpiar memorias ni datasets al salir de un tab; dejar que el backend/DOM sea la fuente
-          // Únicamente repintar con el estado actual conocido
-          paintFromStates(formRoot, nb, byCode, last);
+          // Al salir de un tab, forzar publicación inmediata del backend para guardar el estado actual
+          window.__ccnPublishLastStates && window.__ccnPublishLastStates();
+          // NO repintar aquí - esperar a que shown.bs.tab lo haga con estados frescos
         }catch(_e){}
       }, true);
       // NO forzar rojo al salir de un tab - el backend es la fuente de verdad
