@@ -101,27 +101,233 @@
 
             </group>
 
-            <!-- Panel de Indicadores (placeholder) -->
+            <!-- Panel de Indicadores -->
             <div class="ccn-quote__metrics">
-              <h4>Indicadores
-                <span class="float-end text-muted" style="font-size:.8rem; font-weight:400;">
-                  v <field name="module_version" nolabel="1" readonly="1"/>
-                </span>
-              </h4>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Indicador</th>
-                    <th class="num">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td>—</td>
-                    <td class="num">—</td>
-                  </tr>
-                </tbody>
-              </table>
+              <h4>Indicadores</h4>
+              <!-- Campo de moneda necesario para el widget monetary -->
+              <field name="currency_id" invisible="1"/>
+
+              <!-- TABLA: Resumen del Sitio (cuando current_service_type = 'resumen_sitio') -->
+              <div invisible="current_service_type != 'resumen_sitio'">
+                <div class="mb-2 p-2 bg-light border-start border-success border-5" style="font-size: 0.9rem;">
+                  <strong>SITIO:</strong> <field name="current_site_id" nolabel="1" readonly="1" style="display: inline;"/>
+                </div>
+                <table class="table table-sm table-bordered table-hover mb-3">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 50%;"></th>
+                      <th class="text-center" style="width: 25%;">Costo Unitario</th>
+                      <th class="text-center" style="width: 25%;">Costo Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>MANO DE OBRA</td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_mano_obra_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_mano_obra" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr>
+                      <td>UNIFORMES</td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_uniformes_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_uniformes" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr>
+                      <td>EPP</td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_epp_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_epp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr>
+                      <td>OTROS RUBROS (Resto de conceptos)</td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_otros_rubros_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_otros_rubros" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr class="table-secondary">
+                      <td><strong>SUBTOTAL 1</strong></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_subtotal_1_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_subtotal_1" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr>
+                      <td>UTILIDAD <field name="indicator_sitio_utilidad_pct" nolabel="1" readonly="1" style="display: inline;"/>%</td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_utilidad_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_utilidad" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr>
+                      <td>ADMINISTRACION <field name="indicator_sitio_administracion_pct" nolabel="1" readonly="1" style="display: inline;"/>%</td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_administracion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_administracion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr class="table-warning">
+                      <td><strong>TOTAL MENSUAL ANTES DE I.V.A.</strong></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_total_mensual_antes_iva_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_total_mensual_antes_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr>
+                      <td colspan="2"><strong>I.V.A.</strong></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                    <tr class="table-primary fw-bold">
+                      <td colspan="2"><strong>TOTAL MENSUAL CON I.V.A.</strong></td>
+                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_total_mensual_con_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+                <div class="d-flex gap-2">
+                  <button name="action_show_general_summary" string="📊 Mostrar Resumen General" type="object" class="btn btn-primary btn-sm"/>
+                  <button name="action_generate_full_pdf" string="📄 Generar PDF Completo" type="object" class="btn btn-secondary btn-sm"/>
+                </div>
+              </div>
+
+              <!-- TABLA: Jardinería (cuando current_service_type = 'jardineria') -->
+              <div invisible="current_service_type != 'jardineria'">
+                <div class="mb-2 p-2 bg-light border-start border-primary border-5" style="font-size: 0.9rem;">
+                  <strong>Sitio:</strong> <field name="current_site_id" nolabel="1" readonly="1" style="display: inline;"/> |
+                  <strong>Servicio:</strong> Jardinería |
+                  <strong>Colaboradores:</strong> <field name="indicator_servicio_total_colaboradores" nolabel="1" readonly="1" style="display: inline;"/> |
+                  <strong>Prestaciones:</strong> <field name="indicator_servicio_pct_prestaciones" nolabel="1" readonly="1" style="display: inline;"/>%
+                </div>
+                <table class="table table-sm table-bordered table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 50%;">Rubro</th>
+                      <th class="text-center" style="width: 25%;">Total</th>
+                      <th class="text-center" style="width: 25%;">Por Persona</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Mano de Obra</td>
+                      <td class="text-end"><field name="indicator_servicio_mano_obra" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_mano_obra_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Uniformes</td>
+                      <td class="text-end"><field name="indicator_servicio_uniformes" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_uniformes_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>EPP</td>
+                      <td class="text-end"><field name="indicator_servicio_epp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_epp_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>EPP Alturas</td>
+                      <td class="text-end"><field name="indicator_servicio_epp_alturas" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_epp_alturas_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Comunicación y Cómputo</td>
+                      <td class="text-end"><field name="indicator_servicio_comunicacion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_comunicacion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Herramienta Menor Jardinería</td>
+                      <td class="text-end"><field name="indicator_servicio_herramienta" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_herramienta_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Perfil Médico</td>
+                      <td class="text-end"><field name="indicator_servicio_perfil_medico" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_perfil_medico_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Maquinaria de Jardinería</td>
+                      <td class="text-end"><field name="indicator_servicio_maquinaria" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_maquinaria_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Fertilizantes y Tierra Lama</td>
+                      <td class="text-end"><field name="indicator_servicio_fertilizantes" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_fertilizantes_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Consumibles de Jardinería</td>
+                      <td class="text-end"><field name="indicator_servicio_consumibles" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_consumibles_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Capacitación</td>
+                      <td class="text-end"><field name="indicator_servicio_capacitacion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_capacitacion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr class="table-primary fw-bold">
+                      <td><strong>TOTAL</strong></td>
+                      <td class="text-end"><field name="indicator_servicio_total" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_total_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+
+              <!-- TABLA: Limpieza (cuando current_service_type = 'limpieza') -->
+              <div invisible="current_service_type != 'limpieza'">
+                <div class="mb-2 p-2 bg-light border-start border-info border-5" style="font-size: 0.9rem;">
+                  <strong>Sitio:</strong> <field name="current_site_id" nolabel="1" readonly="1" style="display: inline;"/> |
+                  <strong>Servicio:</strong> Limpieza |
+                  <strong>Colaboradores:</strong> <field name="indicator_servicio_total_colaboradores" nolabel="1" readonly="1" style="display: inline;"/> |
+                  <strong>Prestaciones:</strong> <field name="indicator_servicio_pct_prestaciones" nolabel="1" readonly="1" style="display: inline;"/>%
+                </div>
+                <table class="table table-sm table-bordered table-hover mb-0">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 50%;">Rubro</th>
+                      <th class="text-center" style="width: 25%;">Total</th>
+                      <th class="text-center" style="width: 25%;">Por Persona</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Mano de Obra</td>
+                      <td class="text-end"><field name="indicator_servicio_mano_obra" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_mano_obra_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Uniformes</td>
+                      <td class="text-end"><field name="indicator_servicio_uniformes" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_uniformes_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>EPP</td>
+                      <td class="text-end"><field name="indicator_servicio_epp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_epp_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Equipo Especial de Limpieza</td>
+                      <td class="text-end"><field name="indicator_servicio_equipo_especial" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_equipo_especial_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Comunicación y Cómputo</td>
+                      <td class="text-end"><field name="indicator_servicio_comunicacion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_comunicacion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Material de Limpieza</td>
+                      <td class="text-end"><field name="indicator_servicio_material_limpieza" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_material_limpieza_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Perfil Médico</td>
+                      <td class="text-end"><field name="indicator_servicio_perfil_medico" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_perfil_medico_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Maquinaria de Limpieza</td>
+                      <td class="text-end"><field name="indicator_servicio_maquinaria_limpieza" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_maquinaria_limpieza_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Capacitación</td>
+                      <td class="text-end"><field name="indicator_servicio_capacitacion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_capacitacion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr class="table-primary fw-bold">
+                      <td><strong>TOTAL</strong></td>
+                      <td class="text-end"><field name="indicator_servicio_total" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_servicio_total_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
             </div>
             </group>
@@ -173,8 +379,6 @@
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'mano_obra'}" invisible="rubro_state_mano_obra != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'mano_obra'}"/>
                 <!-- Jardinería -->
                 <field name="line_ids_mano_obra_jardineria" mode="list"
                         invisible="current_service_type != 'jardineria'"
@@ -215,8 +419,6 @@
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'uniforme'}" invisible="rubro_state_uniforme != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'uniforme'}"/>
                 <field name="line_ids_uniforme_jardineria" mode="list"
                        invisible="current_service_type != 'jardineria'"
                        context="{
@@ -254,8 +456,6 @@
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp'}" invisible="rubro_state_epp != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'epp'}"/>
                 <field name="line_ids_epp_jardineria" mode="list"
                        invisible="current_service_type != 'jardineria'"
                        context="{
@@ -293,8 +493,6 @@
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'epp_alturas'}" invisible="rubro_state_epp_alturas_jard != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'epp_alturas'}"/>
                 <field name="line_ids_epp_alturas" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -317,8 +515,6 @@
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'equipo_especial_limpieza'}" invisible="rubro_state_equipo_especial_limpieza_limp != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'equipo_especial_limpieza'}"/>
                 <field name="line_ids_equipo_especial_limpieza" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -341,8 +537,6 @@
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'comunicacion_computo'}" invisible="rubro_state_comunicacion_computo != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'comunicacion_computo'}"/>
                 <field name="line_ids_comunicacion_computo_jardineria" mode="list"
                        invisible="current_service_type != 'jardineria'"
                        context="{
@@ -380,8 +574,6 @@
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'herramienta_menor_jardineria'}" invisible="rubro_state_herramienta_menor_jardineria_jard != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'herramienta_menor_jardineria'}"/>
                 <field name="line_ids_herramienta_menor_jardineria" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -405,8 +597,6 @@
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'material_limpieza'}" invisible="rubro_state_material_limpieza_limp != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'material_limpieza'}"/>
                 <field name="line_ids_material_limpieza" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -430,8 +620,6 @@
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'perfil_medico'}" invisible="rubro_state_perfil_medico != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'perfil_medico'}"/>
                 <field name="line_ids_perfil_medico_jardineria" mode="list"
                        invisible="current_service_type != 'jardineria'"
                        context="{
@@ -469,8 +657,6 @@
                     invisible="current_service_type != 'limpieza'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_limpieza'}" invisible="rubro_state_maquinaria_limpieza_limp != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'maquinaria_limpieza'}"/>
                 <field name="line_ids_maquinaria_limpieza" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -494,8 +680,6 @@
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'maquinaria_jardineria'}" invisible="rubro_state_maquinaria_jardineria_jard != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'maquinaria_jardineria'}"/>
                 <field name="line_ids_maquinaria_jardineria" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -519,8 +703,6 @@
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'fertilizantes_tierra_lama'}" invisible="rubro_state_fertilizantes_tierra_lama_jard != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'fertilizantes_tierra_lama'}"/>
                 <field name="line_ids_fertilizantes_tierra_lama" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -544,8 +726,6 @@
                     invisible="current_service_type != 'jardineria'">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'consumibles_jardineria'}" invisible="rubro_state_consumibles_jardineria_jard != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'consumibles_jardineria'}"/>
                 <field name="line_ids_consumibles_jardineria" mode="list"
                        context="{
                          'default_quote_id': id,
@@ -569,8 +749,6 @@
                     invisible="current_service_type not in ['jardineria', 'limpieza']">
                 <button string="No Aplica" type="object" name="action_mark_rubro_empty" class="btn btn-secondary"
                         context="{'rubro_code': 'capacitacion'}" invisible="rubro_state_capacitacion != 0"/>
-                <button string="Catálogo" type="object" name="action_open_catalog_wizard" class="btn btn-secondary"
-                        context="{'rubro_code': 'capacitacion'}"/>
                 <field name="line_ids_capacitacion_jardineria" mode="list"
                        invisible="current_service_type != 'jardineria'"
                        context="{

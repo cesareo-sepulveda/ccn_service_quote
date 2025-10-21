@@ -72,6 +72,19 @@ $ccn-tab-gap: 6px !default;      // PROPUESTA: gap fijo entre tabs
   font-variant-numeric: tabular-nums;
 }
 
+/* Alineación a la derecha para campos monetarios en tablas */
+.ccn-quote .ccn-quote__metrics table tbody td.text-end,
+.ccn-quote .ccn-quote__metrics table tbody td.text-end .o_field_widget,
+.ccn-quote .ccn-quote__metrics table tbody td.text-end .o_field_monetary {
+  text-align: right !important;
+  justify-content: flex-end !important;
+}
+
+.ccn-quote .ccn-quote__metrics table tbody td.text-end span {
+  display: inline-block;
+  text-align: right !important;
+}
+
 /* Ensure notebook starts below both header and metrics */
 .ccn-quote .o_notebook { margin-top: .75rem; }
 

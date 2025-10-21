@@ -68,6 +68,7 @@ class ServiceQuote(models.Model):
 
     current_service_type = fields.Selection(
         [
+            ('resumen_sitio', 'Resumen del Sitio'),
             ('jardineria', 'Jardinería'),
             ('limpieza', 'Limpieza'),
             ('mantenimiento', 'Mantenimiento'),
@@ -77,6 +78,8 @@ class ServiceQuote(models.Model):
             ('fletes', 'Fletes'),
         ],
         string='Tipo de servicio',
+        default='resumen_sitio',
+        required=True,
     )
 
     current_type = fields.Selection(
@@ -496,14 +499,30 @@ class ServiceQuote(models.Model):
 
     # Dispara client action JS que abre el selector de productos (sin wizard puente)
     def action_open_catalog_wizard(self):
-        self.ensure_one()
+        # Puede llamarse sin registro (desde control en lista vacía)
+        # En ese caso, obtener quote_id del contexto
         ctx = dict(self.env.context or {})
+
+        if self:
+            self.ensure_one()
+            quote_id = self.id
+            site_id = self.current_site_id.id if self.current_site_id else False
+            service_type = self.current_service_type or False
+        else:
+            # Si self está vacío, obtener del contexto
+            quote_id = ctx.get('default_quote_id') or ctx.get('quote_id')
+            if not quote_id:
+                return False
+            quote = self.env['ccn.service.quote'].browse(quote_id)
+            site_id = quote.current_site_id.id if quote.current_site_id else False
+            service_type = quote.current_service_type or False
+
         ctx.update({
-            'active_model': self._name,
-            'active_id': self.id,
-            'quote_id': self.id,
-            'site_id': self.current_site_id.id if self.current_site_id else False,
-            'service_type': self.current_service_type or False,
+            'active_model': 'ccn.service.quote',
+            'active_id': quote_id,
+            'quote_id': quote_id,
+            'site_id': site_id,
+            'service_type': service_type,
             # rubro proviene del contexto del botón en la pestaña
             'rubro_code': ctx.get('rubro_code') or ctx.get('ctx_rubro_code') or False,
         })

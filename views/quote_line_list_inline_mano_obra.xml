@@ -9,6 +9,10 @@
       <field name="type">list</field>
       <field name="arch" type="xml">
         <list editable="bottom" string="Líneas Mano de Obra">
+          <control>
+            <create string="Agregar una línea"/>
+            <button string="Catálogo" type="object" name="action_open_catalog_wizard" context="{'rubro_code': 'mano_obra'}" class="btn-link"/>
+          </control>
           <field name="rubro_id" invisible="1" column_invisible="1"/>
           <field name="rubro_code" invisible="1" column_invisible="1"/>
 
