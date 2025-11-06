@@ -84,7 +84,7 @@
             <group col="2">
 
               <!-- Cliente -->
-                <field name="partner_id" required="1" string="Cliente" attrs="{'readonly': [('state', '=', 'authorized')]}"/>
+                <field name="partner_id" required="1" string="Cliente" readonly="state == 'authorized'"/>
 
                 <!-- Nombre de la cotización -->
                 <field name="name" string="Nombre de la cotización" readonly="state == 'authorized'"/>
