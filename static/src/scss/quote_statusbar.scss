@@ -1,0 +1,41 @@
+/* Colores para el statusbar de cotizaciones CCN - SOLO ESTADO ACTUAL */
+/* Solo aplica dentro de formularios con clase .ccn-quote */
+
+/* Estado actual: Borrador (rojo/danger) */
+.ccn-quote .o_statusbar_status button.o_arrow_button_current[data-value="draft"],
+.ccn-quote .o_statusbar_status .o_arrow_button.o_arrow_button_current[data-value="draft"] {
+    background-color: #dc3545 !important;
+    color: white !important;
+    border-color: #c82333 !important;
+}
+
+.ccn-quote .o_statusbar_status button.o_arrow_button_current[data-value="draft"]::after,
+.ccn-quote .o_statusbar_status .o_arrow_button.o_arrow_button_current[data-value="draft"]::after {
+    border-left-color: #dc3545 !important;
+}
+
+/* Estado actual: Pendiente (amarillo/warning) */
+.ccn-quote .o_statusbar_status button.o_arrow_button_current[data-value="pending"],
+.ccn-quote .o_statusbar_status .o_arrow_button.o_arrow_button_current[data-value="pending"] {
+    background-color: #ffc107 !important;
+    color: #212529 !important;
+    border-color: #e0a800 !important;
+}
+
+.ccn-quote .o_statusbar_status button.o_arrow_button_current[data-value="pending"]::after,
+.ccn-quote .o_statusbar_status .o_arrow_button.o_arrow_button_current[data-value="pending"]::after {
+    border-left-color: #ffc107 !important;
+}
+
+/* Estado actual: Autorizado (verde/success) */
+.ccn-quote .o_statusbar_status button.o_arrow_button_current[data-value="authorized"],
+.ccn-quote .o_statusbar_status .o_arrow_button.o_arrow_button_current[data-value="authorized"] {
+    background-color: #28a745 !important;
+    color: white !important;
+    border-color: #218838 !important;
+}
+
+.ccn-quote .o_statusbar_status button.o_arrow_button_current[data-value="authorized"]::after,
+.ccn-quote .o_statusbar_status .o_arrow_button.o_arrow_button_current[data-value="authorized"]::after {
+    border-left-color: #28a745 !important;
+}

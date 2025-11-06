@@ -19,11 +19,11 @@ patch(FormController.prototype, {
     checkAndApplyReadonly() {
         const record = this.model.root;
         if (record && record.data.state === 'authorized') {
-            // Bloquear todos los campos excepto current_service_type
+            // Bloquear todos los campos excepto current_service_type y display_mode
             const fieldComponents = this.__owl__.bdom.el.querySelectorAll('.o_field_widget');
             fieldComponents.forEach(fieldEl => {
                 const fieldName = fieldEl.getAttribute('name');
-                if (fieldName && fieldName !== 'current_service_type') {
+                if (fieldName && fieldName !== 'current_service_type' && fieldName !== 'display_mode') {
                     // Deshabilitar completamente el campo
                     const inputs = fieldEl.querySelectorAll('input, select, textarea, button');
                     inputs.forEach(input => {

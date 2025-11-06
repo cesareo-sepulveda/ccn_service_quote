@@ -9,8 +9,9 @@
         <form string="Agregar cotización CCN">
           <group>
             <field name="order_id" invisible="1"/>
+            <field name="partner_id" invisible="1"/>
             <field name="quote_id" required="1"
-                   domain="[('partner_id', '=', partner_id)]"
+                   domain="[('partner_id', '=', partner_id), ('state', '=', 'authorized')]"
                    options="{'no_create_edit': True, 'no_quick_create': True}"/>
           </group>
           <footer>

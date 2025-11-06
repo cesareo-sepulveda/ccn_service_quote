@@ -40,7 +40,7 @@ class CCNCatalogDialog extends Component {
             <div class="o_ccn_catalog_tools">
               <input t-model="state.search" t-on-input="onSearch" placeholder="Buscar..."/>
               <button t-on-click="toggleView" class="btn btn-secondary">
-                <t t-if="state.view === 'kanban'">Muy lista</t>
+                <t t-if="state.view === 'kanban'">Buscar</t>
                 <t t-else="">Imágenes</t>
               </button>
             </div>
@@ -100,7 +100,8 @@ class CCNCatalogDialog extends Component {
         </div>
       </t>
       <t t-set-slot="footer">
-        <button class="btn btn-primary" t-on-click="onAddMany" t-att-disabled="!canAddMany()">Seleccionar todo</button>
+        <button class="btn btn-primary" t-on-click="onAddMany" t-att-disabled="!canAddMany()">Agregar todo</button>
+        <button class="btn btn-warning ms-2" t-on-click="onMarkNotApplicable">No aplica</button>
         <button class="btn btn-secondary ms-2" t-on-click="onClose">Cerrar</button>
       </t>
       </Dialog>
@@ -208,14 +209,42 @@ class CCNCatalogDialog extends Component {
     }));
     try{ await this.orm.create('ccn.service.quote.line', values); }
     catch(e){ try{ this.hideBusyOverlay(); }catch(_e){}; throw e; }
-    // Persistir el tab de retorno (por contexto: quote|site|service)
+    // Persistir el tab de retorno (por contexto: quote|site|service) y marcar como verde
     try {
       const ctxKey = `${this.props.quoteId}|${this.props.siteId||''}|${this.props.serviceType||''}`;
       const code = (this.props.rubro === 'herr_menor_jardineria') ? 'herramienta_menor_jardineria' : this.props.rubro;
       sessionStorage.setItem(`ccnGoTab:${ctxKey}`, JSON.stringify({ code, ts: Date.now() }));
+      // Marcar el rubro como verde (filled) para que persista tras el reload
+      sessionStorage.setItem(`ccnFilledMemo:${ctxKey}:${code}`, 'true');
     } catch(_e) {}
     try{ this.props.close(); }catch(_e){}
     this._reloadSoon();
+  }
+
+  async onMarkNotApplicable(){
+    if (!this.props.quoteId || !this.props.rubro) return;
+    this.showBusyOverlay('Marcando como No Aplica...');
+    try {
+      // Construir contexto para el método action_mark_rubro_empty
+      const context = {
+        rubro_code: this.props.rubro,
+        site_id: this.props.siteId || false,
+        service_type: this.props.serviceType || false,
+      };
+      // Llamar al método del modelo ccn.service.quote
+      await this.orm.call('ccn.service.quote', 'action_mark_rubro_empty', [[this.props.quoteId]], { context });
+      // Persistir el tab de retorno
+      try {
+        const ctxKey = `${this.props.quoteId}|${this.props.siteId||''}|${this.props.serviceType||''}`;
+        const code = (this.props.rubro === 'herr_menor_jardineria') ? 'herramienta_menor_jardineria' : this.props.rubro;
+        sessionStorage.setItem(`ccnGoTab:${ctxKey}`, JSON.stringify({ code, ts: Date.now() }));
+      } catch(_e) {}
+      try{ this.props.close(); }catch(_e){}
+      this._reloadSoon();
+    } catch(e) {
+      try{ this.hideBusyOverlay(); }catch(_e){}
+      throw e;
+    }
   }
 
   async load(){
@@ -262,11 +291,13 @@ class CCNCatalogDialog extends Component {
     };
     try{ await this.orm.create('ccn.service.quote.line', [vals]); }
     catch(e){ try{ this.hideBusyOverlay(); }catch(_e){}; throw e; }
-    // Persistir el tab de retorno (por contexto: quote|site|service)
+    // Persistir el tab de retorno (por contexto: quote|site|service) y marcar como verde
     try {
       const ctxKey = `${this.props.quoteId}|${this.props.siteId||''}|${this.props.serviceType||''}`;
       const code = (this.props.rubro === 'herr_menor_jardineria') ? 'herramienta_menor_jardineria' : this.props.rubro;
       sessionStorage.setItem(`ccnGoTab:${ctxKey}`, JSON.stringify({ code, ts: Date.now() }));
+      // Marcar el rubro como verde (filled) para que persista tras el reload
+      sessionStorage.setItem(`ccnFilledMemo:${ctxKey}:${code}`, 'true');
     } catch(_e) {}
     try{ this.props.close(); }catch(_e){}
     this._reloadSoon();

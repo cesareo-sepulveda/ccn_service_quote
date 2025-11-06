@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from odoo import Command, api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
+from markupsafe import Markup
 import logging
 import time
 
@@ -840,15 +841,10 @@ class ServiceQuote(models.Model):
         # Enviar notificación a autorizadores
         self._notify_authorizers()
 
+        # Recargar la vista para reflejar el cambio de estado inmediatamente
         return {
             'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Autorización solicitada'),
-                'message': _('La cotización ha sido enviada para autorización.'),
-                'type': 'success',
-                'sticky': False,
-            }
+            'tag': 'reload',
         }
 
     def action_authorize(self):
@@ -868,15 +864,30 @@ class ServiceQuote(models.Model):
         # Notificar al creador
         self._notify_authorization_complete()
 
+        # Recargar la vista para reflejar el cambio de estado inmediatamente
         return {
             'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Cotización autorizada'),
-                'message': _('La cotización ha sido autorizada exitosamente.'),
-                'type': 'success',
-                'sticky': False,
-            }
+            'tag': 'reload',
+        }
+
+    def action_reset_to_draft(self):
+        """Restablece la cotización a borrador (solo para autorizadores)"""
+        self.ensure_one()
+
+        # Verificar que el usuario sea autorizador
+        if not self.is_authorizer:
+            raise UserError(_('No tiene permisos para restablecer cotizaciones.'))
+
+        if self.state != 'authorized':
+            raise UserError(_('Solo se pueden restablecer cotizaciones en estado Autorizado.'))
+
+        # Cambiar estado a borrador
+        self.write({'state': 'draft'})
+
+        # Recargar la vista para reflejar el cambio de estado inmediatamente
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'reload',
         }
 
     def _notify_authorizers(self):
@@ -894,12 +905,12 @@ class ServiceQuote(models.Model):
             return
 
         # Crear mensaje en el chatter
-        message = _(
+        message = Markup(_(
             'La cotización <b>%(quote_name)s</b> para el cliente <b>%(partner_name)s</b> '
             'requiere autorización.',
             quote_name=self.name,
             partner_name=self.partner_id.name,
-        )
+        ))
 
         self.message_post(
             body=message,
@@ -915,12 +926,12 @@ class ServiceQuote(models.Model):
 
         # Notificar al creador del registro
         if self.create_uid:
-            message = _(
+            message = Markup(_(
                 'La cotización <b>%(quote_name)s</b> para el cliente <b>%(partner_name)s</b> '
                 'ha sido autorizada.',
                 quote_name=self.name,
                 partner_name=self.partner_id.name,
-            )
+            ))
 
             self.message_post(
                 body=message,

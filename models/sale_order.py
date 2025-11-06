@@ -293,24 +293,24 @@ class SaleOrder(models.Model):
 
         quote = self.ccn_quote_id
 
-        # 1. Crear proyecto
+        # 1. Crear cuenta analítica primero
+        analytic_account = self.env['account.analytic.account'].create({
+            'name': _('Proyecto %s - %s') % (self.name, self.partner_id.name),
+            'partner_id': self.partner_id.id,
+            'plan_id': self.env.ref('analytic.analytic_plan_projects').id if self.env.ref('analytic.analytic_plan_projects', False) else False,
+        })
+
+        # 2. Crear proyecto vinculado a la cuenta analítica
         project = self.env['project.project'].create({
             'name': _('Proyecto %s - %s') % (self.name, self.partner_id.name),
             'partner_id': self.partner_id.id,
             'sale_order_id': self.id,
         })
 
-        # 2. Obtener o crear cuenta analítica
-        analytic_account = project.analytic_account_id
-        if not analytic_account:
-            analytic_account = self.env['account.analytic.account'].create({
-                'name': project.name,
-                'partner_id': self.partner_id.id,
-            })
-            project.analytic_account_id = analytic_account.id
-
-        # 3. Vincular cuenta analítica a esta orden de venta
-        self.analytic_account_id = analytic_account.id
+        # 3. Aplicar distribución analítica a las líneas existentes de la SO
+        if analytic_account and self.order_line:
+            for line in self.order_line:
+                line.analytic_distribution = {str(analytic_account.id): 100}
 
         # 4. Obtener materiales de la cotización (type='material')
         material_lines = quote.line_ids.filtered(lambda l: l.type == 'material')
@@ -327,7 +327,6 @@ class SaleOrder(models.Model):
         for site, lines in by_site.items():
             material_so = self.env['sale.order'].create({
                 'partner_id': self.partner_id.id,
-                'analytic_account_id': analytic_account.id,
                 'origin': _('%s - Materiales %s') % (self.name, site.name if site else _('General')),
             })
 

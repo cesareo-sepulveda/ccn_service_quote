@@ -57,8 +57,12 @@
       <field name="arch" type="xml">
         <form string="Cotizador Especial CCN" class="ccn-quote">
           <header>
+            <button name="action_request_authorization" string="Solicitar Autorización" type="object"
+                    class="btn-primary" invisible="not can_request_authorization or state != 'draft'"/>
             <button name="action_authorize" string="Autorizar Cotización" type="object"
                     class="btn-primary" invisible="state != 'pending' or not is_authorizer"/>
+            <button name="action_reset_to_draft" string="Restablecer a borrador" type="object"
+                    class="btn-danger" invisible="state != 'authorized' or not is_authorizer"/>
             <field name="state" widget="statusbar" options="{'clickable': false}"/>
           </header>
           <sheet>
@@ -68,14 +72,6 @@
 
             <!-- Botones inteligentes -->
             <div class="oe_button_box" name="button_box">
-              <button name="action_request_authorization" type="object"
-                      class="oe_stat_button" icon="fa-check-circle"
-                      invisible="not can_request_authorization or state != 'draft'">
-                <div class="o_stat_info">
-                  <span class="o_stat_text">Solicitar</span>
-                  <span class="o_stat_text">Autorización</span>
-                </div>
-              </button>
             </div>
 
             <!-- ===== Cabecera (2 columnas) ===== -->
@@ -106,7 +102,7 @@
                 <field name="current_service_type" string="Tipo de servicio"/>
 
                 <!-- Parámetros -->
-                <field name="display_mode" string="Modo de presentación" readonly="state == 'authorized'"/>
+                <field name="display_mode" string="Modo de presentación"/>
  
                 <field name="admin_percent" string="Administración (%)" readonly="state == 'authorized'"/>
 

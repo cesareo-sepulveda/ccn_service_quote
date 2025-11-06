@@ -793,7 +793,7 @@ let __greenHold = {};
   // Reset duro de contexto: limpiar memorias de verde persistente y colores aplicados
   function hardContextReset(formRoot, nb){
     try{
-      __filledMemo = {};
+      // NO resetear __filledMemo directamente, se maneja en ensureCtx()
       __persistStates = {};
       __persistStatesMap = {};
       __ackOverrides = {};
@@ -838,6 +838,23 @@ let __greenHold = {};
       __filledMemo = __filledMemoMap[key];
       __ackOverrides = __ackOverridesMap[key];
       __persistStates = __persistStatesMap[key];
+      // Cargar memorias verdes desde sessionStorage (marcadas desde catálogo)
+      try {
+        const quoteId = readIntField(formRoot, 'id') || 'new';
+        const siteId = readIntField(formRoot, 'current_site_id') || '';
+        const serviceType = readStrField(formRoot, 'current_service_type') || '';
+        const ctxKey = `${quoteId}|${siteId}|${serviceType}`;
+        // Buscar todas las claves ccnFilledMemo para este contexto
+        for (let i = 0; i < sessionStorage.length; i++) {
+          const storageKey = sessionStorage.key(i);
+          if (storageKey && storageKey.startsWith(`ccnFilledMemo:${ctxKey}:`)) {
+            const code = storageKey.split(':').pop();
+            if (code && sessionStorage.getItem(storageKey) === 'true') {
+              __filledMemo[code] = true;
+            }
+          }
+        }
+      } catch(_e) {}
       // REMOVIDO: No cargar desde DOM en cambio de contexto para evitar contaminación
       // Solo cargar persistedAcks que vienen del storage, no del DOM
       __ctxChanged = true;
@@ -973,10 +990,28 @@ let __greenHold = {};
         if (rowCount === 0 && stateValue !== 1) {
           // Tab activo sin filas reales y backend no confirma verde: limpiar memoria
           delete __filledMemo[code];
+          // También limpiar del mapa
+          if (__ctxKey && __filledMemoMap[__ctxKey]) {
+            delete __filledMemoMap[__ctxKey][code];
+          }
         }
         // Marcar memoria verde si hay contenido (filas visibles) o backend confirma
         if ((rowCount > 0) || (fieldCount > 0) || stateValue === 1) {
           __filledMemo[code] = true;
+          // Guardar en el mapa para que persista entre cambios de tab
+          if (__ctxKey && __filledMemoMap[__ctxKey]) {
+            __filledMemoMap[__ctxKey][code] = true;
+          }
+          // Limpiar sessionStorage temporal si el backend confirma verde
+          if (stateValue === 1) {
+            try {
+              const quoteId = readIntField(formRoot, 'id') || 'new';
+              const siteId = readIntField(formRoot, 'current_site_id') || '';
+              const serviceType = readStrField(formRoot, 'current_service_type') || '';
+              const ctxKey = `${quoteId}|${siteId}|${serviceType}`;
+              sessionStorage.removeItem(`ccnFilledMemo:${ctxKey}:${code}`);
+            } catch(_e) {}
+          }
         }
       }
 
@@ -1292,7 +1327,7 @@ let __greenHold = {};
           lastCtxKey = ctxKey;
           __currentRecordUniqueId = null;
           __ctxKey = null;
-          __filledMemo = {};
+          // NO crear nuevo objeto, se reasignará en ensureCtx()
           // Preservar memorias por contexto (no resetear __filledMemoMap)
           __forceFresh = true;
           for (const k in last) delete last[k];
@@ -1341,7 +1376,7 @@ let __greenHold = {};
 
             // Reset mínimo del contexto (sin baseline rojo)
             __ctxKey = null;
-            __filledMemo = {};
+            // NO crear nuevo objeto, se reasignará en ensureCtx()
             __activeCodeOptimistic = null;
             __ctxChanged = true;
             __forceFresh = true;
@@ -1395,6 +1430,10 @@ let __greenHold = {};
           if (code) {
             __greenHold[code] = Date.now() + 1200; // hold extendido para evitar parpadeo
             __filledMemo[code] = true; // feedback inmediato conservador
+            // Guardar en el mapa para que persista entre cambios de tab
+            if (__ctxKey && __filledMemoMap[__ctxKey]) {
+              __filledMemoMap[__ctxKey][code] = true;
+            }
             // Aplicar VERDE inmediato en el tab activo
             try {
               if (activeLink) {
@@ -1450,6 +1489,10 @@ let __greenHold = {};
           try{
             __greenHold[code] = Date.now() + 1200;
             __filledMemo[code] = true;
+            // Guardar en el mapa para que persista entre cambios de tab
+            if (__ctxKey && __filledMemoMap[__ctxKey]) {
+              __filledMemoMap[__ctxKey][code] = true;
+            }
           }catch(_e){}
           // Esperar a que Odoo procese y publicar/repintar una sola vez
           setTimeout(()=>{
@@ -1530,6 +1573,10 @@ let __greenHold = {};
                     applyTab(link, 1);
                     last[code] = 1;
                     __filledMemo[code] = true;
+                    // Guardar en el mapa para que persista entre cambios de tab
+                    if (__ctxKey && __filledMemoMap[__ctxKey]) {
+                      __filledMemoMap[__ctxKey][code] = true;
+                    }
                   }
                 } catch(_e) {}
                 // Esperar a que Odoo guarde el cambio Y el backend recalcule estados
@@ -1554,6 +1601,10 @@ let __greenHold = {};
                       forceRed(formRoot, getNotebook() || nb, code, last);
                     } else if (realCount > 0) {
                       __filledMemo[code] = true;
+                      // Guardar en el mapa para que persista entre cambios de tab
+                      if (__ctxKey && __filledMemoMap[__ctxKey]) {
+                        __filledMemoMap[__ctxKey][code] = true;
+                      }
                       { const __nb2 = getNotebook() || nb; const __by2 = indexByCode(__nb2); paintFromStates(formRoot, __nb2, __by2, last); }
                     }
                   }catch(_e){ if (DEBUG) console.error('[CCN-CHANGE] Error interno:', _e); }
