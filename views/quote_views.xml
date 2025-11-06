@@ -14,7 +14,7 @@
         <list string="Cotizaciones CCN" default_order="partner_id,name">
           <field name="partner_id" string="Cliente"/>
           <field name="name" string="Cotización"/>
-          <field name="current_service_type" string="Tipo de servicio"/>
+          <field name="state" string="Estado" widget="badge" decoration-danger="state == 'draft'" decoration-warning="state == 'pending'" decoration-success="state == 'authorized'"/>
           <field name="current_site_id" string="Sitio actual" optional="hide"/>
           <field name="display_mode" string="Modo presentación" optional="hide"/>
           <field name="create_date" string="Creado" optional="hide"/>
@@ -56,7 +56,27 @@
       <field name="type">form</field>
       <field name="arch" type="xml">
         <form string="Cotizador Especial CCN" class="ccn-quote">
+          <header>
+            <button name="action_authorize" string="Autorizar Cotización" type="object"
+                    class="btn-primary" invisible="state != 'pending' or not is_authorizer"/>
+            <field name="state" widget="statusbar" options="{'clickable': '1'}"/>
+          </header>
           <sheet>
+            <!-- Campos invisibles para condiciones -->
+            <field name="can_request_authorization" invisible="1"/>
+            <field name="is_authorizer" invisible="1"/>
+
+            <!-- Botones inteligentes -->
+            <div class="oe_button_box" name="button_box">
+              <button name="action_request_authorization" type="object"
+                      class="oe_stat_button" icon="fa-check-circle"
+                      invisible="not can_request_authorization or state != 'draft'">
+                <div class="o_stat_info">
+                  <span class="o_stat_text">Solicitar</span>
+                  <span class="o_stat_text">Autorización</span>
+                </div>
+              </button>
+            </div>
 
             <!-- ===== Cabecera (2 columnas) ===== -->
             <group>
@@ -64,40 +84,41 @@
             <group col="2">
 
               <!-- Cliente -->
-                <field name="partner_id" required="1" string="Cliente"/>
- 
+                <field name="partner_id" required="1" string="Cliente" readonly="state == 'authorized'"/>
+
                 <!-- Nombre de la cotización -->
-                <field name="name" string="Nombre de la cotización"/>
+                <field name="name" string="Nombre de la cotización" readonly="state == 'authorized'"/>
  
                 <!-- Sitio + botón (botón bajo el campo en misma columna) -->
                 <!-- Sitio actual (selector) -->
                 <field name="current_site_id" string="Sitio"
                        domain="[('id','in', site_ids), ('active','=', True)]"
                        context="{'default_quote_id': id}"
-                       options="{'no_open': False, 'no_create': False, 'no_create_edit': False}"/>
+                       options="{'no_open': False, 'no_create': False, 'no_create_edit': False}"
+                       readonly="state == 'authorized'"/>
 
                 <!-- Tabla de sitios retirada a petición; selección se hace arriba -->
- 
+
                 <!-- Espaciador con estilo de etiqueta (NO usar <label/> vacío en Odoo 18) -->
                 <!-- Botón Sitio General retirado: se preselecciona automáticamente -->
- 
+
                 <!-- Tipo de servicio -->
-                <field name="current_service_type" string="Tipo de servicio"/>
- 
+                <field name="current_service_type" string="Tipo de servicio" readonly="state == 'authorized'"/>
+
                 <!-- Parámetros -->
-                <field name="display_mode" string="Modo de presentación"/>
+                <field name="display_mode" string="Modo de presentación" readonly="state == 'authorized'"/>
  
-                <field name="admin_percent" string="Administración (%)"/>
- 
-                <field name="utility_percent" string="Utilidad (%)"/>
- 
-                <field name="financial_percent" string="Costo Financiero (%)"/>
- 
-                <field name="transporte_rate" string="Tarifa Transporte P/P"/>
+                <field name="admin_percent" string="Administración (%)" readonly="state == 'authorized'"/>
 
-                <field name="bienestar_rate" string="Tarifa Bienestar P/P"/>
+                <field name="utility_percent" string="Utilidad (%)" readonly="state == 'authorized'"/>
 
-                <field name="prestaciones_percent" string="Porcentaje prestaciones (%)"/>
+                <field name="financial_percent" string="Costo Financiero (%)" readonly="state == 'authorized'"/>
+
+                <field name="transporte_rate" string="Tarifa Transporte P/P" readonly="state == 'authorized'"/>
+
+                <field name="bienestar_rate" string="Tarifa Bienestar P/P" readonly="state == 'authorized'"/>
+
+                <field name="prestaciones_percent" string="Porcentaje prestaciones (%)" readonly="state == 'authorized'"/>
 
             </group>
 
@@ -121,53 +142,138 @@
                     </tr>
                   </thead>
                   <tbody>
+                    <!-- Rubros que componen SUBTOTAL 1 -->
                     <tr>
-                      <td>MANO DE OBRA</td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_mano_obra_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_mano_obra" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td>Mano de Obra</td>
+                      <td class="text-end"><field name="indicator_sitio_mano_obra_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_mano_obra" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
                     <tr>
-                      <td>UNIFORMES</td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_uniformes_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_uniformes" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td>Uniformes</td>
+                      <td class="text-end"><field name="indicator_sitio_uniformes_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_uniformes" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
                     <tr>
                       <td>EPP</td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_epp_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_epp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end"><field name="indicator_sitio_epp_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_epp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
                     <tr>
-                      <td>OTROS RUBROS (Resto de conceptos)</td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_otros_rubros_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_otros_rubros" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td>EPP Alturas</td>
+                      <td class="text-end"><field name="indicator_sitio_epp_alturas_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_epp_alturas" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
-                    <tr class="table-secondary">
+                    <tr>
+                      <td>Equipo Especial de Limpieza</td>
+                      <td class="text-end"><field name="indicator_sitio_equipo_especial_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_equipo_especial" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Comunicación y Cómputo</td>
+                      <td class="text-end"><field name="indicator_sitio_comunicacion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_comunicacion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Herramienta Menor Jardinería</td>
+                      <td class="text-end"><field name="indicator_sitio_herramienta_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_herramienta" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Material de Limpieza</td>
+                      <td class="text-end"><field name="indicator_sitio_material_limpieza_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_material_limpieza" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+
+                    <!-- SUBTOTAL 1 -->
+                    <tr class="table-secondary fw-bold">
                       <td><strong>SUBTOTAL 1</strong></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_subtotal_1_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_subtotal_1" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end"><field name="indicator_sitio_subtotal_1_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_subtotal_1" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+
+                    <!-- Administración y Utilidad -->
+                    <tr>
+                      <td>Administración <field name="indicator_sitio_administracion_pct" nolabel="1" readonly="1" style="display: inline;"/>%</td>
+                      <td class="text-end"><field name="indicator_sitio_administracion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_administracion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
                     <tr>
-                      <td>UTILIDAD <field name="indicator_sitio_utilidad_pct" nolabel="1" readonly="1" style="display: inline;"/>%</td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_utilidad_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_utilidad" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td>Utilidad <field name="indicator_sitio_utilidad_pct" nolabel="1" readonly="1" style="display: inline;"/>%</td>
+                      <td class="text-end"><field name="indicator_sitio_utilidad_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_utilidad" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+
+                    <!-- SUBTOTAL 2 -->
+                    <tr class="table-info fw-bold">
+                      <td><strong>SUBTOTAL 2</strong></td>
+                      <td class="text-end"><field name="indicator_sitio_subtotal_2_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_subtotal_2" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+
+                    <!-- Rubros adicionales que componen el TOTAL ANTES DE IVA -->
+                    <tr>
+                      <td>Perfil Médico</td>
+                      <td class="text-end"><field name="indicator_sitio_perfil_medico_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_perfil_medico" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
                     <tr>
-                      <td>ADMINISTRACION <field name="indicator_sitio_administracion_pct" nolabel="1" readonly="1" style="display: inline;"/>%</td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_administracion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_administracion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td>Maquinaria de Limpieza</td>
+                      <td class="text-end"><field name="indicator_sitio_maquinaria_limpieza_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_maquinaria_limpieza" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
-                    <tr class="table-warning">
+                    <tr>
+                      <td>Maquinaria de Jardinería</td>
+                      <td class="text-end"><field name="indicator_sitio_maquinaria_jardineria_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_maquinaria_jardineria" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Fertilizantes y Tierra Lama</td>
+                      <td class="text-end"><field name="indicator_sitio_fertilizantes_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_fertilizantes" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Consumibles de Jardinería</td>
+                      <td class="text-end"><field name="indicator_sitio_consumibles_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_consumibles" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Transporte</td>
+                      <td class="text-end"><field name="indicator_sitio_transporte_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_transporte" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Bienestar</td>
+                      <td class="text-end"><field name="indicator_sitio_bienestar_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_bienestar" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Capacitación</td>
+                      <td class="text-end"><field name="indicator_sitio_capacitacion_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_capacitacion" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+                    <tr>
+                      <td>Costo Financiero <field name="indicator_sitio_costo_financiero_pct" nolabel="1" readonly="1" style="display: inline;"/>%</td>
+                      <td class="text-end"><field name="indicator_sitio_costo_financiero_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_costo_financiero" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                    </tr>
+
+                    <!-- TOTAL ANTES DE IVA -->
+                    <tr class="table-warning fw-bold">
                       <td><strong>TOTAL MENSUAL ANTES DE I.V.A.</strong></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_total_mensual_antes_iva_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_total_mensual_antes_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end"><field name="indicator_sitio_total_mensual_antes_iva_pp" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
+                      <td class="text-end"><field name="indicator_sitio_total_mensual_antes_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
+
+                    <!-- IVA -->
                     <tr>
-                      <td colspan="2"><strong>I.V.A.</strong></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td colspan="2"><strong>I.V.A. (16%)</strong></td>
+                      <td class="text-end"><field name="indicator_sitio_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
+
+                    <!-- TOTAL CON IVA -->
                     <tr class="table-primary fw-bold">
                       <td colspan="2"><strong>TOTAL MENSUAL CON I.V.A.</strong></td>
-                      <td class="text-end" style="text-align: right !important;"><field name="indicator_sitio_total_mensual_con_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}" style="text-align: right !important;"/></td>
+                      <td class="text-end"><field name="indicator_sitio_total_mensual_con_iva" nolabel="1" readonly="1" widget="monetary" options="{'currency_field': 'currency_id'}"/></td>
                     </tr>
                   </tbody>
                 </table>

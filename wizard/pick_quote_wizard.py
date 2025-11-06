@@ -17,7 +17,8 @@ class CCNServiceQuotePickWizard(models.TransientModel):
         "ccn.service.quote",
         string="Cotización CCN",
         required=False,
-        help="Cotización de servicio a importar a la Orden de Venta.",
+        domain="[('partner_id', '=', partner_id), ('state', '=', 'authorized')]",
+        help="Cotización de servicio autorizada para importar a la Orden de Venta. Solo se pueden importar cotizaciones autorizadas.",
     )
     
     partner_id = fields.Many2one(
@@ -42,6 +43,10 @@ class CCNServiceQuotePickWizard(models.TransientModel):
             raise UserError(_("Este asistente debe abrirse desde una Orden de Venta."))
         if not self.quote_id:
             raise UserError(_("Selecciona una cotización antes de continuar."))
+
+        # Validación: solo cotizaciones autorizadas
+        if self.quote_id.state != 'authorized':
+            raise UserError(_("Solo se pueden importar cotizaciones con estado 'Autorizado'. La cotización seleccionada está en estado '%s'.") % dict(self.quote_id._fields['state'].selection).get(self.quote_id.state))
 
         # Validación extra por si alguien evade el dominio
         so_partner = self.order_id.partner_id

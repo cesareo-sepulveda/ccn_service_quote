@@ -41,6 +41,27 @@ class ServiceQuote(models.Model):
     partner_id = fields.Many2one('res.partner', string='Cliente', required=True, index=True)
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
 
+    # Estado de la cotización
+    state = fields.Selection([
+        ('draft', 'Borrador'),
+        ('pending', 'Pendiente'),
+        ('authorized', 'Autorizado'),
+    ], string='Estado', default='draft', required=True, tracking=True, copy=False)
+
+    # Verificar si puede solicitar autorización (todos los tabs están completos)
+    can_request_authorization = fields.Boolean(
+        string='Puede solicitar autorización',
+        compute='_compute_can_request_authorization',
+        store=False,
+    )
+
+    # Verificar si el usuario actual es autorizador
+    is_authorizer = fields.Boolean(
+        string='Es autorizador',
+        compute='_compute_is_authorizer',
+        store=False,
+    )
+
     currency_id = fields.Many2one(
         'res.currency', string='Moneda', required=True,
         default=lambda self: self.env.company.currency_id.id,
@@ -55,6 +76,8 @@ class ServiceQuote(models.Model):
         "quote_id",
         string="Sitios",
         default=_default_site_ids,
+        readonly=True,
+        states={'draft': [('readonly', False)], 'pending': [('readonly', False)]},
     )
 
     current_site_id = fields.Many2one(
@@ -105,7 +128,8 @@ class ServiceQuote(models.Model):
     bienestar_rate = fields.Float(string='Tarifa Bienestar P/P', default=0.0)
     prestaciones_percent = fields.Float(string='Porcentaje prestaciones (%)', default=45.0)
 
-    line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas')
+    line_ids = fields.One2many('ccn.service.quote.line', 'quote_id', string='Líneas',
+                               readonly=True, states={'draft': [('readonly', False)], 'pending': [('readonly', False)]})
 
     # ACKs (No aplica) por rubro/sitio/tipo — para disparar recomputos de estado
     ack_ids = fields.One2many('ccn.service.quote.ack', 'quote_id', string='ACKs')
@@ -698,6 +722,179 @@ class ServiceQuote(models.Model):
             ver = ''
         for rec in self:
             rec.module_version = ver
+
+    # ============================================
+    # FLUJO DE AUTORIZACIÓN
+    # ============================================
+
+    @api.depends('line_ids', 'line_ids.service_type', 'ack_ids', 'state')
+    def _compute_can_request_authorization(self):
+        """
+        Verifica si todos los tabs activos están completos (verde o ámbar).
+        Un servicio se considera inactivo si TODOS sus rubros están en rojo.
+        """
+        for rec in self:
+            # Solo en estado borrador se puede solicitar autorización
+            if rec.state != 'draft':
+                rec.can_request_authorization = False
+                continue
+
+            # Obtener servicios activos con al menos una línea o ACK
+            servicios_activos = set()
+            for line in rec.line_ids:
+                if line.service_type:
+                    servicios_activos.add(line.service_type)
+            for ack in rec.ack_ids:
+                if ack.service_type and ack.is_empty:
+                    servicios_activos.add(ack.service_type)
+
+            # Si no hay servicios activos, no se puede solicitar autorización
+            if not servicios_activos:
+                rec.can_request_authorization = False
+                continue
+
+            # Verificar que cada servicio activo tenga todos sus rubros completos
+            # Un rubro está completo si tiene líneas (verde) o ACK (ámbar)
+            all_complete = True
+            for servicio in servicios_activos:
+                # Obtener rubros con datos para este servicio
+                rubros_con_lineas = set()
+                rubros_con_ack = set()
+
+                for line in rec.line_ids.filtered(lambda l: l.service_type == servicio):
+                    if line.rubro_code:
+                        rubros_con_lineas.add(line.rubro_code)
+
+                for ack in rec.ack_ids.filtered(lambda a: a.service_type == servicio and a.is_empty):
+                    if ack.rubro_code:
+                        rubros_con_ack.add(ack.rubro_code)
+
+                # Todos los rubros del catálogo
+                todos_rubros = {code for code, _ in RUBRO_CODES}
+
+                # Verificar si hay al menos un rubro sin completar (sin líneas ni ACK)
+                rubros_completos = rubros_con_lineas | rubros_con_ack
+                rubros_incompletos = todos_rubros - rubros_completos
+
+                # Si hay rubros incompletos, este servicio no está completo
+                if rubros_incompletos:
+                    all_complete = False
+                    break
+
+            rec.can_request_authorization = all_complete
+
+    @api.depends()
+    def _compute_is_authorizer(self):
+        """Verifica si el usuario actual pertenece al grupo de autorizadores"""
+        authorizer_group = self.env.ref('ccn_service_quote.group_ccn_quote_authorizer', raise_if_not_found=False)
+        for rec in self:
+            rec.is_authorizer = authorizer_group and self.env.user in authorizer_group.users
+
+    def action_request_authorization(self):
+        """Solicita autorización de la cotización"""
+        self.ensure_one()
+
+        if self.state != 'draft':
+            raise UserError(_('Solo se pueden solicitar autorización de cotizaciones en estado Borrador.'))
+
+        if not self.can_request_authorization:
+            raise UserError(_('No se puede solicitar autorización. Asegúrese de que todos los servicios activos tengan todos sus rubros completos.'))
+
+        # Cambiar estado a pendiente
+        self.write({'state': 'pending'})
+
+        # Enviar notificación a autorizadores
+        self._notify_authorizers()
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Autorización solicitada'),
+                'message': _('La cotización ha sido enviada para autorización.'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def action_authorize(self):
+        """Autoriza la cotización (solo para autorizadores)"""
+        self.ensure_one()
+
+        # Verificar que el usuario sea autorizador
+        if not self.is_authorizer:
+            raise UserError(_('No tiene permisos para autorizar cotizaciones.'))
+
+        if self.state != 'pending':
+            raise UserError(_('Solo se pueden autorizar cotizaciones en estado Pendiente.'))
+
+        # Cambiar estado a autorizado
+        self.write({'state': 'authorized'})
+
+        # Notificar al creador
+        self._notify_authorization_complete()
+
+        return {
+            'type': 'ir.actions.client',
+            'tag': 'display_notification',
+            'params': {
+                'title': _('Cotización autorizada'),
+                'message': _('La cotización ha sido autorizada exitosamente.'),
+                'type': 'success',
+                'sticky': False,
+            }
+        }
+
+    def _notify_authorizers(self):
+        """Envía notificación a los usuarios autorizadores"""
+        self.ensure_one()
+        authorizer_group = self.env.ref('ccn_service_quote.group_ccn_quote_authorizer', raise_if_not_found=False)
+
+        if not authorizer_group:
+            return
+
+        # Obtener usuarios autorizadores
+        authorizers = authorizer_group.users
+
+        if not authorizers:
+            return
+
+        # Crear mensaje en el chatter
+        message = _(
+            'La cotización <b>%(quote_name)s</b> para el cliente <b>%(partner_name)s</b> '
+            'requiere autorización.',
+            quote_name=self.name,
+            partner_name=self.partner_id.name,
+        )
+
+        self.message_post(
+            body=message,
+            subject=_('Solicitud de autorización de cotización'),
+            message_type='notification',
+            partner_ids=authorizers.partner_id.ids,
+            subtype_xmlid='mail.mt_comment',
+        )
+
+    def _notify_authorization_complete(self):
+        """Notifica al creador que la cotización fue autorizada"""
+        self.ensure_one()
+
+        # Notificar al creador del registro
+        if self.create_uid:
+            message = _(
+                'La cotización <b>%(quote_name)s</b> para el cliente <b>%(partner_name)s</b> '
+                'ha sido autorizada.',
+                quote_name=self.name,
+                partner_name=self.partner_id.name,
+            )
+
+            self.message_post(
+                body=message,
+                subject=_('Cotización autorizada'),
+                message_type='notification',
+                partner_ids=[self.create_uid.partner_id.id] if self.create_uid.partner_id else [],
+                subtype_xmlid='mail.mt_comment',
+            )
 
 
 # =====================================================================

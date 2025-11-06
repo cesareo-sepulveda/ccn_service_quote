@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+    <!-- Categoría de aplicación -->
+    <record id="module_category_ccn_quotes" model="ir.module.category">
+      <field name="name">CCN Service Quotes</field>
+      <field name="description">Gestión de cotizaciones de servicio CCN</field>
+      <field name="sequence">10</field>
+    </record>
+
+    <!-- Grupo: Usuario base de cotizaciones -->
+    <record id="group_ccn_quote_user" model="res.groups">
+      <field name="name">Usuario de Cotizaciones CCN</field>
+      <field name="category_id" ref="module_category_ccn_quotes"/>
+      <field name="comment">Puede crear y editar cotizaciones en estado borrador</field>
+    </record>
+
+    <!-- Grupo: Autorizador de cotizaciones -->
+    <record id="group_ccn_quote_authorizer" model="res.groups">
+      <field name="name">Autorizador de Cotizaciones CCN</field>
+      <field name="category_id" ref="module_category_ccn_quotes"/>
+      <field name="implied_ids" eval="[(4, ref('group_ccn_quote_user'))]"/>
+      <field name="users" eval="[(4, ref('base.user_admin'))]"/>
+      <field name="comment">Puede autorizar cotizaciones pendientes</field>
+    </record>
+
+  </data>
+</odoo>

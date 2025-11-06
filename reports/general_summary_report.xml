@@ -1,0 +1,428 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+  <data>
+
+    <!-- Definición del reporte PDF -->
+    <record id="report_general_summary_pdf" model="ir.actions.report">
+      <field name="name">Resumen General - CCN</field>
+      <field name="model">ccn.service.quote</field>
+      <field name="report_type">qweb-pdf</field>
+      <field name="report_name">ccn_service_quote.report_general_summary_document</field>
+      <field name="report_file">ccn_service_quote.report_general_summary_document</field>
+      <field name="print_report_name">'Resumen General - %s' % (object.name)</field>
+      <field name="binding_model_id" ref="model_ccn_service_quote"/>
+      <field name="binding_type">report</field>
+    </record>
+
+    <!-- Template principal del reporte -->
+    <template id="report_general_summary_document">
+      <t t-call="web.html_container">
+        <t t-foreach="docs" t-as="doc">
+          <t t-call="web.external_layout">
+            <div class="page">
+
+              <!-- Encabezado del reporte -->
+              <div class="row mb-4">
+                <div class="col-12">
+                  <h2 style="color: #2E7D32; border-bottom: 3px solid #2E7D32; padding-bottom: 10px;">
+                    📊 Resumen General - Todos los Sitios
+                  </h2>
+                  <p><strong>Cotización:</strong> <t t-esc="doc.name"/></p>
+                  <p><strong>Cliente:</strong> <t t-esc="doc.partner_id.name"/></p>
+                  <p><strong>Fecha:</strong> <t t-esc="context_timestamp(datetime.datetime.now()).strftime('%d/%m/%Y %H:%M')"/></p>
+                </div>
+              </div>
+
+              <!-- Obtener sitios activos (sin "General") -->
+              <t t-set="sites" t-value="doc.site_ids.filtered(lambda s: s.active and (s.name or '').strip().lower() != 'general').sorted(key=lambda s: s.sequence)"/>
+
+              <t t-if="not sites">
+                <div class="alert alert-warning">
+                  <p>No hay sitios configurados para esta cotización.</p>
+                </div>
+              </t>
+
+              <t t-if="sites">
+                <!-- Obtener parámetros de configuración -->
+                <t t-set="admin_pct" t-value="doc.admin_percent or 0.0"/>
+                <t t-set="utilidad_pct" t-value="doc.utility_percent or 0.0"/>
+                <t t-set="costo_financiero_pct" t-value="doc.financial_percent or 0.0"/>
+                <t t-set="tarifa_transporte" t-value="doc.transporte_rate or 0.0"/>
+                <t t-set="tarifa_bienestar" t-value="doc.bienestar_rate or 0.0"/>
+                <t t-set="currency" t-value="doc.currency_id"/>
+
+                <!-- Calcular datos por sitio -->
+                <t t-set="site_data" t-value="{}"/>
+                <t t-foreach="sites" t-as="site">
+                  <t t-set="lines" t-value="doc.line_ids.filtered(lambda l: l.site_id == site)"/>
+                  <t t-set="mo_lines" t-value="lines.filtered(lambda l: l.rubro_code == 'mano_obra')"/>
+                  <t t-set="total_colaboradores" t-value="int(sum(mo_lines.mapped('quantity')))"/>
+
+                  <!-- Calcular rubros -->
+                  <t t-set="mano_obra" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'mano_obra').mapped('total_price'))"/>
+                  <t t-set="uniformes" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'uniforme').mapped('total_price'))"/>
+                  <t t-set="epp" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'epp').mapped('total_price'))"/>
+                  <t t-set="epp_alturas" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'epp_alturas').mapped('total_price'))"/>
+                  <t t-set="equipo_especial" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'equipo_especial_limpieza').mapped('total_price'))"/>
+                  <t t-set="comunicacion" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'comunicacion_computo').mapped('total_price'))"/>
+                  <t t-set="herramienta" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'herramienta_menor_jardineria').mapped('total_price'))"/>
+                  <t t-set="material_limpieza" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'material_limpieza').mapped('total_price'))"/>
+                  <t t-set="perfil_medico" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'perfil_medico').mapped('total_price'))"/>
+                  <t t-set="maquinaria_limpieza" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'maquinaria_limpieza').mapped('total_price'))"/>
+                  <t t-set="maquinaria_jardineria" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'maquinaria_jardineria').mapped('total_price'))"/>
+                  <t t-set="fertilizantes" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'fertilizantes_tierra_lama').mapped('total_price'))"/>
+                  <t t-set="consumibles" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'consumibles_jardineria').mapped('total_price'))"/>
+                  <t t-set="capacitacion" t-value="sum(lines.filtered(lambda l: l.rubro_code == 'capacitacion').mapped('total_price'))"/>
+
+                  <!-- SUBTOTAL 1 -->
+                  <t t-set="subtotal_1" t-value="mano_obra + uniformes + epp + epp_alturas + equipo_especial + comunicacion + herramienta + material_limpieza"/>
+
+                  <!-- Administración y Utilidad -->
+                  <t t-set="administracion" t-value="subtotal_1 * (admin_pct / 100.0)"/>
+                  <t t-set="utilidad" t-value="subtotal_1 * (utilidad_pct / 100.0)"/>
+
+                  <!-- SUBTOTAL 2 -->
+                  <t t-set="subtotal_2" t-value="subtotal_1 + administracion + utilidad"/>
+
+                  <!-- Transporte y Bienestar -->
+                  <t t-set="transporte" t-value="tarifa_transporte * total_colaboradores"/>
+                  <t t-set="bienestar" t-value="tarifa_bienestar * total_colaboradores"/>
+
+                  <!-- Costo Financiero -->
+                  <t t-set="base_costo_financiero" t-value="subtotal_1 + perfil_medico + maquinaria_limpieza + fertilizantes + consumibles + transporte + capacitacion"/>
+                  <t t-set="costo_financiero" t-value="base_costo_financiero * (costo_financiero_pct / 100.0)"/>
+
+                  <!-- TOTAL MENSUAL ANTES DE IVA -->
+                  <t t-set="total_mensual_antes_iva" t-value="subtotal_2 + perfil_medico + maquinaria_limpieza + maquinaria_jardineria + fertilizantes + consumibles + transporte + bienestar + capacitacion + costo_financiero"/>
+
+                  <!-- IVA y TOTAL CON IVA -->
+                  <t t-set="iva" t-value="total_mensual_antes_iva * 0.16"/>
+                  <t t-set="total_mensual_con_iva" t-value="total_mensual_antes_iva + iva"/>
+
+                  <!-- Guardar datos en diccionario -->
+                  <t t-set="site_data" t-value="site_data.update({site.id: {
+                    'mano_obra': mano_obra,
+                    'uniformes': uniformes,
+                    'epp': epp,
+                    'epp_alturas': epp_alturas,
+                    'equipo_especial': equipo_especial,
+                    'comunicacion': comunicacion,
+                    'herramienta': herramienta,
+                    'material_limpieza': material_limpieza,
+                    'subtotal_1': subtotal_1,
+                    'administracion': administracion,
+                    'utilidad': utilidad,
+                    'subtotal_2': subtotal_2,
+                    'perfil_medico': perfil_medico,
+                    'maquinaria_limpieza': maquinaria_limpieza,
+                    'maquinaria_jardineria': maquinaria_jardineria,
+                    'fertilizantes': fertilizantes,
+                    'consumibles': consumibles,
+                    'transporte': transporte,
+                    'bienestar': bienestar,
+                    'capacitacion': capacitacion,
+                    'costo_financiero': costo_financiero,
+                    'total_mensual_antes_iva': total_mensual_antes_iva,
+                    'iva': iva,
+                    'total_mensual_con_iva': total_mensual_con_iva
+                  }}) or site_data"/>
+                </t>
+
+                <!-- Tabla de resumen -->
+                <table class="table table-sm table-bordered" style="width: 100%; font-size: 9pt;">
+                  <thead style="background-color: #4CAF50; color: white;">
+                    <tr>
+                      <th style="text-align: left; padding: 8px;">DESCRIPCIÓN</th>
+                      <t t-foreach="sites" t-as="site">
+                        <th style="text-align: right; padding: 8px;"><t t-esc="site.name.upper()"/></th>
+                      </t>
+                      <th style="text-align: right; padding: 8px; background-color: #2E7D32;">TOTAL</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+
+                    <!-- Rubros que componen SUBTOTAL 1 -->
+                    <tr>
+                      <td style="padding: 5px;">Mano de Obra</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['mano_obra']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Uniformes</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['uniformes']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">EPP</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['epp']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">EPP Alturas</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['epp_alturas']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Equipo Especial de Limpieza</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['equipo_especial']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Comunicación y Cómputo</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['comunicacion']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Herramienta Menor Jardinería</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['herramienta']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Material de Limpieza</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['material_limpieza']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <!-- SUBTOTAL 1 -->
+                    <tr style="background-color: #e0e0e0; font-weight: bold;">
+                      <td style="padding: 5px;"><strong>SUBTOTAL 1</strong></td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['subtotal_1']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></strong></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <!-- Administración y Utilidad -->
+                    <tr>
+                      <td style="padding: 5px;">Administración <t t-esc="'%.2f' % admin_pct"/>%</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['administracion']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Utilidad <t t-esc="'%.2f' % utilidad_pct"/>%</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['utilidad']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <!-- SUBTOTAL 2 -->
+                    <tr style="background-color: #d1ecf1; font-weight: bold;">
+                      <td style="padding: 5px;"><strong>SUBTOTAL 2</strong></td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['subtotal_2']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></strong></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <!-- Rubros adicionales -->
+                    <tr>
+                      <td style="padding: 5px;">Perfil Médico</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['perfil_medico']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Maquinaria de Limpieza</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['maquinaria_limpieza']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Maquinaria de Jardinería</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['maquinaria_jardineria']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Fertilizantes y Tierra Lama</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['fertilizantes']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Consumibles de Jardinería</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['consumibles']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Transporte</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['transporte']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Bienestar</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['bienestar']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Capacitación</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['capacitacion']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <tr>
+                      <td style="padding: 5px;">Costo Financiero <t t-esc="'%.2f' % costo_financiero_pct"/>%</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['costo_financiero']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <!-- TOTAL MENSUAL ANTES DE IVA -->
+                    <tr style="background-color: #fff3cd; font-weight: bold;">
+                      <td style="padding: 5px;"><strong>TOTAL MENSUAL ANTES DE I.V.A.</strong></td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['total_mensual_antes_iva']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></strong></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <!-- IVA -->
+                    <tr>
+                      <td style="padding: 5px;">I.V.A. (16%)</td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['iva']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                    <!-- TOTAL CON IVA -->
+                    <tr style="background-color: #cce5ff; font-weight: bold;">
+                      <td style="padding: 5px;"><strong>TOTAL MENSUAL CON I.V.A.</strong></td>
+                      <t t-set="row_total" t-value="0"/>
+                      <t t-foreach="sites" t-as="site">
+                        <t t-set="value" t-value="site_data[site.id]['total_mensual_con_iva']"/>
+                        <t t-set="row_total" t-value="row_total + value"/>
+                        <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(value))"/></strong></td>
+                      </t>
+                      <td style="text-align: right; padding: 5px;"><strong><t t-esc="'%s %s' % (currency.symbol, '{:,.2f}'.format(row_total))"/></strong></td>
+                    </tr>
+
+                  </tbody>
+                </table>
+
+              </t>
+
+            </div>
+          </t>
+        </t>
+      </t>
+    </template>
+
+  </data>
+</odoo>
