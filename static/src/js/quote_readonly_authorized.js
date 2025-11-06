@@ -2,34 +2,40 @@
 
 import { patch } from "@web/core/utils/patch";
 import { FormController } from "@web/views/form/form_controller";
+import { onMounted } from "@odoo/owl";
 
 patch(FormController.prototype, {
     setup() {
         super.setup(...arguments);
 
-        // Monitorear cambios en el estado
+        // Solo aplicar a cotizaciones CCN
         if (this.props.resModel === 'ccn.service.quote') {
-            this.onRecordChanged = () => {
-                const record = this.model.root;
-                if (record && record.data.state === 'authorized') {
-                    this.makeFieldsReadonly();
-                }
-            };
+            onMounted(() => {
+                this.checkAndApplyReadonly();
+            });
         }
     },
 
-    makeFieldsReadonly() {
-        // Forzar readonly en todos los campos cuando el estado es 'authorized'
+    checkAndApplyReadonly() {
         const record = this.model.root;
         if (record && record.data.state === 'authorized') {
-            // Hacer readonly todos los campos excepto current_service_type y current_site_id (para navegación)
-            // current_site_id se configura con options no_create en la vista para evitar agregar sitios
-            Object.keys(record.fields).forEach(fieldName => {
-                if (fieldName !== 'current_service_type' && fieldName !== 'current_site_id') {
-                    const field = record.fields[fieldName];
-                    if (field && !field.readonly) {
-                        field.readonly = true;
-                    }
+            // Bloquear todos los campos excepto current_service_type
+            const fieldComponents = this.__owl__.bdom.el.querySelectorAll('.o_field_widget');
+            fieldComponents.forEach(fieldEl => {
+                const fieldName = fieldEl.getAttribute('name');
+                if (fieldName && fieldName !== 'current_service_type') {
+                    // Deshabilitar completamente el campo
+                    const inputs = fieldEl.querySelectorAll('input, select, textarea, button');
+                    inputs.forEach(input => {
+                        input.disabled = true;
+                        input.style.pointerEvents = 'none';
+                    });
+                    // Bloquear el widget many2one
+                    const many2oneInputs = fieldEl.querySelectorAll('.o_field_many2one input');
+                    many2oneInputs.forEach(input => {
+                        input.disabled = true;
+                        input.readOnly = true;
+                    });
                 }
             });
         }

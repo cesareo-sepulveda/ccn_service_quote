@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 from collections import defaultdict
-from odoo import models, _
+from odoo import models, fields, _
 from odoo.exceptions import UserError
 from odoo.tools.safe_eval import safe_eval
 
 class SaleOrder(models.Model):
     _inherit = "sale.order"
+
+    # Campo para guardar la cotización CCN importada
+    ccn_quote_id = fields.Many2one('ccn.service.quote', string='Cotización CCN', readonly=True, copy=False)
 
     def action_ccn_add_service_quote(self):
         """Abrir selector de Cotizador Especial CCN, filtrando por cliente y corrigiendo context."""
@@ -103,6 +106,9 @@ class SaleOrder(models.Model):
             raise UserError(_(
                 "El cliente de la cotización (%s) no coincide con el de la orden (%s)."
             ) % (quote.partner_id.display_name, self.partner_id.display_name))
+
+        # --- GUARDAR REFERENCIA DE LA COTIZACIÓN ---
+        self.ccn_quote_id = quote.id
 
         # --- VALIDACIONES DE CONTENIDO ---
         if not quote.line_ids:
@@ -258,3 +264,86 @@ class SaleOrder(models.Model):
                             "sequence": seq,
                         })
                         seq += STEP
+
+    # ----------------- Generación automática de proyecto y órdenes de materiales -----------------
+
+    def action_confirm(self):
+        """
+        Sobrescribir action_confirm para:
+        1. Crear proyecto si tiene cotización CCN
+        2. Generar órdenes de venta para materiales
+        3. Vincular cuenta analítica a todas las órdenes
+        """
+        res = super().action_confirm()
+
+        for order in self:
+            if order.ccn_quote_id:
+                order._create_project_and_material_orders()
+
+        return res
+
+    def _create_project_and_material_orders(self):
+        """
+        Crea un proyecto y órdenes de venta para materiales de la cotización CCN
+        """
+        self.ensure_one()
+
+        if not self.ccn_quote_id:
+            return
+
+        quote = self.ccn_quote_id
+
+        # 1. Crear proyecto
+        project = self.env['project.project'].create({
+            'name': _('Proyecto %s - %s') % (self.name, self.partner_id.name),
+            'partner_id': self.partner_id.id,
+            'sale_order_id': self.id,
+        })
+
+        # 2. Obtener o crear cuenta analítica
+        analytic_account = project.analytic_account_id
+        if not analytic_account:
+            analytic_account = self.env['account.analytic.account'].create({
+                'name': project.name,
+                'partner_id': self.partner_id.id,
+            })
+            project.analytic_account_id = analytic_account.id
+
+        # 3. Vincular cuenta analítica a esta orden de venta
+        self.analytic_account_id = analytic_account.id
+
+        # 4. Obtener materiales de la cotización (type='material')
+        material_lines = quote.line_ids.filtered(lambda l: l.type == 'material')
+
+        if not material_lines:
+            return
+
+        # 5. Agrupar materiales por sitio
+        by_site = defaultdict(list)
+        for line in material_lines:
+            by_site[line.site_id].append(line)
+
+        # 6. Crear una orden de venta por cada sitio con materiales
+        for site, lines in by_site.items():
+            material_so = self.env['sale.order'].create({
+                'partner_id': self.partner_id.id,
+                'analytic_account_id': analytic_account.id,
+                'origin': _('%s - Materiales %s') % (self.name, site.name if site else _('General')),
+            })
+
+            # Agregar líneas de materiales
+            for line in lines:
+                if line.product_id:
+                    taxes = line.product_id.taxes_id.filtered(lambda t: t.company_id == self.company_id)
+                    self.env['sale.order.line'].create({
+                        'order_id': material_so.id,
+                        'product_id': line.product_id.id,
+                        'name': line.product_id.name,
+                        'product_uom_qty': line.quantity or 1.0,
+                        'price_unit': line.price_unit_final or 0.0,
+                        'tax_id': [(6, 0, taxes.ids)],
+                        'analytic_distribution': {str(analytic_account.id): 100} if analytic_account else False,
+                    })
+
+            # Confirmar automáticamente la orden de materiales
+            material_so.action_confirm()
