@@ -53,7 +53,8 @@ class ServiceQuote(models.Model):
          'El nombre de la cotización debe ser único por cliente.')
     ]
 
-    partner_id = fields.Many2one('res.partner', string='Cliente', required=True, index=True)
+    partner_id = fields.Many2one('res.partner', string='Cliente', required=True, index=True,
+                                  readonly=True, states={'draft': [('readonly', False)], 'pending': [('readonly', False)]})
     name = fields.Char(string='Nombre', required=True, default=lambda self: _('Nueva Cotización'))
 
     # Estado de la cotización
