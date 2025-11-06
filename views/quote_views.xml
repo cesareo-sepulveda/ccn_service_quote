@@ -84,7 +84,7 @@
             <group col="2">
 
               <!-- Cliente -->
-                <field name="partner_id" required="1" string="Cliente" readonly="state == 'authorized'"/>
+                <field name="partner_id" required="1" string="Cliente" readonly="state == 'authorized'" options="{'no_open': True, 'no_quick_create': True, 'no_create': True, 'no_create_edit': True}"/>
 
                 <!-- Nombre de la cotización -->
                 <field name="name" string="Nombre de la cotización" readonly="state == 'authorized'"/>
@@ -94,8 +94,7 @@
                 <field name="current_site_id" string="Sitio"
                        domain="[('id','in', site_ids), ('active','=', True)]"
                        context="{'default_quote_id': id}"
-                       options="{'no_open': False, 'no_create': False, 'no_create_edit': False}"
-                       readonly="state == 'authorized'"/>
+                       options="{'no_open': True, 'no_create': True, 'no_create_edit': True}"/>
 
                 <!-- Tabla de sitios retirada a petición; selección se hace arriba -->
 

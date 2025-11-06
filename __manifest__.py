@@ -2,7 +2,7 @@
 {
     "name": "Cotizador Especial CCN",
     "summary": "Wizard para cotizar servicios CCN",
-    "version": "18.0.9.9.229",
+    "version": "18.0.9.9.232",
     "author": "Witann Technologies",
     "license": "LGPL-3",
     "category": "Sales/Sales",
@@ -41,6 +41,7 @@
             # "ccn_service_quote/static/src/js/quote_tabs_color_map_v2.js",  # DESACTIVADO - conflicto con badges.js
             "ccn_service_quote/static/src/js/catalog_direct_select.js",
             "ccn_service_quote/static/src/js/quote_red_tab_catalog.js",
+            "ccn_service_quote/static/src/js/quote_readonly_authorized.js",
             # "ccn_service_quote/static/src/js/quote_tab_outline.js",  # TEMPORALMENTE DESACTIVADO - problema de caché
             "ccn_service_quote/static/src/scss/quote_tabs.scss",
             "ccn_service_quote/static/src/scss/catalog_ui.scss",
