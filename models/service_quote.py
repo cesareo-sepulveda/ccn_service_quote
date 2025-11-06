@@ -26,12 +26,27 @@ RUBRO_CODES = [
     ("capacitacion","Capacitación"),
 ]
 
+# Rubros que aplican para cada tipo de servicio
+RUBROS_POR_SERVICIO = {
+    'jardineria': {
+        'mano_obra', 'uniforme', 'epp', 'epp_alturas', 'comunicacion_computo',
+        'herramienta_menor_jardineria', 'perfil_medico', 'maquinaria_jardineria',
+        'fertilizantes_tierra_lama', 'consumibles_jardineria', 'capacitacion'
+    },
+    'limpieza': {
+        'mano_obra', 'uniforme', 'epp', 'equipo_especial_limpieza',
+        'comunicacion_computo', 'material_limpieza', 'perfil_medico',
+        'maquinaria_limpieza', 'capacitacion'
+    }
+}
+
 # =====================================================================
 # QUOTE (encabezado)
 # =====================================================================
 class ServiceQuote(models.Model):
     _name = 'ccn.service.quote'
     _description = 'CCN Service Quote'
+    _inherit = ['mail.thread', 'mail.activity.mixin']
 
     _sql_constraints = [
         ('ccn_service_quote_partner_name_uniq', 'unique(partner_id, name)',
@@ -727,16 +742,20 @@ class ServiceQuote(models.Model):
     # FLUJO DE AUTORIZACIÓN
     # ============================================
 
-    @api.depends('line_ids', 'line_ids.service_type', 'ack_ids', 'state')
+    @api.depends('line_ids', 'line_ids.service_type', 'line_ids.rubro_code',
+                 'ack_ids', 'ack_ids.service_type', 'ack_ids.rubro_code', 'ack_ids.is_empty', 'state')
     def _compute_can_request_authorization(self):
         """
         Verifica si todos los tabs activos están completos (verde o ámbar).
         Un servicio se considera inactivo si TODOS sus rubros están en rojo.
         """
         for rec in self:
+            _logger.info(f"[AUTH] Computing authorization for quote {rec.id} (state={rec.state})")
+
             # Solo en estado borrador se puede solicitar autorización
             if rec.state != 'draft':
                 rec.can_request_authorization = False
+                _logger.info(f"[AUTH] Quote {rec.id}: state is not draft, can_request=False")
                 continue
 
             # Obtener servicios activos con al menos una línea o ACK
@@ -748,9 +767,12 @@ class ServiceQuote(models.Model):
                 if ack.service_type and ack.is_empty:
                     servicios_activos.add(ack.service_type)
 
+            _logger.info(f"[AUTH] Quote {rec.id}: servicios_activos={servicios_activos}")
+
             # Si no hay servicios activos, no se puede solicitar autorización
             if not servicios_activos:
                 rec.can_request_authorization = False
+                _logger.info(f"[AUTH] Quote {rec.id}: no active services, can_request=False")
                 continue
 
             # Verificar que cada servicio activo tenga todos sus rubros completos
@@ -769,19 +791,31 @@ class ServiceQuote(models.Model):
                     if ack.rubro_code:
                         rubros_con_ack.add(ack.rubro_code)
 
-                # Todos los rubros del catálogo
-                todos_rubros = {code for code, _ in RUBRO_CODES}
+                # Rubros que aplican para este tipo de servicio
+                rubros_requeridos = RUBROS_POR_SERVICIO.get(servicio, set())
+
+                # Si no hay rubros definidos para este servicio, usar todos
+                if not rubros_requeridos:
+                    rubros_requeridos = {code for code, _ in RUBRO_CODES}
 
                 # Verificar si hay al menos un rubro sin completar (sin líneas ni ACK)
                 rubros_completos = rubros_con_lineas | rubros_con_ack
-                rubros_incompletos = todos_rubros - rubros_completos
+                rubros_incompletos = rubros_requeridos - rubros_completos
+
+                _logger.info(f"[AUTH] Quote {rec.id}, servicio {servicio}: "
+                           f"rubros_requeridos={rubros_requeridos}, "
+                           f"rubros_con_lineas={rubros_con_lineas}, "
+                           f"rubros_con_ack={rubros_con_ack}, "
+                           f"rubros_incompletos={rubros_incompletos}")
 
                 # Si hay rubros incompletos, este servicio no está completo
                 if rubros_incompletos:
                     all_complete = False
+                    _logger.info(f"[AUTH] Quote {rec.id}, servicio {servicio}: INCOMPLETO")
                     break
 
             rec.can_request_authorization = all_complete
+            _logger.info(f"[AUTH] Quote {rec.id}: FINAL can_request_authorization={all_complete}")
 
     @api.depends()
     def _compute_is_authorizer(self):

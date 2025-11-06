@@ -8,10 +8,10 @@
       <field name="model">ccn.service.quote.line</field>
       <field name="type">list</field>
       <field name="arch" type="xml">
-        <list editable="bottom" string="Líneas del rubro">
+        <list editable="bottom" string="Líneas del rubro" edit="parent.state in ['draft', 'pending']" create="parent.state in ['draft', 'pending']" delete="parent.state in ['draft', 'pending']">
           <control>
             <create string="Agregar una línea"/>
-            <button string="Catálogo" type="object" name="action_open_catalog_wizard" context="{'rubro_code': context.get('ctx_rubro_code')}" class="btn-link"/>
+            <button string="Catálogo" type="object" name="action_open_catalog_wizard" context="{'rubro_code': context.get('ctx_rubro_code')}" class="btn-link" invisible="parent.state == 'authorized'"/>
           </control>
           <!-- Ocultamos rubro en columnas (lo fija la pestaña) -->
           <field name="rubro_id" invisible="1" column_invisible="1"/>
