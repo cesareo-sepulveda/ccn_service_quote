@@ -6,9 +6,15 @@ from . import wizards
 # Hook inline para que Odoo lo encuentre sin archivo extra
 from odoo import api, SUPERUSER_ID
 
-def post_init_hook(cr, registry):
-    """Post-installation hook compatible con Odoo (cr, registry)."""
-    env = api.Environment(cr, SUPERUSER_ID, {})
+def post_init_hook(*args):
+    """Hook compatible con Odoo 16 y 17+."""
+    if len(args) == 1 and isinstance(args[0], api.Environment):
+        env = args[0]
+    elif len(args) == 2:  # (cr, registry) -> construir env de superusuario
+        cr, _registry = args
+        env = api.Environment(cr, SUPERUSER_ID, {})
+    else:
+        raise TypeError("post_init_hook: firma no soportada: %r" % (args,))
     Quote = env['ccn.service.quote'].sudo()
     Site = env['ccn.service.quote.site'].sudo()
     Line = env['ccn.service.quote.line'].sudo()
